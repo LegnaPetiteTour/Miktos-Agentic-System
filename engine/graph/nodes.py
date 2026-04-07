@@ -151,10 +151,12 @@ def execution_node(state: RunState) -> RunState:
     pending = list(state.get("pending_tasks", []))
     completed = list(state.get("completed_tasks", []))
     failed = list(state.get("failed_tasks", []))
+    exhausted = list(state.get("exhausted_tasks", []))
     proposed_actions = list(state.get("proposed_actions", []))
 
     classifier = state["context"].get("tools", {}).get("classifier")
     batch_size = state["context"].get("batch_size", 50)
+    max_retries = state.get("max_retries", 3)
 
     if not classifier:
         msg = "No classifier tool registered in context."
@@ -204,18 +206,51 @@ def execution_node(state: RunState) -> RunState:
 
         except Exception as e:
             error_msg = str(e)
+            task_retries = task.get("retries", 0)
+            unrecoverable = _is_unrecoverable(error_msg)
+
             errors.append(
                 {
                     "task_id": task.get("task_id"),
                     "step": "execution",
                     "error": error_msg,
+                    "unrecoverable": unrecoverable,
                 }
             )
-            failed.append({**task, "status": "failed", "error": error_msg})
-            logs.append(
-                f"[{_now()}] EXECUTION: Task {task.get('task_id')} "
-                f"failed — {error_msg}"
+            failed.append(
+                {**task, "status": "failed", "error": error_msg}
             )
+
+            if unrecoverable or task_retries >= max_retries:
+                exhausted.append(
+                    {
+                        **task,
+                        "status": "exhausted",
+                        "error": error_msg,
+                        "retries": task_retries,
+                    }
+                )
+                logs.append(
+                    f"[{_now()}] EXECUTION: Task"
+                    f" {task.get('task_id')} exhausted"
+                    f" (retries={task_retries},"
+                    f" unrecoverable={unrecoverable})"
+                    f" — {error_msg}"
+                )
+            else:
+                remaining.append(
+                    {
+                        **task,
+                        "retries": task_retries + 1,
+                        "status": "pending",
+                    }
+                )
+                logs.append(
+                    f"[{_now()}] EXECUTION: Task"
+                    f" {task.get('task_id')}"
+                    f" retry {task_retries + 1}/{max_retries}"
+                    f" — {error_msg}"
+                )
 
     logs.append(
         f"[{_now()}] EXECUTION: Batch done. "
@@ -227,6 +262,7 @@ def execution_node(state: RunState) -> RunState:
         "pending_tasks": remaining,
         "completed_tasks": completed,
         "failed_tasks": failed,
+        "exhausted_tasks": exhausted,
         "proposed_actions": proposed_actions,
         "current_step": "review",
         "logs": logs,
@@ -318,9 +354,46 @@ def decision_node(state: RunState) -> RunState:
 
     pending = state.get("pending_tasks", [])
     errors = state.get("errors", [])
+    exhausted = state.get("exhausted_tasks", [])
+    completed = state.get("completed_tasks", [])
     retries = state.get("retries", 0)
     max_retries = state.get("max_retries", 3)
 
+    # Stop immediately on any unrecoverable error
+    unrecoverable = [e for e in errors if e.get("unrecoverable", False)]
+    if unrecoverable:
+        logs.append(
+            f"[{_now()}] DECISION: Unrecoverable error detected"
+            f" ({unrecoverable[0].get('error', '')}). STOP."
+        )
+        return {
+            **state,
+            "exit_reason": "stop",
+            "done": True,
+            "current_step": "state_update",
+            "logs": logs,
+        }
+
+    # Stop if exhausted tasks exceed configurable threshold (default 20%)
+    total = len(completed) + len(exhausted)
+    exhausted_threshold = state["context"].get("exhausted_threshold", 0.20)
+    exhausted_pct = len(exhausted) / total if total > 0 else 0.0
+    if len(exhausted) > 0 and exhausted_pct > exhausted_threshold:
+        logs.append(
+            f"[{_now()}] DECISION: Exhausted rate"
+            f" {exhausted_pct:.0%} exceeds"
+            f" threshold {exhausted_threshold:.0%}"
+            f" ({len(exhausted)}/{total}). STOP."
+        )
+        return {
+            **state,
+            "exit_reason": "stop",
+            "done": True,
+            "current_step": "state_update",
+            "logs": logs,
+        }
+
+    # Legacy coarse guard (safety net)
     if len(errors) > 10 and retries >= max_retries:
         logs.append(
             f"[{_now()}] DECISION: Error threshold exceeded "
@@ -388,3 +461,19 @@ def state_update_node(state: RunState) -> RunState:
 
 def _now() -> str:
     return datetime.now().strftime("%H:%M:%S")
+
+
+_UNRECOVERABLE_MARKERS = (
+    "permission denied",
+    "no space left on device",
+    "no such file or directory",
+    "read-only file system",
+    "errno 13",
+    "errno 28",
+)
+
+
+def _is_unrecoverable(error_msg: str) -> bool:
+    """Return True if the error message signals a system-level failure."""
+    lowered = error_msg.lower()
+    return any(marker in lowered for marker in _UNRECOVERABLE_MARKERS)

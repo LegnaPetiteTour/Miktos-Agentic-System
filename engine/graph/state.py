@@ -1,7 +1,8 @@
 """
 Core state schema for the Miktos engine.
 
-This is the spine of the system. Every node reads from and writes to this state.
+This is the spine of the system.
+Every node reads from and writes to this state.
 
 State must always answer:
   - Where is the system right now?
@@ -30,7 +31,8 @@ class RunState(TypedDict):
     pending_tasks: list[dict]
     completed_tasks: list[dict]
     failed_tasks: list[dict]
-    skipped_tasks: list[dict]
+    skipped_tasks: list[dict]   # low-confidence, not attempted
+    exhausted_tasks: list[dict]  # attempted max_retries times, unresolved
 
     # Review queue (items requiring human review)
     review_queue: list[dict]
@@ -50,7 +52,8 @@ class RunState(TypedDict):
     replans: int
     max_replans: int
     done: bool
-    exit_reason: Optional[str]  # 'success' | 'retry' | 'replan' | 'escalate' | 'stop'
+    # 'success' | 'retry' | 'replan' | 'escalate' | 'stop'
+    exit_reason: Optional[str]
 
     # Domain-specific context (each domain extends this)
     context: dict[str, Any]
