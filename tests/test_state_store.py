@@ -2,7 +2,6 @@
 Tests for the engine state store.
 """
 
-import pytest
 from engine.services.state_store import save_state, load_state, generate_run_id
 
 

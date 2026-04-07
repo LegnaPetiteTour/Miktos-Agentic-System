@@ -3,6 +3,8 @@ name = "miktos-agentic-system"
 version = "0.1.0"
 description = "Miktos Agentic System -- Closed-Loop Orchestration Engine"
 requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
 
 dependencies = [
     "langgraph>=0.2.0",
@@ -24,3 +26,10 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["engine*", "domains*"]
