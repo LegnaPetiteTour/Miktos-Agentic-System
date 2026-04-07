@@ -28,7 +28,11 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Miktos File Analyzer — Closed-Loop File Organizer"
     )
-    parser.add_argument("--path", required=True, help="Root folder to scan and organize")
+    parser.add_argument(
+        "--path",
+        required=True,
+        help="Root folder to scan and organize",
+    )
     parser.add_argument(
         "--mode",
         choices=["dry_run", "live"],
@@ -44,7 +48,11 @@ def parse_args():
     return parser.parse_args()
 
 
-def build_initial_state(root_path: str, mode: str, batch_size: int) -> RunState:
+def build_initial_state(
+    root_path: str,
+    mode: str,
+    batch_size: int,
+) -> RunState:
     return {
         "run_id": generate_run_id(),
         "domain": "file_analyzer",
@@ -108,7 +116,10 @@ def print_summary(final_state: RunState) -> None:
 
     review_queue = final_state.get("review_queue", [])
     if review_queue:
-        rq_path = Path("data/review_queue") / f"{final_state['run_id']}_review.json"
+        rq_path = (
+            Path("data/review_queue")
+            / f"{final_state['run_id']}_review.json"
+        )
         rq_path.parent.mkdir(parents=True, exist_ok=True)
         with open(rq_path, "w") as f:
             json.dump(review_queue, f, indent=2, default=str)
@@ -130,7 +141,11 @@ def main():
     print(f"  Target    : {root_path}")
     print(f"  Batch size: {args.batch_size}")
 
-    initial_state = build_initial_state(root_path, args.mode, args.batch_size)
+    initial_state = build_initial_state(
+        root_path,
+        args.mode,
+        args.batch_size,
+    )
     graph = build_graph()
 
     print(f"  Run ID    : {initial_state['run_id']}")
