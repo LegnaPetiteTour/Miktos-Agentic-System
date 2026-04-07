@@ -19,7 +19,7 @@ from pathlib import Path
 
 from engine.graph.graph_builder import build_graph
 from engine.graph.state import RunState
-from engine.services.state_store import generate_run_id, save_state
+from engine.services.state_store import generate_run_id
 from domains.file_analyzer.tools.fs_tools import FileScannerTool
 from domains.file_analyzer.tools.classifier import classify_file
 
@@ -125,7 +125,7 @@ def main():
         print(f"ERROR: Path does not exist: {root_path}")
         sys.exit(1)
 
-    print(f"\n  Miktos File Analyzer")
+    print("\n  Miktos File Analyzer")
     print(f"  Mode      : {args.mode}")
     print(f"  Target    : {root_path}")
     print(f"  Batch size: {args.batch_size}")
@@ -134,7 +134,7 @@ def main():
     graph = build_graph()
 
     print(f"  Run ID    : {initial_state['run_id']}")
-    print(f"  Starting loop...\n")
+    print("  Starting loop...\n")
 
     final_state = graph.invoke(initial_state)
 
