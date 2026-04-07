@@ -46,15 +46,39 @@ def classify_file(file_meta: dict) -> dict:
     mime = file_meta.get("mime_type", "")
 
     if suffix in EXTENSION_MAP:
-        return {"category": EXTENSION_MAP[suffix], "confidence": CONFIDENCE["extension"], "method": "extension"}
+        return {
+            "category": EXTENSION_MAP[suffix],
+            "confidence": CONFIDENCE["extension"],
+            "method": "extension",
+        }
 
     if mime.startswith("image/"):
-        return {"category": "images", "confidence": CONFIDENCE["mime"], "method": "mime"}
+        return {
+            "category": "images",
+            "confidence": CONFIDENCE["mime"],
+            "method": "mime",
+        }
     if mime.startswith("video/"):
-        return {"category": "video", "confidence": CONFIDENCE["mime"], "method": "mime"}
+        return {
+            "category": "video",
+            "confidence": CONFIDENCE["mime"],
+            "method": "mime",
+        }
     if mime.startswith("audio/"):
-        return {"category": "audio", "confidence": CONFIDENCE["mime"], "method": "mime"}
+        return {
+            "category": "audio",
+            "confidence": CONFIDENCE["mime"],
+            "method": "mime",
+        }
     if mime == "application/pdf":
-        return {"category": "documents", "confidence": CONFIDENCE["mime"], "method": "mime"}
+        return {
+            "category": "documents",
+            "confidence": CONFIDENCE["mime"],
+            "method": "mime",
+        }
 
-    return {"category": "unclassified", "confidence": CONFIDENCE["fallback"], "method": "fallback"}
+    return {
+        "category": "unclassified",
+        "confidence": CONFIDENCE["fallback"],
+        "method": "fallback",
+    }
