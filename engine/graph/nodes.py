@@ -21,9 +21,9 @@ from engine.services.state_store import save_state
 logger = logging.getLogger(__name__)
 
 
-# ─────────────────────────────────────────────
+# -----------------------------
 # ORCHESTRATOR
-# ─────────────────────────────────────────────
+# -----------------------------
 
 def orchestrator_node(state: RunState) -> RunState:
     """
@@ -48,7 +48,8 @@ def orchestrator_node(state: RunState) -> RunState:
     # Work remains
     if pending:
         logs.append(
-            f"[{_now()}] ORCHESTRATOR: {len(pending)} tasks pending. Routing to execution."
+            f"[{_now()}] ORCHESTRATOR: {len(pending)} tasks pending. "
+            "Routing to execution."
         )
         return {**state, "current_step": "execution", "logs": logs}
 
@@ -63,9 +64,9 @@ def orchestrator_node(state: RunState) -> RunState:
     }
 
 
-# ─────────────────────────────────────────────
+# -----------------------------
 # PLANNER
-# ─────────────────────────────────────────────
+# -----------------------------
 
 def planner_node(state: RunState) -> RunState:
     """
@@ -87,18 +88,32 @@ def planner_node(state: RunState) -> RunState:
         msg = "No scanner tool registered in context."
         errors.append({"step": "planner", "error": msg})
         logs.append(f"[{_now()}] PLANNER: ERROR — {msg}")
-        return {**state, "errors": errors, "done": True, "exit_reason": "stop", "logs": logs}
+        return {
+            **state,
+            "errors": errors,
+            "done": True,
+            "exit_reason": "stop",
+            "logs": logs,
+        }
 
     result = scanner.safe_run({"root_path": root_path})
 
     if not result["success"]:
         errors.append({"step": "planner", "error": result["error"]})
         logs.append(f"[{_now()}] PLANNER: Scan failed — {result['error']}")
-        return {**state, "errors": errors, "done": True, "exit_reason": "stop", "logs": logs}
+        return {
+            **state,
+            "errors": errors,
+            "done": True,
+            "exit_reason": "stop",
+            "logs": logs,
+        }
 
     files = result["result"]["files"]
     count = result["result"]["count"]
-    logs.append(f"[{_now()}] PLANNER: Found {count} files. Building task list.")
+    logs.append(
+        f"[{_now()}] PLANNER: Found {count} files. Building task list."
+    )
 
     tasks = [
         {
@@ -119,9 +134,9 @@ def planner_node(state: RunState) -> RunState:
     }
 
 
-# ─────────────────────────────────────────────
+# -----------------------------
 # EXECUTION
-# ─────────────────────────────────────────────
+# -----------------------------
 
 def execution_node(state: RunState) -> RunState:
     """
@@ -145,7 +160,13 @@ def execution_node(state: RunState) -> RunState:
         msg = "No classifier tool registered in context."
         errors.append({"step": "execution", "error": msg})
         logs.append(f"[{_now()}] EXECUTION: ERROR — {msg}")
-        return {**state, "errors": errors, "done": True, "exit_reason": "stop", "logs": logs}
+        return {
+            **state,
+            "errors": errors,
+            "done": True,
+            "exit_reason": "stop",
+            "logs": logs,
+        }
 
     batch = pending[:batch_size]
     remaining = pending[batch_size:]
@@ -173,15 +194,33 @@ def execution_node(state: RunState) -> RunState:
                 "dry_run": state["mode"] == "dry_run",
             }
             proposed_actions.append(action)
-            completed.append({**task, "status": "classified", "action_id": action["action_id"]})
+            completed.append(
+                {
+                    **task,
+                    "status": "classified",
+                    "action_id": action["action_id"],
+                }
+            )
 
         except Exception as e:
             error_msg = str(e)
-            errors.append({"task_id": task.get("task_id"), "step": "execution", "error": error_msg})
+            errors.append(
+                {
+                    "task_id": task.get("task_id"),
+                    "step": "execution",
+                    "error": error_msg,
+                }
+            )
             failed.append({**task, "status": "failed", "error": error_msg})
-            logs.append(f"[{_now()}] EXECUTION: Task {task.get('task_id')} failed — {error_msg}")
+            logs.append(
+                f"[{_now()}] EXECUTION: Task {task.get('task_id')} "
+                f"failed — {error_msg}"
+            )
 
-    logs.append(f"[{_now()}] EXECUTION: Batch done. proposed_actions total={len(proposed_actions)}.")
+    logs.append(
+        f"[{_now()}] EXECUTION: Batch done. "
+        f"proposed_actions total={len(proposed_actions)}."
+    )
 
     return {
         **state,
@@ -195,9 +234,9 @@ def execution_node(state: RunState) -> RunState:
     }
 
 
-# ─────────────────────────────────────────────
+# -----------------------------
 # REVIEW
-# ─────────────────────────────────────────────
+# -----------------------------
 
 def review_node(state: RunState) -> RunState:
     """
@@ -262,9 +301,9 @@ def review_node(state: RunState) -> RunState:
     }
 
 
-# ─────────────────────────────────────────────
+# -----------------------------
 # DECISION
-# ─────────────────────────────────────────────
+# -----------------------------
 
 def decision_node(state: RunState) -> RunState:
     """
@@ -284,22 +323,42 @@ def decision_node(state: RunState) -> RunState:
 
     if len(errors) > 10 and retries >= max_retries:
         logs.append(
-            f"[{_now()}] DECISION: Error threshold exceeded ({len(errors)} errors, "
+            f"[{_now()}] DECISION: Error threshold exceeded "
+            f"({len(errors)} errors, "
             f"{retries}/{max_retries} retries). STOP."
         )
-        return {**state, "exit_reason": "stop", "done": True, "current_step": "state_update", "logs": logs}
+        return {
+            **state,
+            "exit_reason": "stop",
+            "done": True,
+            "current_step": "state_update",
+            "logs": logs,
+        }
 
     if pending:
-        logs.append(f"[{_now()}] DECISION: {len(pending)} tasks remain. CONTINUE.")
-        return {**state, "exit_reason": "continue", "current_step": "state_update", "logs": logs}
+        logs.append(
+            f"[{_now()}] DECISION: {len(pending)} tasks remain. CONTINUE."
+        )
+        return {
+            **state,
+            "exit_reason": "continue",
+            "current_step": "state_update",
+            "logs": logs,
+        }
 
     logs.append(f"[{_now()}] DECISION: All tasks processed. SUCCESS.")
-    return {**state, "exit_reason": "success", "done": True, "current_step": "state_update", "logs": logs}
+    return {
+        **state,
+        "exit_reason": "success",
+        "done": True,
+        "current_step": "state_update",
+        "logs": logs,
+    }
 
 
-# ─────────────────────────────────────────────
+# -----------------------------
 # STATE UPDATE
-# ─────────────────────────────────────────────
+# -----------------------------
 
 def state_update_node(state: RunState) -> RunState:
     """
@@ -311,16 +370,21 @@ def state_update_node(state: RunState) -> RunState:
 
     try:
         save_state(state)
-        logs.append(f"[{_now()}] STATE UPDATE: Saved (run_id={state['run_id']}).")
+        logs.append(
+            f"[{_now()}] STATE UPDATE: Saved "
+            f"(run_id={state['run_id']})."
+        )
     except Exception as e:
-        logs.append(f"[{_now()}] STATE UPDATE: WARNING — could not save state: {e}")
+        logs.append(
+            f"[{_now()}] STATE UPDATE: WARNING — could not save state: {e}"
+        )
 
     return {**state, "logs": logs}
 
 
-# ─────────────────────────────────────────────
+# -----------------------------
 # HELPERS
-# ─────────────────────────────────────────────
+# -----------------------------
 
 def _now() -> str:
     return datetime.now().strftime("%H:%M:%S")
