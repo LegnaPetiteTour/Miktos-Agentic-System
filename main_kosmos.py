@@ -19,6 +19,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import cast
 
 from engine.graph.graph_builder import build_graph
 from engine.graph.state import RunState
@@ -168,7 +169,7 @@ def main():
     print(f"  Run ID    : {initial_state['run_id']}")
     print("  Starting loop...\n")
 
-    final_state = graph.invoke(initial_state)
+    final_state = cast(RunState, graph.invoke(initial_state))
 
     print("\n-- EXECUTION LOG --")
     for line in final_state.get("logs", []):
