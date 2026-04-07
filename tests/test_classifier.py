@@ -24,8 +24,12 @@ def test_classify_video_by_mime():
 
 
 def test_classify_unknown():
+    # mime_type == "unknown" → no MIME detected → tier 4 fallback (0.40)
+    # Contrast: .xyz + "chemical/x-xyz" → tier 3 mime_unhandled (0.60)
+    # This test verifies the critical tier-3/tier-4 boundary.
     result = classify_file({"suffix": ".xyz", "mime_type": "unknown"})
     assert result["category"] == "unclassified"
+    assert result["method"] == "fallback"
     assert result["confidence"] < 0.60
 
 
