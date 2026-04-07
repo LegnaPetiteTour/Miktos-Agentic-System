@@ -1,0 +1,26 @@
+[project]
+name = "miktos-agentic-system"
+version = "0.1.0"
+description = "Miktos Agentic System -- Closed-Loop Orchestration Engine"
+requires-python = ">=3.11"
+
+dependencies = [
+    "langgraph>=0.2.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+    "typing-extensions>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.4.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

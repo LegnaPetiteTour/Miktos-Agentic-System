@@ -1,0 +1,36 @@
+# File Analyzer -- Category Configuration
+
+categories:
+  documents:
+    folder: Documents
+    description: Text documents, PDFs, reports
+  spreadsheets:
+    folder: Spreadsheets
+    description: Excel, CSV, tabular data
+  presentations:
+    folder: Presentations
+    description: Slide decks
+  images:
+    folder: Images
+    description: Photos, graphics, illustrations
+  video:
+    folder: Video
+    description: Video files of all formats
+  audio:
+    folder: Audio
+    description: Music, recordings, audio files
+  code:
+    folder: Code
+    description: Scripts, configs, source files
+  archives:
+    folder: Archives
+    description: Compressed files
+  unclassified:
+    folder: _Review
+    description: Files that could not be classified with sufficient confidence
+
+# Confidence thresholds
+thresholds:
+  auto_approve: 0.90    # classify and act automatically
+  review_queue: 0.60    # send to human review
+  skip: 0.0             # below review_queue = skip and log
