@@ -16,46 +16,90 @@
 
 Goal: Prove the core loop works under real conditions.
 
-### Milestone 1.1 — Deterministic Engine
-- [ ] Project skeleton created
-- [ ] State schema defined
-- [ ] LangGraph graph wired (all 8 nodes)
-- [ ] File scanner implemented
-- [ ] Rule-based classifier implemented
-- [ ] Dry-run mode working
-- [ ] State persists and resumes after interruption
+### Milestone 1.1 — Deterministic Engine ✅ COMPLETE
 
-**Success condition:** Given a folder of 200+ mixed files, the system completes a dry run, produces a categorized action plan, and recovers from interruption without corrupting the source.
+**Completed:** 2026-04-07
+
+- [x] Project skeleton created
+- [x] State schema defined
+- [x] LangGraph graph wired (all 6 nodes)
+- [x] File scanner implemented
+- [x] Rule-based classifier implemented
+- [x] Dry-run mode working
+- [x] Engine/domain separation verified
+- [x] State saves to disk on every iteration
+
+**Verified result:**
+```
+python main.py --path "docs"
+
+Exit       : success
+Completed  : 5
+Failed     : 0
+Skipped    : 0
+Review Q   : 0
+Category   : documents (5)
+```
+
+**Known issue — Python 3.14 + Pydantic:**
+LangGraph emits a Pydantic v1 compatibility warning on Python 3.14.
+Run does not fail, but the stable baseline target is Python 3.11.
+See ADR-001. Fix: use the .venv pinned to 3.11 for all runs.
+
+---
 
 ### Milestone 1.2 — Review Queue + Confidence Thresholds
-- [ ] Confidence bands implemented (auto / review / skip)
-- [ ] Review queue file generated
-- [ ] Manual review workflow defined
-- [ ] Optional LLM classifier for ambiguous cases
+
+Goal: Prove the system correctly separates high-confidence from ambiguous files.
+
+- [ ] Test against a large mixed folder (200+ files, multiple types)
+- [ ] Confirm confidence bands working correctly:
+  - `>= 0.90` → auto-approved
+  - `0.60–0.89` → review queue JSON written
+  - `< 0.60` → skipped and logged
+- [ ] Review queue file written to `data/review_queue/`
+- [ ] Skipped files logged with reason and confidence score
+- [ ] Optional LLM classifier for genuinely ambiguous files
+
+**Success condition:** Given 200+ mixed files, the system produces a clean
+action plan, correctly separates uncertain files into the review queue,
+and writes a readable review file without corrupting the source folder.
+
+---
 
 ### Milestone 1.3 — Closed-Loop Correction
-- [ ] Retry logic implemented
-- [ ] Fallback strategies defined
-- [ ] Unresolved exception bucket
-- [ ] Loop bounds enforced (max retries, time budget)
+
+Goal: Prove the loop can recover and adapt, not just succeed on clean input.
+
+- [ ] Retry logic fires on execution failure
+- [ ] Fallback strategies defined per failure type
+- [ ] Unresolved exception bucket (files that exhaust retries)
+- [ ] Loop bounds enforced (max retries, max replans)
+- [ ] Test: inject bad files and confirm recovery behavior
+
+---
 
 ### Milestone 1.4 — Engine Extraction
-- [ ] Engine layer separated from file domain
-- [ ] Engine is importable as standalone package
+
+Goal: Prove the engine is genuinely domain-agnostic.
+
+- [ ] Engine layer verified to have zero domain-specific imports
+- [ ] Engine importable as standalone package
 - [ ] File analyzer depends on engine, not the reverse
-- [ ] Engine has no file-specific logic
+- [ ] Domain swap test: swap file_analyzer tools for mock domain tools,
+      confirm engine runs without modification
 
 ---
 
 ## Phase 2 — Domain 2 (Kosmos / Media Organizer)
 
-Goal: Prove the engine is reusable without modification.
+Goal: Prove the engine is reusable without modification to the core.
 
-- [ ] New domain created under `domains/`
+- [ ] New domain created under `domains/kosmos/`
 - [ ] Engine imported unchanged
-- [ ] New tools registered (media metadata, EXIF, video info)
-- [ ] New classification rules defined
-- [ ] System runs against media library
+- [ ] New tools: media metadata, EXIF, video/audio info
+- [ ] New classification rules
+- [ ] System runs against real media library
 
 **Success condition:** Engine core requires zero changes. Only domain layer is new.
 
