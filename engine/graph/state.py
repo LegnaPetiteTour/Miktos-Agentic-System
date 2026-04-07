@@ -30,7 +30,8 @@ class RunState(TypedDict):
     pending_tasks: list[dict]
     completed_tasks: list[dict]
     failed_tasks: list[dict]
-    skipped_tasks: list[dict]
+    skipped_tasks: list[dict]   # low-confidence, not attempted
+    exhausted_tasks: list[dict]  # attempted max_retries times, unresolved
 
     # Review queue (items requiring human review)
     review_queue: list[dict]

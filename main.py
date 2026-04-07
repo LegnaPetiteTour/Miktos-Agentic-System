@@ -63,6 +63,7 @@ def build_initial_state(
         "completed_tasks": [],
         "failed_tasks": [],
         "skipped_tasks": [],
+        "exhausted_tasks": [],
         "review_queue": [],
         "proposed_actions": [],
         "applied_actions": [],
@@ -82,6 +83,7 @@ def build_initial_state(
                 "auto_approve": 0.90,
                 "review_queue": 0.60,
             },
+            "exhausted_threshold": 0.20,
             "tools": {
                 "scanner": FileScannerTool(),
                 "classifier": classify_file,
@@ -100,6 +102,7 @@ def print_summary(final_state: RunState) -> None:
     print(f"  Completed  : {len(final_state.get('completed_tasks', []))}")
     print(f"  Failed     : {len(final_state.get('failed_tasks', []))}")
     print(f"  Skipped    : {len(final_state.get('skipped_tasks', []))}")
+    print(f"  Exhausted  : {len(final_state.get('exhausted_tasks', []))}")
     print(f"  Review Q   : {len(final_state.get('review_queue', []))}")
     print(f"  Errors     : {len(final_state.get('errors', []))}")
 
