@@ -57,6 +57,7 @@ Goal: Prove the core loop works under real conditions.
 - [x] molecule.xyz confirmed in review_queue, not skipped_tasks
 
 **What Phase 1 proved:**
+
 1. The loop executes end-to-end cleanly
 2. Engine/domain separation holds — nodes never import from domain
 3. The system recovers from failure without human intervention
@@ -83,7 +84,8 @@ Goal: Prove the engine is reusable without modification to the core.
 - [x] git diff main -- engine/graph/ is empty — engine unchanged
 
 **Verified result (state file 20260407_195350_b51d67a3):**
-```
+
+```text
 domain     : kosmos
 Exit       : success
 Approved   : videos, raw_photos, documents, photos (exif), audio
@@ -92,6 +94,7 @@ Skipped    : noextension (0.40 fallback)
 ```
 
 **What Phase 2 proved:**
+
 The engine ran a completely different domain without a single change
 to engine/graph/. The maze is genuinely reusable. A new ball ran
 through the same maze and reached the correct exit.
@@ -119,8 +122,9 @@ Goal: Prove the engine works in a real-time, event-driven context.
 - [x] git diff main -- engine/graph/ is empty — engine unchanged
 
 **Classifier confidence table:**
+
 | Rule | Confidence | Engine routing |
-|---|---|---|
+| --- | --- | --- |
 | stream_down, recording_stopped | 0.95 | auto_approve |
 | dropped_frames / cpu_overload (critical) | 0.95 | auto_approve |
 | dropped_frames / cpu_overload (warning) | 0.80 | review_queue |
@@ -129,7 +133,8 @@ Goal: Prove the engine works in a real-time, event-driven context.
 | missing / unknown MIME | 0.40 | skipped |
 
 **Live OBS run (4 ticks × 5s, stream not active):**
-```
+
+```text
   [  1] 🔴 exit=success | alerts=1 (approved=1, queued=0, errors=0)  stream_down×1
   [  2] 🔴 exit=success | alerts=1 (approved=1, queued=0, errors=0)  stream_down×1
   [  3] 🔴 exit=success | alerts=1 (approved=1, queued=0, errors=0)  stream_down×1
