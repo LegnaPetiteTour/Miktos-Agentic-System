@@ -58,11 +58,14 @@ def extract_media_metadata(file_path: str) -> dict:
             fmt = img.format or ""
 
             # Pillow ≥ 7.2 exposes getexif(); older versions use _getexif()
+            # Use getattr to avoid Pylance attribute check on the base type.
             exif_data = None
-            if hasattr(img, "getexif"):
-                exif_data = img.getexif()
-            elif hasattr(img, "_getexif"):
-                exif_data = img._getexif()  # noqa: SLF001
+            get_exif = getattr(img, "getexif", None)
+            get_exif_legacy = getattr(img, "_getexif", None)
+            if callable(get_exif):
+                exif_data = get_exif()
+            elif callable(get_exif_legacy):
+                exif_data = get_exif_legacy()
 
             if not exif_data:
                 return {
