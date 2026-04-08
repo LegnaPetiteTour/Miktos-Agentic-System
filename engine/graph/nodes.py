@@ -14,6 +14,7 @@ Tool registry convention (set in main.py before run):
 
 import uuid
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from engine.graph.state import RunState
 from engine.services.state_store import save_state
@@ -254,6 +255,158 @@ def execution_node(state: RunState) -> RunState:
 
     logs.append(
         f"[{_now()}] EXECUTION: Batch done. "
+        f"proposed_actions total={len(proposed_actions)}."
+    )
+
+    return {
+        **state,
+        "pending_tasks": remaining,
+        "completed_tasks": completed,
+        "failed_tasks": failed,
+        "exhausted_tasks": exhausted,
+        "proposed_actions": proposed_actions,
+        "current_step": "review",
+        "logs": logs,
+        "errors": errors,
+    }
+
+
+# -----------------------------
+# PARALLEL EXECUTION
+# -----------------------------
+
+def parallel_execution_node(state: RunState) -> RunState:
+    """
+    Classifies files from the pending task queue using a ThreadPoolExecutor.
+
+    Identical signature and return shape to execution_node — the router
+    determines which is used based on context["execution_mode"].
+
+    Requires in context:
+      - tools.classifier   : callable(file_meta: dict) -> dict
+      - batch_size         : int (default 50)
+      - parallel_workers   : int (default 4)
+    """
+    logs = list(state.get("logs", []))
+    errors = list(state.get("errors", []))
+    pending = list(state.get("pending_tasks", []))
+    completed = list(state.get("completed_tasks", []))
+    failed = list(state.get("failed_tasks", []))
+    exhausted = list(state.get("exhausted_tasks", []))
+    proposed_actions = list(state.get("proposed_actions", []))
+
+    classifier = state["context"].get("tools", {}).get("classifier")
+    batch_size = state["context"].get("batch_size", 50)
+    max_workers = state["context"].get("parallel_workers", 4)
+    max_retries = state.get("max_retries", 3)
+
+    if not classifier:
+        msg = "No classifier tool registered in context."
+        errors.append({"step": "parallel_execution", "error": msg})
+        logs.append(f"[{_now()}] PARALLEL EXECUTION: ERROR — {msg}")
+        return {
+            **state,
+            "errors": errors,
+            "done": True,
+            "exit_reason": "stop",
+            "logs": logs,
+        }
+
+    batch = pending[:batch_size]
+    remaining = pending[batch_size:]
+
+    logs.append(
+        f"[{_now()}] PARALLEL EXECUTION: Processing batch of {len(batch)} "
+        f"with {max_workers} workers "
+        f"({len(remaining)} remaining after this batch)."
+    )
+
+    def _classify_task(task):
+        """Run classifier for one task. Returns (task, action, error)."""
+        try:
+            file_meta = task["file"]
+            classification = classifier(file_meta)
+            action = {
+                "action_id": uuid.uuid4().hex[:12],
+                "task_id": task["task_id"],
+                "action_type": "classify",
+                "file_path": file_meta["path"],
+                "file_name": file_meta["name"],
+                "category": classification["category"],
+                "confidence": classification["confidence"],
+                "method": classification["method"],
+                "applied": False,
+                "dry_run": state["mode"] == "dry_run",
+            }
+            return task, action, None
+        except Exception as e:
+            return task, None, str(e)
+
+    futures = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for task in batch:
+            futures[executor.submit(_classify_task, task)] = task
+
+        for future in as_completed(futures):
+            task, action, error_msg = future.result()
+            task_retries = task.get("retries", 0)
+
+            if error_msg is None:
+                proposed_actions.append(action)
+                completed.append(
+                    {
+                        **task,
+                        "status": "classified",
+                        "action_id": action["action_id"],
+                    }
+                )
+            else:
+                unrecoverable = _is_unrecoverable(error_msg)
+                errors.append(
+                    {
+                        "task_id": task.get("task_id"),
+                        "step": "parallel_execution",
+                        "error": error_msg,
+                        "unrecoverable": unrecoverable,
+                    }
+                )
+                failed.append(
+                    {**task, "status": "failed", "error": error_msg}
+                )
+
+                if unrecoverable or task_retries >= max_retries:
+                    exhausted.append(
+                        {
+                            **task,
+                            "status": "exhausted",
+                            "error": error_msg,
+                            "retries": task_retries,
+                        }
+                    )
+                    logs.append(
+                        f"[{_now()}] PARALLEL EXECUTION: Task"
+                        f" {task.get('task_id')} exhausted"
+                        f" (retries={task_retries},"
+                        f" unrecoverable={unrecoverable})"
+                        f" — {error_msg}"
+                    )
+                else:
+                    remaining.append(
+                        {
+                            **task,
+                            "retries": task_retries + 1,
+                            "status": "pending",
+                        }
+                    )
+                    logs.append(
+                        f"[{_now()}] PARALLEL EXECUTION: Task"
+                        f" {task.get('task_id')}"
+                        f" retry {task_retries + 1}/{max_retries}"
+                        f" — {error_msg}"
+                    )
+
+    logs.append(
+        f"[{_now()}] PARALLEL EXECUTION: Batch done. "
         f"proposed_actions total={len(proposed_actions)}."
     )
 

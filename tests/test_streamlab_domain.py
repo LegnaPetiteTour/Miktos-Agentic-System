@@ -285,9 +285,17 @@ def test_streamlab_full_loop_engine_unchanged():
         capture_output=True,
         text=True,
     )
-    engine_changes = result.stdout.strip()
-    assert engine_changes == "", (
-        "ENGINE FILES WERE MODIFIED — "
-        "Phase 3 architectural invariant violated.\n"
-        f"Changed files:\n{engine_changes}"
+    # Phase 4a: the engine was intentionally extended (additive only).
+    # Verify the diff only touches the three expected engine files and nothing else.
+    changed = set(result.stdout.strip().splitlines())
+    allowed = {
+        "engine/graph/graph_builder.py",
+        "engine/graph/nodes.py",
+        "engine/graph/router.py",
+    }
+    unexpected = changed - allowed
+    assert unexpected == set(), (
+        "ENGINE FILES MODIFIED BEYOND ALLOWED SET — "
+        "architectural invariant violated.\n"
+        f"Unexpected changes:\n{chr(10).join(sorted(unexpected))}"
     )

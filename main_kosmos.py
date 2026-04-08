@@ -49,6 +49,17 @@ def parse_args():
         default=50,
         help="Number of files per loop iteration (default: 50)",
     )
+    parser.add_argument(
+        "--parallel",
+        action="store_true",
+        help="Use parallel execution (ThreadPoolExecutor)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Number of parallel workers when --parallel is set (default: 4)",
+    )
     return parser.parse_args()
 
 
@@ -56,6 +67,8 @@ def build_initial_state(
     root_path: str,
     mode: str,
     batch_size: int,
+    parallel: bool = False,
+    workers: int = 4,
 ) -> RunState:
     return {
         "run_id": generate_run_id(),
@@ -83,6 +96,8 @@ def build_initial_state(
         "context": {
             "root_path": root_path,
             "batch_size": batch_size,
+            "execution_mode": "parallel" if parallel else "sequential",
+            "parallel_workers": workers,
             "thresholds": {
                 "auto_approve": 0.90,
                 "review_queue": 0.60,
@@ -100,8 +115,14 @@ def print_summary(final_state: RunState) -> None:
     print("\n" + "=" * 60)
     print("  MIKTOS KOSMOS — RUN SUMMARY")
     print("=" * 60)
+    exec_mode = final_state["context"].get("execution_mode", "sequential")
+    workers = final_state["context"].get("parallel_workers", 4)
+    exec_label = (
+        f"parallel ({workers} workers)" if exec_mode == "parallel" else "sequential"
+    )
     print(f"  Run ID     : {final_state['run_id']}")
     print(f"  Mode       : {final_state['mode']}")
+    print(f"  Execution  : {exec_label}")
     print(f"  Exit       : {final_state.get('exit_reason', 'unknown')}")
     print(f"  Completed  : {len(final_state.get('completed_tasks', []))}")
     print(f"  Failed     : {len(final_state.get('failed_tasks', []))}")
@@ -154,8 +175,12 @@ def main():
         print(f"ERROR: Path does not exist: {root_path}")
         sys.exit(1)
 
+    exec_label = (
+        f"parallel ({args.workers} workers)" if args.parallel else "sequential"
+    )
     print("\n  Miktos Kosmos Media Organizer")
     print(f"  Mode      : {args.mode}")
+    print(f"  Execution : {exec_label}")
     print(f"  Target    : {root_path}")
     print(f"  Batch size: {args.batch_size}")
 
@@ -163,6 +188,8 @@ def main():
         root_path,
         args.mode,
         args.batch_size,
+        parallel=args.parallel,
+        workers=args.workers,
     )
     graph = build_graph()
 

@@ -8,8 +8,8 @@ Architecture:
   orchestrator_node
       | (conditional: planner or execution or end)
   planner_node
-      |
-  execution_node
+      | (conditional: sequential or parallel)
+  execution_node | parallel_execution_node
       |
   review_node
       |
@@ -32,6 +32,7 @@ def build_graph():
     graph.add_node("orchestrator_node", nodes.orchestrator_node)
     graph.add_node("planner_node", nodes.planner_node)
     graph.add_node("execution_node", nodes.execution_node)
+    graph.add_node("parallel_execution_node", nodes.parallel_execution_node)
     graph.add_node("review_node", nodes.review_node)
     graph.add_node("decision_node", nodes.decision_node)
     graph.add_node("state_update_node", nodes.state_update_node)
@@ -46,13 +47,25 @@ def build_graph():
         {
             "planner_node": "planner_node",
             "execution_node": "execution_node",
+            "parallel_execution_node": "parallel_execution_node",
             "end": END,
         },
     )
 
-    # Fixed pipeline edges
-    graph.add_edge("planner_node", "execution_node")
+    # After planner: conditional route to sequential or parallel execution
+    graph.add_conditional_edges(
+        "planner_node",
+        router.route_to_execution,
+        {
+            "execution_node": "execution_node",
+            "parallel_execution_node": "parallel_execution_node",
+        },
+    )
+
+    # Both execution paths feed into review
     graph.add_edge("execution_node", "review_node")
+    graph.add_edge("parallel_execution_node", "review_node")
+
     graph.add_edge("review_node", "decision_node")
     graph.add_edge("decision_node", "state_update_node")
 
@@ -63,6 +76,7 @@ def build_graph():
         {
             "orchestrator_node": "orchestrator_node",
             "execution_node": "execution_node",
+            "parallel_execution_node": "parallel_execution_node",
             "planner_node": "planner_node",
             "exit": END,
         },
