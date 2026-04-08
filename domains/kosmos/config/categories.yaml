@@ -1,0 +1,36 @@
+categories:
+  photos:
+    folder: Photos
+    description: Camera images with EXIF metadata
+
+  screenshots:
+    folder: Screenshots
+    description: Screen captures — images without camera EXIF
+
+  images:
+    folder: Images
+    description: Images where type is unclear
+
+  videos:
+    folder: Videos
+    description: Video files of all formats
+
+  audio:
+    folder: Audio
+    description: Music, recordings, audio files
+
+  raw_photos:
+    folder: RAW
+    description: Camera RAW files (.cr2, .nef, .arw, .dng, .raw)
+
+  documents:
+    folder: Documents
+    description: PDFs and documents found in a media library
+
+  unclassified:
+    folder: _Review
+    description: Files that could not be classified with confidence
+
+thresholds:
+  auto_approve: 0.90
+  review_queue: 0.60
