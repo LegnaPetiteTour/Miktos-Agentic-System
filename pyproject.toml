@@ -29,6 +29,18 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = [
+    "langgraph.*",
+    "langchain_core.*",
+    "piexif.*",
+]
+ignore_missing_imports = true
+
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
