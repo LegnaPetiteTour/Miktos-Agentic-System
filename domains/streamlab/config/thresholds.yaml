@@ -1,0 +1,18 @@
+# StreamLab alert thresholds — all values configurable
+
+stream:
+  dropped_frames_pct_warning: 2.0     # > 2% → warning alert
+  dropped_frames_pct_critical: 5.0    # > 5% → critical alert
+  cpu_usage_warning: 75.0             # > 75% → warning
+  cpu_usage_critical: 85.0            # > 85% → critical
+  render_lag_ms_warning: 50.0         # > 50ms render time → warning
+  memory_usage_warning: 80.0          # > 80% of system RAM → warning
+
+# Poll interval in seconds
+poll_interval_seconds: 5
+
+# Confidence tiers (mirrors file_analyzer / kosmos pattern)
+confidence:
+  critical: 0.95     # immediate action required — auto_approve threshold
+  warning: 0.80      # should act soon — routes to review_queue (< 0.90)
+  info: 0.60         # informational — review_queue
