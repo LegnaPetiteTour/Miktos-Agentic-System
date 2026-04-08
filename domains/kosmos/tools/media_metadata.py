@@ -18,6 +18,7 @@ Returned dict keys:
 """
 
 from pathlib import Path
+from typing import Any
 
 try:
     from PIL import Image
@@ -59,7 +60,7 @@ def extract_media_metadata(file_path: str) -> dict:
 
             # Pillow ≥ 7.2 exposes getexif(); older versions use _getexif()
             # Use getattr to avoid Pylance attribute check on the base type.
-            exif_data = None
+            exif_data: Any = None
             get_exif = getattr(img, "getexif", None)
             get_exif_legacy = getattr(img, "_getexif", None)
             if callable(get_exif):
