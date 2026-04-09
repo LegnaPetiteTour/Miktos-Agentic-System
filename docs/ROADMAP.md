@@ -68,7 +68,8 @@
 - [x] engine/benchmarks/parallel_benchmark.py
 
 **Benchmark proof (200 files, 8 workers):**
-```
+
+```text
 Sequential  : 0.21s  (973.5 files/sec)
 Parallel    : 0.05s  (3904.7 files/sec)
 Speedup     : 4.0x
@@ -95,7 +96,8 @@ Correctness : PASS (200/200 actions match)
 - [x] data/messages/ directory structure with pending/ and delivered/ per agent
 
 **Live round-trip proof:**
-```
+
+```text
 1. Inbox polled  → 1 recording_ready message from streamlab_monitor
 2. Kosmos ran    → scanned /Users/atorrella/Movies
                    159 files classified, exit=success
@@ -105,6 +107,7 @@ Correctness : PASS (200/200 actions match)
 ```
 
 **Message chain on disk (independently audited):**
+
 - kosmos_organizer/delivered/f70b2df1...json  <- recording_ready, acknowledged
 - streamlab_monitor/pending/fc25c709...json   <- recording_organized, files_processed: 159
 
