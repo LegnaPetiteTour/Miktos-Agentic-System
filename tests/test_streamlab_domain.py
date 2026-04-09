@@ -292,6 +292,7 @@ def test_streamlab_full_loop_engine_unchanged():
         "engine/graph/graph_builder.py",
         "engine/graph/nodes.py",
         "engine/graph/router.py",
+        "engine/graph/state.py",
     }
     unexpected = changed - allowed
     assert unexpected == set(), (

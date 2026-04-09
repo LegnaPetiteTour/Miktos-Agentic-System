@@ -35,6 +35,7 @@ load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 from engine.graph.graph_builder import build_graph  # noqa: E402
 from engine.graph.state import RunState  # noqa: E402
+from engine.messaging.bus import MessageBus  # noqa: E402
 from engine.services.state_store import generate_run_id  # noqa: E402
 from domains.streamlab.tools.obs_monitor import OBSMonitorTool  # noqa: E402
 from domains.streamlab.tools.alert_classifier import classify_alert  # noqa: E402
@@ -73,12 +74,39 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Seconds between OBS polls (0 = use value from thresholds.yaml)",
     )
+    parser.add_argument(
+        "--handoff",
+        action="store_true",
+        help=(
+            "Post a recording_ready message to kosmos_organizer "
+            "when a recording_stopped alert is detected."
+        ),
+    )
+    parser.add_argument(
+        "--recordings-path",
+        default=str(Path.home() / "Movies"),
+        help="Path where OBS saves recordings (default: ~/Movies)",
+    )
     return parser.parse_args()
 
 
 # ---------------------------------------------------------------------------
 # State builder
 # ---------------------------------------------------------------------------
+
+def _has_recording_stopped(final_state: RunState) -> bool:
+    """Return True if any approved action has category == 'recording_stopped'."""
+    actions = final_state.get("proposed_actions", [])
+    return any(a.get("category") == "recording_stopped" for a in actions)
+
+
+def _recording_stopped_scene(final_state: RunState) -> str:
+    """Return the scene name from the first recording_stopped action."""
+    for a in final_state.get("proposed_actions", []):
+        if a.get("category") == "recording_stopped":
+            return a.get("file_name", "")
+    return ""
+
 
 def build_tick_state(
     tick: int,
@@ -108,6 +136,8 @@ def build_tick_state(
         "max_replans": 2,
         "done": False,
         "exit_reason": None,
+        "agent_id": "streamlab_monitor",
+        "inbox_messages": [],
         "context": {
             "root_path": "obs://stream",  # virtual URI — OBSMonitorTool ignores it
             "batch_size": 50,
@@ -206,6 +236,9 @@ def main() -> None:
         print(f"  Duration      : {args.duration}s")
     else:
         print("  Duration      : indefinite (Ctrl+C to stop)")
+    if args.handoff:
+        print("  Handoff       : enabled \u2192 kosmos_organizer")
+        print(f"  Recordings    : {args.recordings_path}")
     print()
 
     tick = 0
@@ -226,6 +259,27 @@ def main() -> None:
             alert_count = len(final_state.get("proposed_actions", []))
             total_alerts += alert_count
             print_tick_summary(tick, final_state)
+
+            # Handoff: post recording_ready to kosmos_organizer if detected
+            if args.handoff and _has_recording_stopped(final_state):
+                bus = MessageBus()
+                bus.post(
+                    from_agent="streamlab_monitor",
+                    to_agent="kosmos_organizer",
+                    message_type="recording_ready",
+                    payload={
+                        "recordings_path": args.recordings_path,
+                        "trigger_run_id": final_state["run_id"],
+                        "scene": _recording_stopped_scene(final_state),
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                                   time.gmtime()),
+                    },
+                    run_id=final_state["run_id"],
+                )
+                print(
+                    "  \u2192 Message posted to kosmos_organizer: recording_ready"
+                )
+                print(f"    Path: {args.recordings_path}")
 
             # Sleep, but honour --duration if close to the limit
             if args.duration:
