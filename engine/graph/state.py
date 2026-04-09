@@ -55,5 +55,11 @@ class RunState(TypedDict):
     # 'success' | 'retry' | 'replan' | 'escalate' | 'stop'
     exit_reason: Optional[str]
 
+    # Agent identity (Phase 4b)
+    # agent_id defaults to domain for backward compatibility.
+    # inbox_messages is populated by message_trigger_node when enable_messaging=True.
+    agent_id: str
+    inbox_messages: list[dict]
+
     # Domain-specific context (each domain extends this)
     context: dict[str, Any]

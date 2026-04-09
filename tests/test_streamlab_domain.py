@@ -138,6 +138,8 @@ def _build_streamlab_state(mock_items: list[dict]) -> RunState:
         "max_replans": 2,
         "done": False,
         "exit_reason": None,
+        "agent_id": "streamlab_monitor",
+        "inbox_messages": [],
         "context": {
             "root_path": "obs://stream",
             "batch_size": 50,
@@ -292,6 +294,7 @@ def test_streamlab_full_loop_engine_unchanged():
         "engine/graph/graph_builder.py",
         "engine/graph/nodes.py",
         "engine/graph/router.py",
+        "engine/graph/state.py",
     }
     unexpected = changed - allowed
     assert unexpected == set(), (

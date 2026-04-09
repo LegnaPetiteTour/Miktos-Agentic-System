@@ -17,6 +17,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from engine.graph.state import RunState
+from engine.messaging.bus import MessageBus
 from engine.services.state_store import save_state
 
 logger = logging.getLogger(__name__)
@@ -630,3 +631,41 @@ def _is_unrecoverable(error_msg: str) -> bool:
     """Return True if the error message signals a system-level failure."""
     lowered = error_msg.lower()
     return any(marker in lowered for marker in _UNRECOVERABLE_MARKERS)
+
+
+# -----------------------------
+# MESSAGE TRIGGER
+# -----------------------------
+
+def message_trigger_node(state: RunState) -> RunState:
+    """
+    Reads pending messages from the bus for this agent and injects them into
+    state["inbox_messages"]. Acknowledges receipt immediately.
+
+    Runs only when context["enable_messaging"] is True.
+    Skipped entirely when enable_messaging is absent or False — zero cost for
+    all existing domains.
+    """
+    if not state.get("context", {}).get("enable_messaging", False):
+        return state
+
+    logs = list(state.get("logs", []))
+    agent_id = state.get("agent_id") or state.get("domain", "unknown")
+    messages_dir = state["context"].get("messages_dir", "data/messages")
+
+    bus = MessageBus(base_dir=messages_dir)
+    pending = bus.read_pending(agent_id)
+
+    inbox = []
+    for msg in pending:
+        bus.acknowledge(msg)
+        inbox.append(msg.to_dict())
+        logs.append(
+            f"[{_now()}] TRIGGER: Message from {msg.from_agent}"
+            f" — type={msg.message_type} id={msg.message_id}"
+        )
+
+    if not pending:
+        logs.append(f"[{_now()}] TRIGGER: No pending messages for {agent_id}.")
+
+    return {**state, "inbox_messages": inbox, "logs": logs}

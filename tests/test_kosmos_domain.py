@@ -61,6 +61,8 @@ def _build_kosmos_state(root_path: str) -> RunState:
         "max_replans": 2,
         "done": False,
         "exit_reason": None,
+        "agent_id": "kosmos_organizer",
+        "inbox_messages": [],
         "context": {
             "root_path": root_path,
             "batch_size": 50,
@@ -175,6 +177,7 @@ def test_kosmos_full_loop_engine_unchanged():
         "engine/graph/graph_builder.py",
         "engine/graph/nodes.py",
         "engine/graph/router.py",
+        "engine/graph/state.py",
     }
     unexpected = changed - allowed
     assert unexpected == set(), (
