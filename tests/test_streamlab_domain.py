@@ -138,6 +138,8 @@ def _build_streamlab_state(mock_items: list[dict]) -> RunState:
         "max_replans": 2,
         "done": False,
         "exit_reason": None,
+        "agent_id": "streamlab_monitor",
+        "inbox_messages": [],
         "context": {
             "root_path": "obs://stream",
             "batch_size": 50,

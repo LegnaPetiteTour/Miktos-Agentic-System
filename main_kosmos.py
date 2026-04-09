@@ -263,7 +263,7 @@ def listen_loop(args: argparse.Namespace) -> None:
 
                 completed = len(final_state.get("completed_tasks", []))
                 actions = final_state.get("proposed_actions", [])
-                cats = {}
+                cats: dict[str, int] = {}
                 for a in actions:
                     cat = a.get("category", "unknown")
                     cats[cat] = cats.get(cat, 0) + 1

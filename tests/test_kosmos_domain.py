@@ -61,6 +61,8 @@ def _build_kosmos_state(root_path: str) -> RunState:
         "max_replans": 2,
         "done": False,
         "exit_reason": None,
+        "agent_id": "kosmos_organizer",
+        "inbox_messages": [],
         "context": {
             "root_path": root_path,
             "batch_size": 50,
