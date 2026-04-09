@@ -66,9 +66,9 @@ def listen_loop(args: argparse.Namespace) -> None:
     coordinator = SessionCoordinator(bus, agent_id=AGENT_ID)
 
     if args.once:
-        print(f"\n  Miktos Coordinator — Single-drain mode")
+        print("\n  Miktos Coordinator — Single-drain mode")
     else:
-        print(f"\n  Miktos Coordinator — Listen Mode")
+        print("\n  Miktos Coordinator — Listen Mode")
     print(f"  Agent ID : {AGENT_ID}")
     if not args.once:
         print(f"  Poll interval : {args.poll_interval}s")

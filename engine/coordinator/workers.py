@@ -48,7 +48,9 @@ class KosmosWorker:
             category = result["category"]
             confidence = result["confidence"]
             method = result["method"]
-            proposed_path = str(Path(output_dir) / category / path.name) if output_dir else ""
+            proposed_path = (
+                str(Path(output_dir) / category / path.name) if output_dir else ""
+            )
             return {
                 "success": True,
                 "category": category,
@@ -75,7 +77,11 @@ class ThumbnailWorker:
         file_path = payload.get("file_path", "")
         output_dir = payload.get("output_dir", "")
 
-        thumbnail_path = str(Path(output_dir) / "thumbnail.jpg") if output_dir else "/tmp/thumbnail.jpg"
+        thumbnail_path = (
+            str(Path(output_dir) / "thumbnail.jpg")
+            if output_dir
+            else "/tmp/thumbnail.jpg"
+        )
         try:
             Path(thumbnail_path).parent.mkdir(parents=True, exist_ok=True)
             result = subprocess.run(
@@ -94,9 +100,16 @@ class ThumbnailWorker:
             )
             if result.returncode != 0:
                 error = result.stderr.strip() or "ffmpeg exited non-zero"
-                return {"success": False, "error": error, "thumbnail_path": thumbnail_path}
+                return {
+                    "success": False,
+                    "error": error,
+                    "thumbnail_path": thumbnail_path,
+                }
             if not Path(thumbnail_path).exists():
-                return {"success": False, "error": "ffmpeg succeeded but output file missing"}
+                return {
+                    "success": False,
+                    "error": "ffmpeg succeeded but output file missing",
+                }
             return {"success": True, "thumbnail_path": thumbnail_path}
         except FileNotFoundError:
             return {"success": False, "error": "ffmpeg not found on PATH"}
@@ -122,7 +135,11 @@ class MetadataWorker:
         category = payload.get("category", "")
         trigger_run_id = payload.get("trigger_run_id", "")
 
-        metadata_path = str(Path(output_dir) / "session.json") if output_dir else "/tmp/session.json"
+        metadata_path = (
+            str(Path(output_dir) / "session.json")
+            if output_dir
+            else "/tmp/session.json"
+        )
         duration_seconds = 0.0
         file_size_bytes = 0
 

@@ -149,7 +149,8 @@ class MessageBus:
         Append one line to data/messages/message.log.
 
         Format:
-          <ISO timestamp>  <event>  <from_agent> -> <to_agent>  <message_type>  <msg_id[:8]>  <notes>
+          <ISO timestamp>  <event>  <from_agent> -> <to_agent>
+          <message_type>  <msg_id[:8]>  <notes>
 
         Append-only. Never truncated. Safe to tail -f.
         """
@@ -157,7 +158,9 @@ class MessageBus:
         log_path = self.base_dir / "message.log"
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         short_id = message_id[:8]
-        parts = [ts, f"{event:<13}", f"{from_agent} -> {to_agent}", message_type, short_id]
+        parts = [
+            ts, f"{event:<13}", f"{from_agent} -> {to_agent}", message_type, short_id
+        ]
         if notes:
             parts.append(notes)
         line = "  ".join(parts) + "\n"

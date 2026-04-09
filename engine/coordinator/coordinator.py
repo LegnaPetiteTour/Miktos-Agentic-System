@@ -110,7 +110,9 @@ class SessionCoordinator:
         # ------------------------------------------------------------------
         results: dict[str, dict[str, Any]] = {}
 
-        def _run_with_retry(slot_name: str, slot: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+        def _run_with_retry(
+            slot_name: str, slot: dict[str, Any]
+        ) -> tuple[str, dict[str, Any]]:
             worker = slot["worker"]
             slot_payload = slot["payload"]
             required = slot["required"]
@@ -194,7 +196,11 @@ class SessionCoordinator:
                 name: {
                     "success": results.get(name, {}).get("success", False),
                     "required": slots[name]["required"],
-                    **{k: v for k, v in results.get(name, {}).items() if k != "success"},
+                    **{
+                        k: v
+                        for k, v in results.get(name, {}).items()
+                        if k != "success"
+                    },
                 }
                 for name in slots
             },

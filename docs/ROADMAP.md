@@ -68,7 +68,8 @@
 - [x] engine/benchmarks/parallel_benchmark.py
 
 **Benchmark proof (200 files, 8 workers):**
-```
+
+```text
 Sequential  : 0.21s  (973.5 files/sec)
 Parallel    : 0.05s  (3904.7 files/sec)
 Speedup     : 4.0x
@@ -90,7 +91,8 @@ Correctness : PASS (200/200 actions match)
 - [x] main_streamlab.py --handoff / main_kosmos.py --listen
 
 **Live round-trip proof:**
-```
+
+```text
 1. Inbox polled  → recording_ready from streamlab_monitor
 2. Kosmos ran    → 159 files classified from ~/Movies, exit=success
 3. Acknowledged  → moved to kosmos_organizer/delivered/
@@ -118,14 +120,16 @@ Correctness : PASS (200/200 actions match)
 - [x] All 34 prior tests pass unmodified — coordinator is a separate layer
 
 **Slot definitions:**
-```
+
+```text
 organize   (required)  KosmosWorker    — classify and propose file path
 thumbnail  (optional)  ThumbnailWorker — extract first-frame JPEG via ffmpeg
 metadata   (required)  MetadataWorker  — write session.json via ffprobe
 ```
 
 **Live proof — coordinator stdout:**
-```
+
+```text
 Session 05b7a3154d20
 ├── organize   ✅  videos (0.95)  →  data/sessions/05b7a3154d20/videos/video_clip.mp4
 ├── thumbnail  ❌  moov atom not found  (stub fixture — 8-byte ASCII, not a real video)
@@ -134,7 +138,8 @@ exit: success | posted session_complete → streamlab_monitor
 ```
 
 **message.log event chain (12 lines, independently audited):**
-```
+
+```text
 POSTED      streamlab_monitor → session_coordinator  recording_ready
 DISPATCHED  coordinator → kosmos_worker              organize       attempt 1
 DISPATCHED  coordinator → thumbnail_worker           thumbnail      attempt 1
@@ -149,6 +154,7 @@ ACKNOWLEDGED coordinator ← recording_ready
 ```
 
 **What Phase 4c proved — all three architecture contract criteria met:**
+
 1. Delegation reduced complexity for the coordinator — it never touches domain logic
 2. Aggregation is deterministic — slot-filling, no inference, no LLM
 3. Failure ownership is clear — thumbnail failed, coordinator recorded which slot,
