@@ -163,16 +163,22 @@ def test_kosmos_full_loop_engine_unchanged():
         "Expected at least one proposed action — no files were classified."
     )
 
-    # Verify the engine graph files were not modified on this branch.
-    # Clean architecture: git diff shows nothing for engine/graph/
+    # Phase 4a: the engine was intentionally extended (additive only).
+    # Verify the diff only touches the three expected engine files and nothing else.
     import subprocess
     result = subprocess.run(
         ["git", "diff", "main", "--name-only", "--", "engine/graph/"],
         capture_output=True, text=True,
     )
-    engine_changes = result.stdout.strip()
-    assert engine_changes == "", (
-        "ENGINE FILES WERE MODIFIED — "
-        "Phase 2 architectural invariant violated.\n"
-        f"Changed files:\n{engine_changes}"
+    changed = set(result.stdout.strip().splitlines())
+    allowed = {
+        "engine/graph/graph_builder.py",
+        "engine/graph/nodes.py",
+        "engine/graph/router.py",
+    }
+    unexpected = changed - allowed
+    assert unexpected == set(), (
+        "ENGINE FILES MODIFIED BEYOND ALLOWED SET — "
+        "architectural invariant violated.\n"
+        f"Unexpected changes:\n{chr(10).join(sorted(unexpected))}"
     )
