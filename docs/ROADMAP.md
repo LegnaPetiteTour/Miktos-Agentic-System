@@ -72,7 +72,8 @@
 - [x] All 25 pre-existing tests pass unmodified
 
 **Benchmark proof (200 synthetic Kosmos files, 8 workers):**
-```
+
+```text
 Phase 4a — Parallel Execution Benchmark
 ============================================
 Files       : 200
