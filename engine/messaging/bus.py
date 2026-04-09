@@ -76,6 +76,13 @@ class MessageBus:
                 pass
             raise
 
+        self.append_log(
+            event="POSTED",
+            from_agent=from_agent,
+            to_agent=to_agent,
+            message_type=message_type,
+            message_id=msg.message_id,
+        )
         return msg
 
     def read_pending(self, for_agent: str) -> list[AgentMessage]:
@@ -112,6 +119,13 @@ class MessageBus:
                 pass
             raise
         src.unlink(missing_ok=True)
+        self.append_log(
+            event="ACKNOWLEDGED",
+            from_agent=message.from_agent,
+            to_agent=message.to_agent,
+            message_type=message.message_type,
+            message_id=message.message_id,
+        )
 
     def clear_delivered(self, for_agent: str) -> int:
         """Delete delivered messages. Returns count deleted."""
@@ -121,3 +135,31 @@ class MessageBus:
             path.unlink(missing_ok=True)
             count += 1
         return count
+
+    def append_log(
+        self,
+        event: str,
+        from_agent: str,
+        to_agent: str,
+        message_type: str,
+        message_id: str,
+        notes: str = "",
+    ) -> None:
+        """
+        Append one line to data/messages/message.log.
+
+        Format:
+          <ISO timestamp>  <event>  <from_agent> -> <to_agent>  <message_type>  <msg_id[:8]>  <notes>
+
+        Append-only. Never truncated. Safe to tail -f.
+        """
+        self.base_dir.mkdir(parents=True, exist_ok=True)
+        log_path = self.base_dir / "message.log"
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        short_id = message_id[:8]
+        parts = [ts, f"{event:<13}", f"{from_agent} -> {to_agent}", message_type, short_id]
+        if notes:
+            parts.append(notes)
+        line = "  ".join(parts) + "\n"
+        with open(log_path, "a") as f:
+            f.write(line)

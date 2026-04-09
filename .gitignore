@@ -31,3 +31,7 @@ Thumbs.db
 
 # Message bus runtime data
 data/messages/**/*.json
+data/messages/message.log
+
+# Session artifacts (runtime output)
+data/sessions/*/
