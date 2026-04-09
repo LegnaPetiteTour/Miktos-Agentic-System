@@ -32,6 +32,9 @@ Thumbs.db
 # Message bus runtime data
 data/messages/**/*.json
 data/messages/message.log
+# subscriptions.json is runtime config — subscriptions.example.json is committed
+data/messages/subscriptions.json
+!data/messages/subscriptions.example.json
 
 # Session artifacts (runtime output)
 data/sessions/*/

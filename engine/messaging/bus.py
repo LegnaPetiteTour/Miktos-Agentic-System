@@ -5,15 +5,26 @@ Storage: data/messages/<to_agent>/pending/<message_id>.json
 After delivery: moved to data/messages/<to_agent>/delivered/
 
 This is the v1 implementation. The interface is stable.
-Swap the backing store in Phase 4d by replacing this class.
+Swap the backing store in Phase 5 by replacing this class.
 
 Atomicity guarantee: post() writes to a temp file then renames.
 This prevents partial reads if the process is interrupted mid-write.
+
+Phase 4d additions — pub/sub:
+  subscribe(topic, agent_id)   — register agent as subscriber to topic
+  unsubscribe(topic, agent_id) — remove agent from subscriber list
+  publish(topic, from_agent, payload) — deliver to all topic subscribers
+
+Subscription registry: data/messages/subscriptions.json
+  Format: { "<topic>": ["<agent_id>", ...], ... }
+  Atomic writes — safe for concurrent access.
+  See data/messages/subscriptions.example.json for the canonical format.
 """
 
 import json
 import os
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Any
 from datetime import datetime, timezone
@@ -166,3 +177,126 @@ class MessageBus:
         line = "  ".join(parts) + "\n"
         with open(log_path, "a") as f:
             f.write(line)
+
+    # ------------------------------------------------------------------
+    # Pub/Sub — Phase 4d
+    # ------------------------------------------------------------------
+
+    def _subscriptions_path(self) -> Path:
+        return self.base_dir / "subscriptions.json"
+
+    def _load_subscriptions(self) -> dict[str, list[str]]:
+        """
+        Load the subscription registry from disk.
+
+        Returns an empty dict if the file does not exist or is corrupt.
+        Never raises.
+        """
+        path = self._subscriptions_path()
+        if not path.exists():
+            return {}
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return {}
+            return data
+        except json.JSONDecodeError:
+            return {}
+
+    def _save_subscriptions(
+        self, subscriptions: dict[str, list[str]]
+    ) -> None:
+        """Persist the subscription registry atomically."""
+        self.base_dir.mkdir(parents=True, exist_ok=True)
+        path = self._subscriptions_path()
+        fd, tmp_path = tempfile.mkstemp(dir=self.base_dir, suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(subscriptions, f, indent=2)
+                f.write("\n")
+            os.replace(tmp_path, path)
+        except Exception:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
+
+    def subscribe(self, topic: str, agent_id: str) -> None:
+        """
+        Register agent_id as a subscriber to topic.
+
+        Subscriptions persist to data/messages/subscriptions.json.
+        If the agent is already subscribed to this topic, this is a no-op.
+        Atomic write — safe to call concurrently.
+        """
+        subs = self._load_subscriptions()
+        if topic not in subs:
+            subs[topic] = []
+        if agent_id not in subs[topic]:
+            subs[topic].append(agent_id)
+            self._save_subscriptions(subs)
+
+    def unsubscribe(self, topic: str, agent_id: str) -> None:
+        """
+        Remove agent_id from the subscriber list for topic.
+
+        No-op if agent_id is not subscribed or topic does not exist.
+        Atomic write.
+        """
+        subs = self._load_subscriptions()
+        if topic in subs and agent_id in subs[topic]:
+            subs[topic].remove(agent_id)
+            self._save_subscriptions(subs)
+
+    def publish(
+        self,
+        topic: str,
+        from_agent: str,
+        payload: dict[str, Any],
+        run_id: str = "",
+    ) -> list[AgentMessage]:
+        """
+        Publish an event to all subscribers of topic.
+
+        The publisher does not need to know who the subscribers are.
+        Each subscriber receives an independent AgentMessage in their inbox.
+
+        If no subscribers are registered for topic, returns [] silently.
+        Logs one PUBLISHED event with subscriber count, then one POSTED
+        event per delivery (via the existing post() call).
+
+        This is the core of Phase 4d. One publish(), N deliveries.
+        Backing store: JSON (Redis upgrade path available in Phase 5).
+        """
+        subs = self._load_subscriptions()
+        subscribers = subs.get(topic, [])
+
+        if not subscribers:
+            return []
+
+        # Log PUBLISHED first so the log entry precedes the per-subscriber
+        # POSTED entries that post() writes.
+        publish_id = uuid.uuid4().hex
+        self.append_log(
+            event="PUBLISHED",
+            from_agent=from_agent,
+            to_agent=f"[{len(subscribers)} subscriber(s)]",
+            message_type=topic,
+            message_id=publish_id,
+            notes=", ".join(subscribers),
+        )
+
+        messages: list[AgentMessage] = []
+        for subscriber in subscribers:
+            msg = self.post(
+                from_agent=from_agent,
+                to_agent=subscriber,
+                message_type=topic,
+                payload=payload,
+                run_id=run_id,
+            )
+            messages.append(msg)
+
+        return messages

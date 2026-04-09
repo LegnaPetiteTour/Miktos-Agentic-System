@@ -1,0 +1,10 @@
+{
+  "recording_stopped": [
+    "session_coordinator",
+    "kosmos_organizer"
+  ],
+  "stream_started": [],
+  "session_complete": [
+    "streamlab_monitor"
+  ]
+}

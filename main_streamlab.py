@@ -78,8 +78,8 @@ def parse_args() -> argparse.Namespace:
         "--handoff",
         action="store_true",
         help=(
-            "Post a recording_ready message to kosmos_organizer "
-            "when a recording_stopped alert is detected."
+            "Publish a recording_stopped event to all registered subscribers "
+            "when a recording_stopped alert is detected. (Phase 4d pub/sub)"
         ),
     )
     parser.add_argument(
@@ -237,7 +237,7 @@ def main() -> None:
     else:
         print("  Duration      : indefinite (Ctrl+C to stop)")
     if args.handoff:
-        print("  Handoff       : enabled \u2192 kosmos_organizer")
+        print("  Handoff       : enabled \u2192 publish(recording_stopped)")
         print(f"  Recordings    : {args.recordings_path}")
     print()
 
@@ -260,26 +260,26 @@ def main() -> None:
             total_alerts += alert_count
             print_tick_summary(tick, final_state)
 
-            # Handoff: post recording_ready to kosmos_organizer if detected
+            # Handoff: publish recording_stopped to all subscribers if detected
             if args.handoff and _has_recording_stopped(final_state):
                 bus = MessageBus()
-                bus.post(
+                delivered = bus.publish(
+                    topic="recording_stopped",
                     from_agent="streamlab_monitor",
-                    to_agent="kosmos_organizer",
-                    message_type="recording_ready",
                     payload={
                         "recordings_path": args.recordings_path,
                         "trigger_run_id": final_state["run_id"],
                         "scene": _recording_stopped_scene(final_state),
-                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ",
-                                                   time.gmtime()),
+                        "timestamp": time.strftime(
+                            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                        ),
                     },
                     run_id=final_state["run_id"],
                 )
                 print(
-                    "  \u2192 Message posted to kosmos_organizer: recording_ready"
+                    f"  \u2192 Published recording_stopped"
+                    f" to {len(delivered)} subscriber(s)"
                 )
-                print(f"    Path: {args.recordings_path}")
 
             # Sleep, but honour --duration if close to the limit
             if args.duration:
