@@ -81,56 +81,87 @@ Correctness : PASS (200/200 actions match)
 ## Phase 4b — Agent-to-Agent Messaging ✅ COMPLETE
 
 **Completed:** 2026-04-09
-**Commit:** `ee259e2` (PR #14)
+**Commit:** `ee259e2`
 **Tests:** 34/34 passing, 1 skipped
 
-**Two agents communicate through a durable JSON message bus.**
-
 - [x] engine/messaging/models.py — AgentMessage dataclass
-- [x] engine/messaging/bus.py — MessageBus with atomic writes (tempfile + rename)
-- [x] agent_id + inbox_messages added to RunState (backward compatible defaults)
-- [x] message_trigger_node — reads inbox, acknowledges, injects into state
-- [x] build_graph_with_messaging() — additive, build_graph() unchanged
-- [x] main_streamlab.py --handoff flag — posts recording_ready on stream stop
-- [x] main_kosmos.py --listen flag — polls inbox, processes recording_ready messages
-- [x] data/messages/ directory structure with pending/ and delivered/ per agent
+- [x] engine/messaging/bus.py — MessageBus with atomic writes
+- [x] agent_id + inbox_messages added to RunState (backward compatible)
+- [x] message_trigger_node + build_graph_with_messaging() — additive
+- [x] main_streamlab.py --handoff / main_kosmos.py --listen
 
 **Live round-trip proof:**
 
 ```text
-1. Inbox polled  → 1 recording_ready message from streamlab_monitor
-2. Kosmos ran    → scanned /Users/atorrella/Movies
-                   159 files classified, exit=success
-3. Acknowledged  → message moved to kosmos_organizer/delivered/
-4. Reply posted  → recording_organized to streamlab_monitor/pending/
-5. Verified      → files_processed: 159, exit_reason: success
+1. Inbox polled  → recording_ready from streamlab_monitor
+2. Kosmos ran    → 159 files classified from ~/Movies, exit=success
+3. Acknowledged  → moved to kosmos_organizer/delivered/
+4. Reply posted  → recording_organized, files_processed: 159
 ```
-
-**Message chain on disk (independently audited):**
-
-- kosmos_organizer/delivered/f70b2df1...json  <- recording_ready, acknowledged
-- streamlab_monitor/pending/fc25c709...json   <- recording_organized, files_processed: 159
-
-**What Phase 4b proved:**
-The system is no longer just a loop. It is a network. One agent triggers
-another without human involvement. The message bus interface is stable —
-backing store swapped to Redis in Phase 4d with a one-file change.
-
-**Invariant:** Messaging is opt-in. No existing domain is affected.
-build_graph() and all three existing entry points are unchanged.
 
 ---
 
-## Phase 4c — Team / Task Delegation
+## Phase 4c — Team / Task Delegation ✅ COMPLETE
 
-Goal: Hierarchical orchestration — coordinator assigns to specialized workers.
+**Completed:** 2026-04-09
+**Commit:** PR #16
+**Tests:** 39/39 passing, 1 skipped
 
-*Requires Phase 4b — agent identity and messaging already exist.*
+**Hierarchical orchestration — coordinator dispatches three workers in parallel.**
 
-- [ ] Coordinator agent role defined
-- [ ] Worker agent roles defined
-- [ ] Delegation and result aggregation working
-- [ ] Progress tracking across the team
+- [x] engine/coordinator/workers.py — KosmosWorker, ThumbnailWorker, MetadataWorker
+      Each worker: one responsibility, independently testable, never raises
+- [x] engine/coordinator/coordinator.py — SessionCoordinator
+      ThreadPoolExecutor(max_workers=3), named slot aggregation, retry loop
+- [x] engine/messaging/bus.py — append_log() added, auto-wired into post()/acknowledge()
+- [x] data/messages/message.log — append-only event log, full observability
+- [x] main_coordinator.py — --poll-interval / --once entry point
+- [x] data/sessions/ — session artifacts written per run
+- [x] All 34 prior tests pass unmodified — coordinator is a separate layer
+
+**Slot definitions:**
+
+```text
+organize   (required)  KosmosWorker    — classify and propose file path
+thumbnail  (optional)  ThumbnailWorker — extract first-frame JPEG via ffmpeg
+metadata   (required)  MetadataWorker  — write session.json via ffprobe
+```
+
+**Live proof — coordinator stdout:**
+
+```text
+Session 05b7a3154d20
+├── organize   ✅  videos (0.95)  →  data/sessions/05b7a3154d20/videos/video_clip.mp4
+├── thumbnail  ❌  moov atom not found  (stub fixture — 8-byte ASCII, not a real video)
+└── metadata   ✅  data/sessions/05b7a3154d20/session.json  (0.0s)
+exit: success | posted session_complete → streamlab_monitor
+```
+
+**message.log event chain (12 lines, independently audited):**
+
+```text
+POSTED      streamlab_monitor → session_coordinator  recording_ready
+DISPATCHED  coordinator → kosmos_worker              organize       attempt 1
+DISPATCHED  coordinator → thumbnail_worker           thumbnail      attempt 1
+DISPATCHED  coordinator → metadata_worker            metadata       attempt 1
+COMPLETED   kosmos_worker → coordinator              organize
+FAILED      thumbnail_worker → coordinator           thumbnail      [moov atom not found]
+COMPLETED   metadata_worker → coordinator            metadata
+DISPATCHED  coordinator → metadata_worker            metadata       (category enrichment)
+COMPLETED   metadata_worker → coordinator            metadata
+POSTED      coordinator → streamlab_monitor          session_complete  success
+ACKNOWLEDGED coordinator ← recording_ready
+```
+
+**What Phase 4c proved — all three architecture contract criteria met:**
+
+1. Delegation reduced complexity for the coordinator — it never touches domain logic
+2. Aggregation is deterministic — slot-filling, no inference, no LLM
+3. Failure ownership is clear — thumbnail failed, coordinator recorded which slot,
+   why, and that it was optional. Required slots all succeeded. exit_reason: success.
+
+**Invariant:** Coordinator is a capability layer above the engine, not inside it.
+build_graph() and all three existing entry points are completely unchanged.
 
 ---
 
