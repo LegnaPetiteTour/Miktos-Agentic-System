@@ -38,3 +38,9 @@ data/messages/subscriptions.json
 
 # Session artifacts (runtime output)
 data/sessions/*/
+
+# Phase 5 — post-stream domain runtime config
+domains/streamlab_post/config/session_config.yaml
+# session_config.example.yaml is the committed reference
+!domains/streamlab_post/config/session_config.example.yaml
+

@@ -1,0 +1,39 @@
+# Session configuration for post-stream closure.
+# Copy this file to session_config.yaml and fill in values before running.
+# session_config.yaml is gitignored — this file is the committed reference.
+
+event_name: "Committee-Meeting"           # used in file naming — no spaces
+stream_date: ""                           # YYYY-MM-DD — auto-filled if blank
+stream_type: "obs_simple"                 # "obs_simple" | "zoom_epiphan"
+
+recording:
+  local_path: "/Users/atorrella/Movies"   # where OBS saves recordings
+  min_size_bytes: 1048576                 # 1MB minimum — catches empty files
+
+youtube:
+  en:
+    video_id: ""          # pre-known if stream was scheduled; blank = auto-detect
+    channel_id: ""        # your EN channel ID (UC...)
+    title: ""             # set before stream, or filled manually
+    description: ""       # EN description — FR will be translated from this
+    playlist_id: ""       # optional — blank = skip playlist assignment
+  fr:
+    video_id: ""
+    channel_id: ""
+    title: ""             # auto-filled by TranslationWorker from EN title
+    description: ""       # auto-filled by TranslationWorker from EN description
+    playlist_id: ""
+
+elevenlabs:
+  model: "scribe_v1"      # ElevenLabs speech-to-text model
+  language_code: "fr"     # primary language hint (bilingual detection still runs)
+
+notification:
+  recipients_email: []    # ["person@example.com", "other@example.com"]
+  recipients_teams: ""    # Teams webhook URL (single URL, blank = skip)
+  subject_template: "Transcript — {event_name} ({date})"
+  body_template: |
+    The transcript for {event_name} ({date}) is ready.
+    Session folder: {final_folder}
+    Transcript: {transcript_path}
+    Duration: {duration}s
