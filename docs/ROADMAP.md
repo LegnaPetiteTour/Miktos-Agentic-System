@@ -68,8 +68,7 @@
 - [x] engine/benchmarks/parallel_benchmark.py
 
 **Benchmark proof (200 files, 8 workers):**
-
-```text
+```
 Sequential  : 0.21s  (973.5 files/sec)
 Parallel    : 0.05s  (3904.7 files/sec)
 Speedup     : 4.0x
@@ -91,8 +90,7 @@ Correctness : PASS (200/200 actions match)
 - [x] main_streamlab.py --handoff / main_kosmos.py --listen
 
 **Live round-trip proof:**
-
-```text
+```
 1. Inbox polled  → recording_ready from streamlab_monitor
 2. Kosmos ran    → 159 files classified from ~/Movies, exit=success
 3. Acknowledged  → moved to kosmos_organizer/delivered/
@@ -107,84 +105,109 @@ Correctness : PASS (200/200 actions match)
 **Commit:** PR #16
 **Tests:** 39/39 passing, 1 skipped
 
-**Hierarchical orchestration — coordinator dispatches three workers in parallel.**
-
 - [x] engine/coordinator/workers.py — KosmosWorker, ThumbnailWorker, MetadataWorker
-      Each worker: one responsibility, independently testable, never raises
-- [x] engine/coordinator/coordinator.py — SessionCoordinator
-      ThreadPoolExecutor(max_workers=3), named slot aggregation, retry loop
-- [x] engine/messaging/bus.py — append_log() added, auto-wired into post()/acknowledge()
-- [x] data/messages/message.log — append-only event log, full observability
+- [x] engine/coordinator/coordinator.py — SessionCoordinator, parallel dispatch, retry
+- [x] engine/messaging/bus.py — append_log() wired into post()/acknowledge()
+- [x] data/messages/message.log — append-only observability log
 - [x] main_coordinator.py — --poll-interval / --once entry point
-- [x] data/sessions/ — session artifacts written per run
-- [x] All 34 prior tests pass unmodified — coordinator is a separate layer
+- [x] data/sessions/ — session artifacts per run
 
-**Slot definitions:**
-
-```text
-organize   (required)  KosmosWorker    — classify and propose file path
-thumbnail  (optional)  ThumbnailWorker — extract first-frame JPEG via ffmpeg
-metadata   (required)  MetadataWorker  — write session.json via ffprobe
+**Live proof:**
 ```
-
-**Live proof — coordinator stdout:**
-
-```text
 Session 05b7a3154d20
-├── organize   ✅  videos (0.95)  →  data/sessions/05b7a3154d20/videos/video_clip.mp4
-├── thumbnail  ❌  moov atom not found  (stub fixture — 8-byte ASCII, not a real video)
-└── metadata   ✅  data/sessions/05b7a3154d20/session.json  (0.0s)
+├── organize   ✅  videos (0.95)
+├── thumbnail  ❌  moov atom not found  (stub — expected)
+└── metadata   ✅  session.json  (0.0s)
 exit: success | posted session_complete → streamlab_monitor
 ```
 
-**message.log event chain (12 lines, independently audited):**
+---
 
-```text
-POSTED      streamlab_monitor → session_coordinator  recording_ready
-DISPATCHED  coordinator → kosmos_worker              organize       attempt 1
-DISPATCHED  coordinator → thumbnail_worker           thumbnail      attempt 1
-DISPATCHED  coordinator → metadata_worker            metadata       attempt 1
-COMPLETED   kosmos_worker → coordinator              organize
-FAILED      thumbnail_worker → coordinator           thumbnail      [moov atom not found]
-COMPLETED   metadata_worker → coordinator            metadata
-DISPATCHED  coordinator → metadata_worker            metadata       (category enrichment)
-COMPLETED   metadata_worker → coordinator            metadata
-POSTED      coordinator → streamlab_monitor          session_complete  success
-ACKNOWLEDGED coordinator ← recording_ready
+## Phase 4d — Event Bus (Pub/Sub) ✅ COMPLETE
+
+**Completed:** 2026-04-09
+**Commit:** PR #17
+**Tests:** 44/44 passing, 1 skipped
+
+**One event, multiple independent reactions. Publisher names zero recipients.**
+
+- [x] bus.subscribe(topic, agent_id) — atomic JSON registry, idempotent
+- [x] bus.unsubscribe(topic, agent_id) — atomic removal, no-op if absent
+- [x] bus.publish(topic, from_agent, payload) — fan-out to N subscribers
+      Returns list[AgentMessage], one per subscriber
+- [x] data/messages/subscriptions.example.json — format reference, committed
+- [x] data/messages/subscriptions.json — runtime registry, gitignored
+- [x] main_streamlab.py --handoff now uses publish("recording_stopped")
+      Publisher no longer names session_coordinator or kosmos_organizer
+- [x] scripts/dmo_preview.py — live one-publish two-delivery proof
+- [x] All 39 prior tests pass unmodified
+
+**Live proof — message.log (independently audited on disk):**
+```
+PUBLISHED  streamlab_monitor -> [2 subscriber(s)]  recording_stopped  session_coordinator, kosmos_organizer
+POSTED     streamlab_monitor -> session_coordinator  recording_stopped
+POSTED     streamlab_monitor -> kosmos_organizer    recording_stopped
+ACKNOWLEDGED  ... session_coordinator  recording_stopped
+ACKNOWLEDGED  ... kosmos_organizer    recording_stopped
 ```
 
-**What Phase 4c proved — all three architecture contract criteria met:**
+**What Phase 4d proved:**
+One publish() call reached two independent agents. The publisher named
+neither recipient. Adding a third subscriber requires one line in
+subscriptions.json — zero code changes. The interface is stable for Phase 5.
+Redis upgrade path: replace MessageBus backing store when distribution demands it.
 
-1. Delegation reduced complexity for the coordinator — it never touches domain logic
-2. Aggregation is deterministic — slot-filling, no inference, no LLM
-3. Failure ownership is clear — thumbnail failed, coordinator recorded which slot,
-   why, and that it was optional. Required slots all succeeded. exit_reason: success.
-
-**Invariant:** Coordinator is a capability layer above the engine, not inside it.
-build_graph() and all three existing entry points are completely unchanged.
-
----
-
-## Phase 4d — Event Bus
-
-Goal: Infrastructure layer for multi-domain coordination.
-
-*Requires Phase 4b and 4c.*
-
-- [ ] Shared message broker defined (Redis or equivalent)
-- [ ] Publish/subscribe across domains
-- [ ] Events trigger cross-domain actions
-- [ ] MessageBus backing store swapped from JSON to broker
+**Invariant:** pub/sub is additive. All point-to-point usage (post(), acknowledge())
+is unchanged. All 39 prior tests pass unmodified.
 
 ---
 
-## Phase 5 — DMO / Ecosystem
+## Phase 5 — Post-Stream Closure Engine (DMO v1)
 
-Goal: The engine becomes the nervous system of the full Miktos product family.
+**Product target:** Multilingual live production operations for OBS/Zoom/Epiphan
+workflows. Miktos becomes the orchestration layer above the existing tool stack.
 
-*Requires Phase 4d.*
+**Vertical wedge:** Post-stream operations automation — the manual checklist
+that runs after every bilingual EN/FR stream is eliminated.
 
-- [ ] Multiple domains running concurrently
-- [ ] Shared memory across domains
-- [ ] Cross-domain orchestration
-- [ ] Full observability dashboard
+**The before/after:**
+```
+Before (manual, after every stream):
+  - Check YouTube EN upload status and visibility
+  - Check YouTube FR upload status and visibility
+  - Translate description to French manually (Google Translate)
+  - Add title + description to both channels
+  - Verify video is in correct playlist on both channels
+  - Confirm local backup recording exists and is valid
+  - Extract audio from recording (Premiere or equivalent)
+  - Upload MP3 to ElevenLabs, wait, download bilingual transcript
+  - Rename and file all artifacts with correct naming convention
+  - Share transcript via Teams/Outlook
+
+After (Miktos, triggered by stream end):
+  - Detects recording_stopped via OBS WebSocket
+  - Verifies backup file exists, size valid, not corrupt
+  - Checks YouTube EN: upload complete, public, in playlist
+  - Checks YouTube FR: upload complete, public, in playlist
+  - Generates FR description via translation (Google Translate API)
+  - Sets title + description on both channels via YouTube Data API
+  - Extracts audio via ffmpeg (already in engine)
+  - Submits MP3 to ElevenLabs, polls, downloads bilingual transcript
+  - Renames and files all artifacts into dated session folder
+  - Sends transcript via Teams/Outlook (or writes share-ready package)
+  - Produces session report: pass/fail per step, flags for human review
+```
+
+**New workers required (Phase 5 slots):**
+- YouTubeVerificationWorker — YouTube Data API v3, dual-channel EN/FR
+- TranscriptPipelineWorker — ffmpeg audio extract + ElevenLabs API + download
+- BackupVerificationWorker — file exists, size threshold, not corrupt
+- TranslationWorker — Google Translate API, EN→FR description
+- NotificationWorker — Teams webhook or Outlook/Graph API, share transcript
+
+**Engine unchanged. Coordinator extended with new slot definitions.**
+**All existing tests continue to pass.**
+
+Goal: Eliminate the post-stream manual checklist entirely.
+Every step above runs automatically from a single stream-end event.
+Human review only for flagged failures.
