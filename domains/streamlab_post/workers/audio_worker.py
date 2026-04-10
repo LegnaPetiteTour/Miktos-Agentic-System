@@ -57,7 +57,7 @@ class AudioExtractWorker:
 
         out_dir = Path(output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
-        mp3_path = out_dir / "audio.mp3"
+        mp3_file = out_dir / "audio.mp3"
 
         try:
             result = subprocess.run(
@@ -68,7 +68,7 @@ class AudioExtractWorker:
                     "-acodec", "libmp3lame",
                     "-ar", "44100",
                     "-ab", "192k",
-                    str(mp3_path),
+                    str(mp3_file),
                     "-y",
                     "-loglevel", "error",
                 ],
@@ -85,7 +85,7 @@ class AudioExtractWorker:
             stderr = result.stderr.strip() or "unknown ffmpeg error"
             return {"success": False, "error": f"ffmpeg failed: {stderr}"}
 
-        if not mp3_path.exists() or mp3_path.stat().st_size == 0:
+        if not mp3_file.exists() or mp3_file.stat().st_size == 0:
             return {
                 "success": False,
                 "error": "ffmpeg completed but output MP3 is missing or empty",
@@ -93,6 +93,6 @@ class AudioExtractWorker:
 
         return {
             "success": True,
-            "mp3_path": str(mp3_path),
-            "file_size_bytes": mp3_path.stat().st_size,
+            "mp3_path": str(mp3_file),
+            "file_size_bytes": mp3_file.stat().st_size,
         }

@@ -207,13 +207,17 @@ def main() -> None:
     bus.subscribe(_TOPIC, _AGENT_ID)
 
     mode = "dry-run" if args.dry_run else "live"
+    config_label = (
+        "session_config.yaml"
+        if _CONFIG_PATH.exists()
+        else "session_config.example.yaml (fallback)"
+    )
     print(
         f"Post-Stream Closure Engine started  [{mode}]\n"
         f"  Subscribed to: {_TOPIC}\n"
         f"  Agent ID:      {_AGENT_ID}\n"
         f"  Poll interval: {args.poll_interval}s\n"
-        f"  Config:        "
-        f"{'session_config.yaml' if _CONFIG_PATH.exists() else 'session_config.example.yaml (fallback)'}\n"
+        f"  Config:        {config_label}\n"
     )
 
     if args.once:

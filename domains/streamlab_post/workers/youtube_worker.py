@@ -63,7 +63,9 @@ class YouTubeWorker:
                 "dry_run": True,
                 "video_id": video_id or mock_video_id,
                 "title": title or f"Committee Meeting ({language.upper()})",
-                "description": description or f"[{language.upper()} description placeholder]",
+                "description": (
+                    description or f"[{language.upper()} description placeholder]"
+                ),
                 "visibility": "public",
                 "playlist_added": bool(playlist_id),
                 "playlist_id": playlist_id,

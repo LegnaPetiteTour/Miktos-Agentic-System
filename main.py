@@ -76,6 +76,8 @@ def build_initial_state(
         "max_replans": 2,
         "done": False,
         "exit_reason": None,
+        "agent_id": "file_analyzer",
+        "inbox_messages": [],
         "context": {
             "root_path": root_path,
             "batch_size": batch_size,
