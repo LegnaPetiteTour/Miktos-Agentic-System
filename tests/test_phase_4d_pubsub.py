@@ -148,12 +148,12 @@ def test_publish_logged_correctly(tmp_path: Path) -> None:
     )
 
     # The PUBLISHED line must exist
-    published_lines = [l for l in relevant if "PUBLISHED" in l]
+    published_lines = [line for line in relevant if "PUBLISHED" in line]
     assert len(published_lines) == 1, "Expected exactly one PUBLISHED line"
     assert "[2 subscriber(s)]" in published_lines[0]
 
     # The POSTED lines must exist — one per subscriber
-    posted_lines = [l for l in relevant if "POSTED" in l]
+    posted_lines = [line for line in relevant if "POSTED" in line]
     assert len(posted_lines) == 2, (
         f"Expected 2 POSTED lines, got {len(posted_lines)}"
     )
