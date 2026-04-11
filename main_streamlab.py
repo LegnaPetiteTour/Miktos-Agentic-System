@@ -95,9 +95,12 @@ def parse_args() -> argparse.Namespace:
 # ---------------------------------------------------------------------------
 
 def _has_recording_stopped(final_state: RunState) -> bool:
-    """Return True if any approved action has category == 'recording_stopped'."""
+    """Return True if recording_stopped or stream_down alert is approved."""
     actions = final_state.get("proposed_actions", [])
-    return any(a.get("category") == "recording_stopped" for a in actions)
+    return any(
+        a.get("category") in ("recording_stopped", "stream_down")
+        for a in actions
+    )
 
 
 def _recording_stopped_scene(final_state: RunState) -> str:
@@ -245,6 +248,12 @@ def main() -> None:
     total_alerts = 0
     start_time = time.time()
 
+    # Edge-detection state: only publish on the active→stopped transition.
+    # Starts False so we wait until we've seen at least one healthy poll
+    # (recording active) before treating a "stopped" state as a real event.
+    was_recording_active = False
+    handoff_published = False
+
     try:
         while True:
             elapsed = time.time() - start_time
@@ -260,26 +269,38 @@ def main() -> None:
             total_alerts += alert_count
             print_tick_summary(tick, final_state)
 
-            # Handoff: publish recording_stopped to all subscribers if detected
-            if args.handoff and _has_recording_stopped(final_state):
-                bus = MessageBus()
-                delivered = bus.publish(
-                    topic="recording_stopped",
-                    from_agent="streamlab_monitor",
-                    payload={
-                        "recordings_path": args.recordings_path,
-                        "trigger_run_id": final_state["run_id"],
-                        "scene": _recording_stopped_scene(final_state),
-                        "timestamp": time.strftime(
-                            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
-                        ),
-                    },
-                    run_id=final_state["run_id"],
-                )
-                print(
-                    f"  \u2192 Published recording_stopped"
-                    f" to {len(delivered)} subscriber(s)"
-                )
+            # Handoff: publish recording_stopped only on the active→stopped
+            # transition (edge-triggered). This prevents flood-publishing
+            # when the script starts before OBS is recording, or when OBS
+            # is idle after a session ends.
+            if args.handoff:
+                recording_stopped_now = _has_recording_stopped(final_state)
+                if not recording_stopped_now:
+                    # Recording is active — arm the trigger for next stop
+                    was_recording_active = True
+                    handoff_published = False
+                elif was_recording_active and not handoff_published:
+                    # Transition: was active → now stopped → publish once
+                    bus = MessageBus()
+                    delivered = bus.publish(
+                        topic="recording_stopped",
+                        from_agent="streamlab_monitor",
+                        payload={
+                            "recordings_path": args.recordings_path,
+                            "trigger_run_id": final_state["run_id"],
+                            "scene": _recording_stopped_scene(final_state),
+                            "timestamp": time.strftime(
+                                "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                            ),
+                        },
+                        run_id=final_state["run_id"],
+                    )
+                    print(
+                        f"  \u2192 Published recording_stopped"
+                        f" to {len(delivered)} subscriber(s)"
+                    )
+                    handoff_published = True
+                    was_recording_active = False
 
             # Sleep, but honour --duration if close to the limit
             if args.duration:

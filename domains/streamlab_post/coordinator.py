@@ -82,7 +82,22 @@ class PostStreamCoordinator:
         elevenlabs_cfg = session_config.get("elevenlabs", {})
         notification_cfg = session_config.get("notification", {})
 
-        file_path = payload.get("file_path") or payload.get("recordings_path", "")
+        file_path = payload.get("file_path", "")
+        if not file_path:
+            # recordings_path may be a folder — find the most recent recording
+            recordings_path = Path(payload.get("recordings_path", ""))
+            if recordings_path.is_dir():
+                candidates = sorted(
+                    [
+                        f for f in recordings_path.iterdir()
+                        if f.suffix.lower() in (".mkv", ".mov", ".mp4", ".flv")
+                    ],
+                    key=lambda f: f.stat().st_mtime,
+                    reverse=True,
+                )
+                file_path = str(candidates[0]) if candidates else ""
+            else:
+                file_path = str(recordings_path)
         dry_run = payload.get("dry_run", False)
 
         # Accumulated results — enriched after each stage
@@ -112,6 +127,7 @@ class PostStreamCoordinator:
                     "title": youtube_cfg.get("en", {}).get("title", ""),
                     "description": youtube_cfg.get("en", {}).get("description", ""),
                     "playlist_id": youtube_cfg.get("en", {}).get("playlist_id", ""),
+                    "visibility": youtube_cfg.get("en", {}).get("visibility", "public"),
                     "dry_run": dry_run,
                 },
             },
@@ -202,6 +218,7 @@ class PostStreamCoordinator:
                     "title": translate_result.get("title_fr", ""),
                     "description": translate_result.get("description_fr", ""),
                     "playlist_id": youtube_cfg.get("fr", {}).get("playlist_id", ""),
+                    "visibility": youtube_cfg.get("fr", {}).get("visibility", "public"),
                     "dry_run": dry_run,
                 },
             },

@@ -41,6 +41,7 @@ class YouTubeWorker:
           title (str)           — video title to set
           description (str)     — video description to set
           playlist_id (str)     — optional; blank = skip
+          visibility (str)      — "public", "unlisted", or "private" (default: public)
           dry_run (bool)        — if True, skip API calls, return mock result
 
         Returns:
@@ -54,6 +55,7 @@ class YouTubeWorker:
         title = payload.get("title", "")
         description = payload.get("description", "")
         playlist_id = payload.get("playlist_id", "")
+        visibility = payload.get("visibility", "public")
         dry_run = payload.get("dry_run", False)
 
         if dry_run:
@@ -66,7 +68,7 @@ class YouTubeWorker:
                 "description": (
                     description or f"[{language.upper()} description placeholder]"
                 ),
-                "visibility": "public",
+                "visibility": visibility,
                 "playlist_added": bool(playlist_id),
                 "playlist_id": playlist_id,
             }
@@ -175,7 +177,7 @@ class YouTubeWorker:
                     "categoryId": "22",  # People & Blogs
                 },
                 "status": {
-                    "privacyStatus": "public",
+                    "privacyStatus": visibility,
                 },
             }
             youtube.videos().update(
@@ -215,7 +217,7 @@ class YouTubeWorker:
             "video_id": video_id,
             "title": title,
             "description": description,
-            "visibility": "public",
+            "visibility": visibility,
             "playlist_added": playlist_added,
             "playlist_id": playlist_id,
         }
