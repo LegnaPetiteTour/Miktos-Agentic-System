@@ -151,14 +151,14 @@ ACKNOWLEDGED  (both)
 ## Phase 5 — Post-Stream Closure Engine (DMO v1) ✅ COMPLETE
 
 **Completed:** 2026-04-10
-**Commit:** PR #18
+**Commit:** PR #18 + PR #19 (live validation fixes)
 **Tests:** 52/52 passing, 1 skipped
 
 **Product:** Multilingual live production operations layer for OBS/Zoom/Epiphan
 workflows. Eliminates the manual post-stream checklist entirely.
 
-**Vertical wedge:** Post-stream closure automation for bilingual EN/FR streams.
-One stream-end event → full session closure, no human involvement.
+**Multistream note:** obs-multi-rtmp plugin handles simultaneous EN + FR YouTube
+delivery from a single OBS instance — no Epiphan required for simple streams.
 
 - [x] domains/streamlab_post/ — new domain, engine unchanged
 - [x] BackupVerificationWorker — file exists, size threshold, ffprobe validation
@@ -182,48 +182,71 @@ Stage 3 (parallel):  youtube_fr      file_rename
 Stage 4 (optional):  notify
 ```
 
-**Dry-run proof — message.log (independently audited):**
+**5 production bugs found and fixed in PR #19 (2026-04-11):**
 ```
-PUBLISHED  streamlab_monitor -> [3 subscriber(s)]  recording_stopped
-           session_coordinator, kosmos_organizer, post_stream_processor
-POSTED     → post_stream_processor  recording_stopped
-ACKNOWLEDGED  post_stream_processor ← recording_stopped  (×2 runs)
+Bug 1: obs_monitor.py      recording_stopped alert never emitted
+       Fix: added get_record_status() + alert when output_active=False
+
+Bug 2: main_streamlab.py   _has_recording_stopped() never matched
+       Fix: added "stream_down" to match set
+
+Bug 3: coordinator.py      received folder path, not file path
+       Fix: most-recent-file resolution from directory
+
+Bug 4: youtube_worker.py   always set public unconditionally
+       Fix: read visibility from payload/config
+
+Bug 5: main_streamlab.py   flood-published (11+ events per run, level-triggered)
+       Fix: edge-triggered — publish only on True→False recording transition
 ```
 
-**Dry-run session artifacts on disk:**
-- data/sessions/b0d6b6561fa2/transcript.txt — bilingual mock transcript written
-- data/sessions/111743134184/transcript.txt — second dry-run run confirmed
-
-**The before/after — manual steps eliminated:**
+**Live validation — 2026-04-11 — 4 real sessions:**
 ```
-Before: 10 manual steps after every stream (avg ~30 min)
+Sessions: 2026-04-11_Miktos-Demo_001 through _004
+6/8 slots ✅ per session
+
+transcript ❌ — ElevenLabs minimum duration; will work on full-length streams
+youtube_fr ❌ — FR channel pending ~24h YouTube approval; no code change needed
+
+Artifacts confirmed on disk (independently audited):
+  2026-04-11_Miktos-Demo_001_EN.mov  34.70 MB  ← naming convention applied
+  2026-04-11_Miktos-Demo_001.mp3     1.29 MB   ← audio extracted by ffmpeg
+
+message.log — 4 pub/sub cycles at 06:42 UTC:
+  PUBLISHED streamlab_monitor -> [3 subscriber(s)] recording_stopped
+  (session_coordinator, kosmos_organizer, post_stream_processor)
+  ACKNOWLEDGED by post_stream_processor (×4)
+```
+
+**Before/after — manual steps eliminated:**
+```
+Before: ~30 min manual work after every stream
   Check EN upload → Check FR upload → Translate description →
-  Set titles/descriptions → Verify playlists → Confirm backup →
+  Set titles + descriptions → Verify playlists → Confirm backup →
   Extract audio in Premiere → Upload to ElevenLabs → Download transcript →
   Rename files → Share via Teams/Outlook
 
 After: Zero manual steps
   Stream ends → Miktos closes the session automatically
-  Human review only for flagged failures (❌ slots in session report)
+  Human review only for flagged ❌ slots in session report
 ```
 
-**Naming convention:** YYYY-MM-DD_EventName_NNN_EN.mp4
-  NNN increments automatically for same-day multiple streams.
-
-**Invariant:** Engine unchanged. PostStreamCoordinator is a domain-layer
-component. All prior domains and tests unaffected.
+**Naming convention:** YYYY-MM-DD_EventName_NNN_EN.mov
+NNN increments automatically for same-day multiple streams.
 
 ---
 
-## Next — Live Credential Setup
+## Pending — FR Channel + First Full-Length Stream
 
-Before running against a real stream:
+- [ ] FR YouTube channel approved (~24h from 2026-04-11) — no code change needed
+- [ ] Run against a full-length stream to clear ElevenLabs minimum duration
+- [ ] Update session_config.yaml with real video_id before each stream
+- [ ] Configure Teams webhook or Outlook recipients for Stage 4 notifications
 
-1. Create Google Cloud OAuth2 Desktop App credentials
-2. Run `python scripts/youtube_auth.py --channel en` → copy token to .env
-3. Run `python scripts/youtube_auth.py --channel fr` → copy token to .env
-4. Add GOOGLE_TRANSLATE_API_KEY to .env
-5. Add ELEVENLABS_API_KEY to .env
-6. Fill in domains/streamlab_post/config/session_config.yaml
-7. Run `python main_post_stream.py --poll-interval 5` before next stream
-8. End the stream → observe full session closure without touching anything
+**When FR channel is approved — run checklist:**
+```
+Terminal A: python main_streamlab.py --handoff --poll-interval 5
+Terminal B: python main_post_stream.py --poll-interval 5
+Start OBS with obs-multi-rtmp → both EN + FR channels live
+Run the stream → stop OBS → all 8 slots should be ✅
+```
