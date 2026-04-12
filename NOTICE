@@ -1,0 +1,61 @@
+# Miktos — Notice
+
+Copyright (c) 2026 Angel Torrella and Miktos Contributors
+
+---
+
+## Open Source Core
+
+Miktos Core is open source under the MIT License. This includes:
+
+- The orchestration engine (`engine/`)
+- The message bus and pub/sub system (`engine/messaging/`)
+- The coordinator and worker pattern (`engine/coordinator/`)
+- The domain adapter template and shared tools (`engine/tools/`)
+- The LangGraph graph builder, nodes, router, and state schema
+- All tests, documentation, and example configurations
+
+You are free to use, modify, self-host, and build upon Miktos Core
+under the terms of the MIT License.
+
+---
+
+## Commercial and Hosted Offerings
+
+The following are not part of the open source release and require
+a separate commercial license:
+
+- **Miktos Cloud** — hosted managed service with multi-user workspaces,
+  guaranteed SLA, and managed credential storage
+- **Premium workflow packs** — production-ready domain templates
+  with managed API integrations
+- **Enterprise features** — multi-tenant coordination, observability
+  dashboards, audit trails, SSO, and enterprise support
+- **Managed AI layer** — hosted transcript, translation, and
+  LLM inference with usage billing
+
+For commercial licensing inquiries: contact the maintainers via
+the GitHub repository.
+
+---
+
+## Third-Party Attributions
+
+Miktos integrates with the following external services via their
+published APIs. Use of those services is governed by their respective
+terms of service:
+
+- YouTube Data API (Google LLC)
+- Google Cloud Translation API (Google LLC)
+- ElevenLabs Speech-to-Text API (ElevenLabs Inc.)
+- Microsoft Graph API (Microsoft Corporation)
+- OBS WebSocket Protocol (OBS Project, GPL-2.0)
+- LangGraph (LangChain Inc., MIT)
+
+---
+
+## Trademarks
+
+"Miktos" is a trademark of Angel Torrella. Use of the Miktos name
+or logo in forks, derived works, or competing products requires
+prior written permission.
