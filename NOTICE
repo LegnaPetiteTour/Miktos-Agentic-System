@@ -1,5 +1,6 @@
-Miktos Agentic System
-Copyright (c) 2026 Angel Torrella (atorrella.r@gmail.com)
+# Miktos Agentic System
+
+Copyright (c) 2026 Angel Torrella (<atorrella.r@gmail.com>)
 
 ---
 
@@ -11,22 +12,22 @@ OPEN CORE BOUNDARY
 
 The following components are open source under the MIT License:
 
-  - engine/         Core orchestration engine (graph, messaging, coordinator,
-                    state, models, tools)
-  - domains/        Domain adapters (file_analyzer, kosmos, streamlab)
-  - tests/          Test suite
-  - scripts/        Developer and operator utilities
+- engine/         Core orchestration engine (graph, messaging, coordinator,
+                  state, models, tools)
+- domains/        Domain adapters (file_analyzer, kosmos, streamlab)
+- tests/          Test suite
+- scripts/        Developer and operator utilities
 
 The following are NOT included in this repository and are separate commercial
 offerings:
 
-  - Hosted Miktos services and managed deployments
-  - Managed integrations (YouTube, ElevenLabs, Teams, Zoom, Epiphan, etc.)
-  - Enterprise configuration, support, and SLA agreements
-  - White-label and OEM licensing
+- Hosted Miktos services and managed deployments
+- Managed integrations (YouTube, ElevenLabs, Teams, Zoom, Epiphan, etc.)
+- Enterprise configuration, support, and SLA agreements
+- White-label and OEM licensing
 
 For commercial licensing, hosting, or integration inquiries, contact:
-  atorrella.r@gmail.com
+<atorrella.r@gmail.com>
 
 ---
 
