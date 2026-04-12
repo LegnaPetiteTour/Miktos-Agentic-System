@@ -25,7 +25,7 @@ extraction, translation, transcript, file organization, and notification — wit
 
 ## Core Architecture
 
-```
+```text
 [INPUT / TRIGGER]
        ↓
 [SCANNER / ADAPTER]     ← domain swaps this layer only
@@ -88,7 +88,7 @@ sessions. 52/52 tests.
 
 ## StreamLab: The Post-Stream Pipeline
 
-```
+```text
 Stream ends (OBS recording stopped)
          ↓
 Stage 1 (parallel):  backup_verify  |  youtube_en    |  audio_extract
@@ -101,7 +101,7 @@ Stage 4 (optional):                notify
 ```
 
 | Worker | What it does |
-|--------|-------------|
+| -------- | ------------- |
 | `backup_verify` | File exists, size threshold, ffprobe structural validation |
 | `youtube_en` | YouTube Data API v3 — set title, description, visibility, playlist |
 | `audio_extract` | ffmpeg MP3 extraction from raw recording |
@@ -158,7 +158,7 @@ youtube:
 ## Tech Stack
 
 | Layer | Choice |
-|---|---|
+| --- | --- |
 | Language | Python 3.11+ |
 | Orchestration | LangGraph |
 | Validation | Pydantic |
@@ -176,7 +176,7 @@ youtube:
 
 ## Repository Structure
 
-```
+```text
 Miktos-Agentic-System/
 ├── engine/                       # Core reusable orchestration engine
 │   ├── graph/                    # LangGraph nodes, state, router
@@ -205,7 +205,7 @@ Miktos-Agentic-System/
 
 Three domains. Zero engine changes between them.
 
-```
+```text
 Domain 1 — File Analyzer:   FileScannerTool      → MIME alert items
 Domain 2 — Kosmos:          FileScannerTool      → media alert items
 Domain 3 — StreamLab:       OBSMonitorTool       → stream alert items
