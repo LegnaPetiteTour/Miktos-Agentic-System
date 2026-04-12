@@ -100,12 +100,25 @@ class OBSMonitorTool(BaseTool):
 
         stream_status = client.get_stream_status()
         stats = client.get_stats()
-        client.get_record_status()  # reserved for future recording alerts
+        record_status = client.get_record_status()
         scene_resp = client.get_current_program_scene()
 
         scene_name: str = getattr(
             scene_resp, "current_program_scene_name", ""
         )
+
+        # ── Recording stopped check ─────────────────────────────────────────
+        recording_active: bool = getattr(record_status, "output_active", False)
+
+        if not recording_active:
+            items.append(_make_alert_item(
+                metric_type="recording_stopped",
+                value=0.0,
+                threshold=1.0,
+                severity="critical",
+                description="OBS recording is not active",
+                scene=scene_name,
+            ))
 
         # ── Stream active check ──────────────────────────────────────────
         stream_active: bool = getattr(stream_status, "output_active", False)

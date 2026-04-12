@@ -56,7 +56,7 @@ class TranscriptWorker:
 
         if dry_run:
             transcript_text = (
-                "[Speaker 1]: Good morning everyone, welcome to the committee meeting.\n"
+                "[Speaker 1]: Good morning everyone, welcome to the meeting.\n"
                 "[Speaker 2]: Bonjour à tous, nous allons commencer la réunion.\n"
                 "[Speaker 1]: Today's agenda includes three items.\n"
                 "[Speaker 2]: L'ordre du jour comprend trois points.\n"

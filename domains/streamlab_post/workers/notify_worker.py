@@ -216,8 +216,10 @@ class NotificationWorker:
         except Exception as exc:
             return {"sent": False, "error": f"MSAL auth failed: {exc}"}
 
-        if "access_token" not in token_result:
-            error = token_result.get("error_description", "token acquisition failed")
+        if not token_result or "access_token" not in token_result:
+            error = (token_result or {}).get(
+                "error_description", "token acquisition failed"
+            )
             return {"sent": False, "error": error}
 
         access_token = token_result["access_token"]

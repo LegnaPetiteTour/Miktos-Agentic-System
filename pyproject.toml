@@ -57,7 +57,10 @@ module = [
     "google.auth.*",
     "google.oauth2.*",
     "google_auth_oauthlib.*",
+    "msal",
     "msal.*",
+    "requests",
+    "requests.*",
 ]
 ignore_missing_imports = true
 

@@ -92,6 +92,8 @@ def _build_state(root_path: str, parallel: bool, workers: int) -> RunState:
         "max_replans": 2,
         "done": False,
         "exit_reason": None,
+        "agent_id": "kosmos",
+        "inbox_messages": [],
         "context": {
             "root_path": root_path,
             "batch_size": 500,  # large batch to minimise loop overhead

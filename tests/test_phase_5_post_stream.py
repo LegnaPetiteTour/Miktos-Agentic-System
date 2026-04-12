@@ -209,7 +209,10 @@ def test_youtube_worker_handles_missing_credentials(
     )
 
     assert result["success"] is False
-    assert "credentials" in result["error"].lower() or "missing" in result["error"].lower()
+    assert (
+        "credentials" in result["error"].lower()
+        or "missing" in result["error"].lower()
+    )
 
 
 # ---------------------------------------------------------------------------

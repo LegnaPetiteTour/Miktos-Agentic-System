@@ -68,7 +68,8 @@
 - [x] engine/benchmarks/parallel_benchmark.py
 
 **Benchmark proof (200 files, 8 workers):**
-```
+
+```text
 Sequential  : 0.21s  (973.5 files/sec)
 Parallel    : 0.05s  (3904.7 files/sec)
 Speedup     : 4.0x
@@ -90,7 +91,8 @@ Correctness : PASS (200/200 actions match)
 - [x] main_streamlab.py --handoff / main_kosmos.py --listen
 
 **Live round-trip proof:**
-```
+
+```text
 1. Inbox polled  → recording_ready from streamlab_monitor
 2. Kosmos ran    → 159 files classified from ~/Movies, exit=success
 3. Acknowledged  → moved to kosmos_organizer/delivered/
@@ -113,7 +115,8 @@ Correctness : PASS (200/200 actions match)
 - [x] data/sessions/ — session artifacts per run
 
 **Live proof:**
-```
+
+```text
 Session 05b7a3154d20
 ├── organize   ✅  videos (0.95)
 ├── thumbnail  ❌  moov atom not found  (stub — expected)
@@ -139,7 +142,8 @@ exit: success | posted session_complete → streamlab_monitor
 - [x] scripts/dmo_preview.py — live one-publish two-delivery proof
 
 **Live proof — message.log:**
-```
+
+```text
 PUBLISHED  streamlab_monitor -> [2 subscriber(s)]  recording_stopped
 POSTED     streamlab_monitor -> session_coordinator  recording_stopped
 POSTED     streamlab_monitor -> kosmos_organizer    recording_stopped
@@ -175,7 +179,8 @@ One stream-end event → full session closure, no human involvement.
 - [x] All 44 prior tests pass unmodified
 
 **4-stage execution model:**
-```
+
+```text
 Stage 1 (parallel):  backup_verify   youtube_en    audio_extract
 Stage 2 (parallel):  translate       transcript
 Stage 3 (parallel):  youtube_fr      file_rename
@@ -183,7 +188,8 @@ Stage 4 (optional):  notify
 ```
 
 **Dry-run proof — message.log (independently audited):**
-```
+
+```text
 PUBLISHED  streamlab_monitor -> [3 subscriber(s)]  recording_stopped
            session_coordinator, kosmos_organizer, post_stream_processor
 POSTED     → post_stream_processor  recording_stopped
@@ -191,11 +197,13 @@ ACKNOWLEDGED  post_stream_processor ← recording_stopped  (×2 runs)
 ```
 
 **Dry-run session artifacts on disk:**
+
 - data/sessions/b0d6b6561fa2/transcript.txt — bilingual mock transcript written
 - data/sessions/111743134184/transcript.txt — second dry-run run confirmed
 
 **The before/after — manual steps eliminated:**
-```
+
+```text
 Before: 10 manual steps after every stream (avg ~30 min)
   Check EN upload → Check FR upload → Translate description →
   Set titles/descriptions → Verify playlists → Confirm backup →
