@@ -114,7 +114,7 @@ Correctness : PASS (200/200 actions match)
 - [x] main_coordinator.py — --poll-interval / --once entry point
 - [x] data/sessions/ — session artifacts per run
 
-**Live proof:**
+**Live proof (session 05b7a3154d20 confirmed on disk):**
 
 ```text
 Session 05b7a3154d20
@@ -141,7 +141,7 @@ exit: success | posted session_complete → streamlab_monitor
 - [x] main_streamlab.py --handoff now uses publish("recording_stopped")
 - [x] scripts/dmo_preview.py — live one-publish two-delivery proof
 
-**Live proof — message.log:**
+**Live proof — message.log (confirmed on disk at 2026-04-09T23:05:55Z):**
 
 ```text
 PUBLISHED  streamlab_monitor -> [2 subscriber(s)]  recording_stopped
@@ -152,86 +152,153 @@ ACKNOWLEDGED  (both)
 
 ---
 
-## Phase 5 — Post-Stream Closure Engine (DMO v1) ✅ COMPLETE
+## Phase 5 — Post-Stream Closure Engine ✅ COMPLETE
 
-**Completed:** 2026-04-10
-**Commit:** PR #18
+**Completed:** 2026-04-14
+**Commits:** PR #18 (initial) + PR #19 (5 bugs) + PR #20 (3 bugs from live validation)
 **Tests:** 52/52 passing, 1 skipped
 
-**Product:** Multilingual live production operations layer for OBS/Zoom/Epiphan
-workflows. Eliminates the manual post-stream checklist entirely.
-
-**Vertical wedge:** Post-stream closure automation for bilingual EN/FR streams.
-One stream-end event → full session closure, no human involvement.
+**Product:** Eliminates the manual post-stream checklist for bilingual EN/FR
+institutional live streams. One stream-end event → full session closure.
 
 - [x] domains/streamlab_post/ — new domain, engine unchanged
 - [x] BackupVerificationWorker — file exists, size threshold, ffprobe validation
 - [x] AudioExtractWorker — ffmpeg MP3 extraction from recording
-- [x] YouTubeWorker — Data API v3, EN + FR channels, auto-detect video_id
+- [x] YouTubeWorker — Data API v3, EN + FR channels, uploads playlist auto-detect
 - [x] TranslationWorker — Google Translate API v2, EN→FR title + description
 - [x] TranscriptWorker — ElevenLabs Scribe API, bilingual, speaker-labeled
-- [x] FileRenameWorker — YYYY-MM-DD_EventName_NNN_EN convention, organized folder
+- [x] FileRenameWorker — YYYY-MM-DD_EventName_NNN_EN convention
 - [x] NotificationWorker — Teams webhook + Graph API email, transcript attached
 - [x] PostStreamCoordinator — 4-stage execution, inter-stage payload enrichment
 - [x] main_post_stream.py — --dry-run / --once / --poll-interval entry point
 - [x] scripts/youtube_auth.py — one-time OAuth2 refresh token setup
-- [x] session_config.example.yaml — operator config reference, committed
-- [x] All 44 prior tests pass unmodified
+- [x] session_config.example.yaml — operator config reference
 
 **4-stage execution model:**
 
 ```text
-Stage 1 (parallel):  backup_verify   youtube_en    audio_extract
-Stage 2 (parallel):  translate       transcript
-Stage 3 (parallel):  youtube_fr      file_rename
-Stage 4 (optional):  notify
+Stage 1 (parallel, required):  backup_verify   youtube_en    audio_extract
+Stage 2 (parallel, optional):  translate       transcript
+Stage 3 (parallel, optional):  youtube_fr      file_rename
+Stage 4 (optional):            notify
 ```
 
-**Dry-run proof — message.log (independently audited):**
+**PR #20 bug fixes (found during live validation 2026-04-13):**
+
+1. `_has_recording_stopped()` included `stream_down` — obs-multi-rtmp plugin
+   keeps `stream_down` permanently present; edge trigger never armed.
+   Fix: check only `recording_stopped`.
+2. `youtube_fr` used YouTube search API — lags 10–60 minutes for new VODs.
+   Fix: switched to uploads playlist API (near-instant).
+3. `transcript` multipart field named `"audio"` instead of `"file"`.
+   Fix: renamed per ElevenLabs Scribe API spec.
+
+**Live proof — session `2026-04-13_Miktos-Demo_005` (confirmed on disk):**
 
 ```text
-PUBLISHED  streamlab_monitor -> [3 subscriber(s)]  recording_stopped
-           session_coordinator, kosmos_organizer, post_stream_processor
-POSTED     → post_stream_processor  recording_stopped
-ACKNOWLEDGED  post_stream_processor ← recording_stopped  (×2 runs)
+Stage 1:  backup_verify ✅  youtube_en ✅  audio_extract ✅
+Stage 2:  translate ✅     transcript ✅ (105 words)
+Stage 3:  youtube_fr ✅    file_rename ✅
+Stage 4:  notify ✅ (skipped cleanly)
+
+Session closed in 7 seconds. No human involvement.
+
+Files on disk:
+  2026-04-13_Miktos-Demo_005_EN.mov   305.77 MB
+  2026-04-13_Miktos-Demo_005.mp3       11.37 MB
+
+Message log (2026-04-14T05:04:18Z UTC):
+  PUBLISHED  streamlab_monitor -> [3 subscriber(s)]  recording_stopped
+  ACKNOWLEDGED  post_stream_processor  (6 seconds)
 ```
-
-**Dry-run session artifacts on disk:**
-
-- data/sessions/b0d6b6561fa2/transcript.txt — bilingual mock transcript written
-- data/sessions/111743134184/transcript.txt — second dry-run run confirmed
-
-**The before/after — manual steps eliminated:**
-
-```text
-Before: 10 manual steps after every stream (avg ~30 min)
-  Check EN upload → Check FR upload → Translate description →
-  Set titles/descriptions → Verify playlists → Confirm backup →
-  Extract audio in Premiere → Upload to ElevenLabs → Download transcript →
-  Rename files → Share via Teams/Outlook
-
-After: Zero manual steps
-  Stream ends → Miktos closes the session automatically
-  Human review only for flagged failures (❌ slots in session report)
-```
-
-**Naming convention:** YYYY-MM-DD_EventName_NNN_EN.mp4
-  NNN increments automatically for same-day multiple streams.
-
-**Invariant:** Engine unchanged. PostStreamCoordinator is a domain-layer
-component. All prior domains and tests unaffected.
 
 ---
 
-## Next — Live Credential Setup
+## Phase 6 — Pre-Stream Readiness Check ✅ COMPLETE
 
-Before running against a real stream:
+**Completed:** 2026-04-14
+**Commit:** PR #22
+**Tests:** 67/67 passing, 0 skipped
 
-1. Create Google Cloud OAuth2 Desktop App credentials
-2. Run `python scripts/youtube_auth.py --channel en` → copy token to .env
-3. Run `python scripts/youtube_auth.py --channel fr` → copy token to .env
-4. Add GOOGLE_TRANSLATE_API_KEY to .env
-5. Add ELEVENLABS_API_KEY to .env
-6. Fill in domains/streamlab_post/config/session_config.yaml
-7. Run `python main_post_stream.py --poll-interval 5` before next stream
-8. End the stream → observe full session closure without touching anything
+**Command to run before every stream:**
+
+```bash
+python main_preflight.py
+```
+
+Catches configuration, credential, process, and connectivity problems
+before they propagate into post-stream failures.
+
+**Six checks:**
+
+```text
+1. OBS WebSocket       — can the monitor connect?          hard fail
+2. session_config.yaml — required fields non-empty?        hard fail
+3. Recording path      — exists and writable?              hard fail
+4. Pending inbox       — stale messages present?           hard fail
+5. Duplicate process   — main_streamlab --handoff running? hard fail
+6. Credentials         — tokens valid, API keys set?       soft warn
+    YOUTUBE_REFRESH_TOKEN_EN  — refresh attempted
+    YOUTUBE_REFRESH_TOKEN_FR  — refresh attempted
+    GOOGLE_TRANSLATE_API_KEY  — env var present?
+    ELEVENLABS_API_KEY        — env var present?
+    youtube.en.video_id       — blank = auto-discovery
+    youtube.fr.video_id       — blank = auto-discovery
+    Teams webhook URL         — blank = notify skips
+```
+
+**Output format:**
+
+```text
+  Miktos Pre-Flight Check
+  ───────────────────────────────────────
+  ✅  OBS WebSocket — reachable at localhost:4455
+  ✅  session_config.yaml — all required fields present
+  ✅  Recording path — exists and writable: /Users/…/Movies
+  ✅  Inbox — empty
+  ✅  Duplicate process — none found
+  ✅  YOUTUBE_REFRESH_TOKEN_EN — valid (refresh succeeded)
+  ✅  YOUTUBE_REFRESH_TOKEN_FR — valid (refresh succeeded)
+  ✅  GOOGLE_TRANSLATE_API_KEY — set
+  ✅  ELEVENLABS_API_KEY — set
+  ✅  youtube.en.video_id — set (vz9ecJuLhLs)
+  ⚠️   youtube.fr.video_id — blank (auto-discovery will be used)
+  ⚠️   Teams webhook URL — blank (notify slot will skip)
+  ───────────────────────────────────────
+  READY TO STREAM  (2 warning(s), 0 errors)
+```
+
+**File structure added:**
+
+```text
+domains/streamlab_post/pre_flight/
+  __init__.py
+  checker.py              ← PreFlightChecker
+  checks/
+    __init__.py
+    obs_check.py
+    config_check.py
+    path_check.py
+    inbox_check.py
+    process_check.py
+    credentials_check.py
+main_preflight.py         ← entry point (--dry-run flag)
+tests/test_phase_6_preflight.py  ← 14 new tests
+```
+
+**Live proof — 2026-04-14 (this machine):**
+
+- `--dry-run`: all 12 checks ✅, exit 0
+- Live run: OBS ✅, config ✅, path ✅, inbox ✅, credentials ✅, caught stale
+  `main_streamlab.py --handoff` process (PID 35558) ❌ → exit 1 (correct)
+
+**Invariant:** No engine/ changes. No changes to any existing Phase 1–5 file.
+`PreFlightChecker` is a domain-layer class. All 52 prior tests pass unmodified.
+
+---
+
+## Future Phases (not yet scoped)
+
+- **Phase 7:** Operations dashboard frontend (Stage 1 — session visibility)
+- **Phase 8:** Zoom/Epiphan scenario (separate domain adapter)
+- **Phase 9:** Multi-user / cloud deployment
