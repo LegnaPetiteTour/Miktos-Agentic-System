@@ -214,111 +214,86 @@ Message log (2026-04-14T05:04:18Z UTC):
 
 ---
 
-## Phase 6 — Pre-Stream Readiness Checks 🔜 IN PROGRESS
+## Phase 6 — Pre-Stream Readiness Check ✅ COMPLETE
 
-**Branch:** `phase-6/pre-stream-readiness`
-**Target tests:** 52 existing + 8–10 new
+**Completed:** 2026-04-14
+**Commit:** PR #22
+**Tests:** 67/67 passing, 0 skipped
 
-**Objective:** Prevent failures before they happen. Three failure modes found
-in Phase 5 live validation that a pre-flight check would have caught:
+**Command to run before every stream:**
 
-1. Stale `recording_stopped` messages in the inbox triggering a false post-stream
-   run against a previous session's files.
-2. Two `--handoff` processes running simultaneously (duplicate-publish race).
-3. `session_config.yaml` not updated before the stream.
+```bash
+python main_preflight.py
+```
 
-**New files:**
+Catches configuration, credential, process, and connectivity problems
+before they propagate into post-stream failures.
+
+**Six checks:**
+
+```text
+1. OBS WebSocket       — can the monitor connect?          hard fail
+2. session_config.yaml — required fields non-empty?        hard fail
+3. Recording path      — exists and writable?              hard fail
+4. Pending inbox       — stale messages present?           hard fail
+5. Duplicate process   — main_streamlab --handoff running? hard fail
+6. Credentials         — tokens valid, API keys set?       soft warn
+    YOUTUBE_REFRESH_TOKEN_EN  — refresh attempted
+    YOUTUBE_REFRESH_TOKEN_FR  — refresh attempted
+    GOOGLE_TRANSLATE_API_KEY  — env var present?
+    ELEVENLABS_API_KEY        — env var present?
+    youtube.en.video_id       — blank = auto-discovery
+    youtube.fr.video_id       — blank = auto-discovery
+    Teams webhook URL         — blank = notify skips
+```
+
+**Output format:**
+
+```text
+  Miktos Pre-Flight Check
+  ───────────────────────────────────────
+  ✅  OBS WebSocket — reachable at localhost:4455
+  ✅  session_config.yaml — all required fields present
+  ✅  Recording path — exists and writable: /Users/…/Movies
+  ✅  Inbox — empty
+  ✅  Duplicate process — none found
+  ✅  YOUTUBE_REFRESH_TOKEN_EN — valid (refresh succeeded)
+  ✅  YOUTUBE_REFRESH_TOKEN_FR — valid (refresh succeeded)
+  ✅  GOOGLE_TRANSLATE_API_KEY — set
+  ✅  ELEVENLABS_API_KEY — set
+  ✅  youtube.en.video_id — set (vz9ecJuLhLs)
+  ⚠️   youtube.fr.video_id — blank (auto-discovery will be used)
+  ⚠️   Teams webhook URL — blank (notify slot will skip)
+  ───────────────────────────────────────
+  READY TO STREAM  (2 warning(s), 0 errors)
+```
+
+**File structure added:**
 
 ```text
 domains/streamlab_post/pre_flight/
   __init__.py
-  checker.py              — PreFlightChecker class
+  checker.py              ← PreFlightChecker
   checks/
     __init__.py
-    obs_check.py          — OBS WebSocket reachable
-    config_check.py       — session_config.yaml valid + required fields present
-    path_check.py         — recording path exists and writable
-    inbox_check.py        — no stale recording_stopped messages pending
-    process_check.py      — no duplicate --handoff process running
-    credentials_check.py  — YouTube tokens, Translate key, ElevenLabs key
-main_preflight.py         — entry point, colored console output, exit 0/1
-tests/test_phase_6_preflight.py
+    obs_check.py
+    config_check.py
+    path_check.py
+    inbox_check.py
+    process_check.py
+    credentials_check.py
+main_preflight.py         ← entry point (--dry-run flag)
+tests/test_phase_6_preflight.py  ← 14 new tests
 ```
 
-**Each check returns:**
+**Live proof — 2026-04-14 (this machine):**
 
-```python
-{"status": "ok" | "warn" | "fail", "message": str}
-```
+- `--dry-run`: all 12 checks ✅, exit 0
+- Live run: OBS ✅, config ✅, path ✅, inbox ✅, credentials ✅, caught stale
+  `main_streamlab.py --handoff` process (PID 35558) ❌ → exit 1 (correct)
 
-**Hard failures (❌ — exit 1, block session):**
-
-- OBS WebSocket not reachable
-- `session_config.yaml` missing or required fields empty (event_name, EN channel_id)
-- Recording path does not exist or is not writable
-- Stale `recording_stopped` messages in `post_stream_processor` pending inbox
-- Duplicate `--handoff` process already running
-
-**Soft warnings (⚠️ — continue, operator informed):**
-
-- YouTube EN OAuth token needs refresh (attempt refresh, warn if fails)
-- YouTube FR OAuth token needs refresh (attempt refresh, warn if fails)
-- `GOOGLE_TRANSLATE_API_KEY` not set
-- `ELEVENLABS_API_KEY` not set
-- `video_id` blank in config (note: auto-discovery will be used)
-- Teams webhook URL not configured (note: notify slot will skip)
-
-**Console output format:**
-
-```text
-Miktos Pre-Flight Check
-─────────────────────────────────────────
-✅  OBS connected (ws://localhost:4455)
-✅  session_config.yaml valid
-✅  Recording path ~/Movies writable
-✅  No stale messages in inbox
-✅  No duplicate --handoff processes
-✅  YouTube EN token valid
-✅  YouTube FR token valid
-⚠️  video_id blank — auto-discovery will be used
-✅  Google Translate API key set
-✅  ElevenLabs API key set
-⚠️  Teams webhook not configured — notify will skip
-─────────────────────────────────────────
-READY TO STREAM  (2 warnings, 0 errors)
-```
-
-**Architecture constraints (invariants apply):**
-
-- Checks are sequential, synchronous, fast — no ThreadPoolExecutor
-- `PreFlightChecker` is a domain-layer class — engine unchanged
-- `main_preflight.py` is the only new entry point
-- No changes to `main_streamlab.py`, `main_post_stream.py`, or any engine file
-- All existing 52 tests must pass unmodified
-
-**Operator workflow after Phase 6:**
-
-```bash
-# Step 1 (new): run before every stream
-python main_preflight.py
-
-# Step 2: start post-stream listener
-python main_post_stream.py --poll-interval 5
-
-# Step 3: start stream monitor (one terminal only)
-python main_streamlab.py --handoff
-
-# Step 4: run the stream in OBS, stop when done
-# Miktos closes the session automatically
-```
-
-**Seal criteria:**
-
-- [ ] All checks implemented and independently testable
-- [ ] `main_preflight.py` runs end-to-end and exits 0 on a real pre-stream setup
-- [ ] All 52 prior tests pass unmodified
-- [ ] 8+ new tests
-- [ ] Dry-run: `python main_preflight.py --dry-run` works without OBS or credentials
+**Invariant:** No engine/ changes. No changes to any existing Phase 1–5 file.
+`PreFlightChecker` is a domain-layer class. All 52 prior tests pass unmodified.
 
 ---
 
