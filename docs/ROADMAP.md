@@ -299,8 +299,63 @@ tests/test_phase_6_preflight.py  ← 14 new tests
 
 ---
 
-## Future Phases (not yet scoped)
+## Pre-Phase 7 — Operational Hardening 🔜 NEXT
 
-- **Phase 7:** Operations dashboard frontend (Stage 1 — session visibility)
-- **Phase 8:** Zoom/Epiphan scenario (separate domain adapter)
-- **Phase 9:** Multi-user / cloud deployment
+**Target:** Before the next production stream.
+**Classification:** Not a numbered phase. Scripts and minor improvements only.
+**Branch:** `hardening/operational-scripts`
+
+Four scripts that reduce per-stream friction and prevent the known failure modes
+from recurring at daily/weekly streaming frequency.
+
+| Script | What it does |
+|---|---|
+| `scripts/prepare_session.py` | Prompts for event_name + video_ids, updates session_config.yaml |
+| `scripts/run_session.py` | Single launcher: pre-flight → post-stream → monitor, enforces correct order |
+| `scripts/clear_inbox.py` | Safely moves stale pending messages to delivered/, logs to message.log |
+| `scripts/clean_sessions.py` | Archives hex-UUID test sessions, leaves production sessions untouched |
+
+**Post-hardening workflow:**
+
+```bash
+python scripts/prepare_session.py   # update event_name + video_ids
+python scripts/run_session.py       # pre-flight + starts everything
+# Stream in OBS — stop when done. Session closes automatically.
+```
+
+---
+
+## Phase 7 — Operations Dashboard 🔜 PLANNED
+
+**Depends on:** Hardening complete + 3 clean production sessions.
+
+### Phase 7a — Post-Session HTML Report
+
+A new optional Stage 4 worker (`report_worker.py`) that generates
+`data/sessions/<session_name>/session_report.html` after each session closes.
+
+Contents: slot table (✅/❌ with timing), files produced, YouTube links,
+transcript word count, warnings. Self-contained HTML — no server required.
+
+### Phase 7b — Live Terminal Status View
+
+A `rich`-based terminal panel showing real-time stage progress during
+the session: pre-flight result, stream state, stage completion, final table.
+
+---
+
+## Phase 8 — Zoom/Epiphan Scenario 🔜 PLANNED
+
+**Depends on:** Phase 7 complete + 10 clean production sessions total.
+
+New domain adapter for the Zoom/Epiphan Pearl production scenario:
+live French-language translator, sign language coverage, multiple sources,
+Epiphan hardware switching. Separate from the OBS domain — shares the engine.
+
+Not yet scoped in detail. Scoping begins after Phase 7a is operational.
+
+---
+
+## Phase 9 — Multi-User / Cloud Deployment 🔜 FUTURE
+
+Not yet scoped. Depends on Phase 8 and commercial validation of the product.
