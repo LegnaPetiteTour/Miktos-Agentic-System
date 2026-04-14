@@ -98,7 +98,7 @@ class TranscriptWorker:
                 response = requests.post(
                     self._ELEVENLABS_URL,
                     headers={"xi-api-key": api_key},
-                    files={"audio": audio_file},
+                    files={"file": audio_file},
                     data={
                         "model_id": "scribe_v1",
                         "language_code": language_code,
