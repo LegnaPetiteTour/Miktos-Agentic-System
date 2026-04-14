@@ -218,7 +218,9 @@ Message log (2026-04-14T05:04:18Z UTC):
 
 **Completed:** 2026-04-14
 **Commit:** `7a12e05` (PR #22)
-**Tests:** 67/67 passing, 0 skipped
+**Tests:** 66 passed, 1 skipped — pytest collects 67 items; the 1 skipped is
+`tests/test_streamlab_domain.py::test_obs_connection_live`, which requires a
+live OBS WebSocket and has been conditionally skipped since Phase 3.
 
 **Command to run before every stream:**
 
