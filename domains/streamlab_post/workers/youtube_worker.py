@@ -13,6 +13,7 @@ Stage 3 FR: set metadata (title_fr, description_fr from TranslationWorker)
 """
 
 import os
+import time
 from datetime import datetime, timedelta, timezone
 
 
@@ -135,37 +136,80 @@ class YouTubeWorker:
                     "success": False,
                     "error": "Neither video_id nor channel_id provided",
                 }
+            # Use the channel's uploads playlist rather than search() — the
+            # uploads playlist updates within seconds of a stream ending,
+            # whereas the search index can lag 10–60 minutes for new VODs.
+            # Retry up to 10 times with 60-second delays (up to ~10 minutes).
+            max_attempts = 10
+            retry_delay = 60  # seconds between attempts
+            video_id = ""
+            last_error = ""
+            uploads_playlist_id = ""
+            # Resolve uploads playlist ID once (cached across retries)
             try:
-                six_hours_ago = (
-                    datetime.now(timezone.utc) - timedelta(hours=6)
-                ).strftime("%Y-%m-%dT%H:%M:%SZ")
-                search_response = (
-                    youtube.search()
-                    .list(
-                        channelId=channel_id,
-                        type="video",
-                        order="date",
-                        maxResults=5,
-                        publishedAfter=six_hours_ago,
-                        part="id,snippet",
-                    )
+                ch_response = (
+                    youtube.channels()
+                    .list(part="contentDetails", id=channel_id)
                     .execute()
                 )
-                items = search_response.get("items", [])
-                if not items:
-                    return {
-                        "success": False,
-                        "error": (
-                            f"No videos found on channel {channel_id} "
-                            f"in the last 6 hours"
-                        ),
-                    }
-                video_id = items[0]["id"]["videoId"]
+                ch_items = ch_response.get("items", [])
+                if ch_items:
+                    uploads_playlist_id = (
+                        ch_items[0]
+                        .get("contentDetails", {})
+                        .get("relatedPlaylists", {})
+                        .get("uploads", "")
+                    )
             except Exception as exc:
-                return {
-                    "success": False,
-                    "error": f"YouTube search failed: {exc}",
-                }
+                last_error = f"YouTube channel lookup failed: {exc}"
+
+            if not uploads_playlist_id:
+                last_error = last_error or (
+                    f"Could not resolve uploads playlist for channel {channel_id}"
+                )
+                return {"success": False, "error": last_error}
+
+            six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
+            for attempt in range(max_attempts):
+                if attempt > 0:
+                    time.sleep(retry_delay)
+                try:
+                    pl_response = (
+                        youtube.playlistItems()
+                        .list(
+                            playlistId=uploads_playlist_id,
+                            part="snippet",
+                            maxResults=5,
+                        )
+                        .execute()
+                    )
+                    for item in pl_response.get("items", []):
+                        snippet = item.get("snippet", {})
+                        published_str = snippet.get("publishedAt", "")
+                        try:
+                            published_at = datetime.fromisoformat(
+                                published_str.replace("Z", "+00:00")
+                            )
+                        except ValueError:
+                            continue
+                        if published_at >= six_hours_ago:
+                            video_id = (
+                                snippet.get("resourceId", {}).get("videoId", "")
+                            )
+                            if video_id:
+                                break
+                    if video_id:
+                        break
+                    last_error = (
+                        f"No recent videos found in uploads playlist for "
+                        f"channel {channel_id} "
+                        f"(attempt {attempt + 1}/{max_attempts})"
+                    )
+                except Exception as exc:
+                    last_error = f"YouTube playlist lookup failed: {exc}"
+                    break
+            if not video_id:
+                return {"success": False, "error": last_error}
 
         # Update video metadata and visibility
         try:

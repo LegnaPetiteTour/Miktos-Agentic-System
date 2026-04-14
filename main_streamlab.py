@@ -95,10 +95,10 @@ def parse_args() -> argparse.Namespace:
 # ---------------------------------------------------------------------------
 
 def _has_recording_stopped(final_state: RunState) -> bool:
-    """Return True if recording_stopped or stream_down alert is approved."""
+    """Return True if a recording_stopped alert is approved."""
     actions = final_state.get("proposed_actions", [])
     return any(
-        a.get("category") in ("recording_stopped", "stream_down")
+        a.get("category") == "recording_stopped"
         for a in actions
     )
 
