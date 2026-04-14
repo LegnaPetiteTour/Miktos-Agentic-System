@@ -26,7 +26,6 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 import yaml
 
 from domains.streamlab_post.pre_flight.checks import (
