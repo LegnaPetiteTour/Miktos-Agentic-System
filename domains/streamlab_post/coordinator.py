@@ -287,12 +287,22 @@ class PostStreamCoordinator:
                     "mp3_path":            audio_result.get("mp3_path", ""),
                     "video_id_en":         en_result.get("video_id", ""),
                     "title_en":            en_result.get("title", ""),
-                    "video_id_fr":         stage3_results.get("youtube_fr", {}).get("video_id", ""),
-                    "title_fr":            translate_result.get("title_fr", ""),
-                    "transcript_path":     transcript_result.get("transcript_path", ""),
+                    "video_id_fr":         stage3_results.get(
+                        "youtube_fr", {}
+                    ).get("video_id", ""),
+                    "title_fr":            translate_result.get(
+                        "title_fr", ""
+                    ),
+                    "transcript_path":     transcript_result.get(
+                        "transcript_path", ""
+                    ),
                     "word_count":          transcript_result.get("word_count", 0),
-                    "detected_languages":  transcript_result.get("detected_languages", []),
-                    "final_folder":        rename_result.get("final_folder", str(output_dir)),
+                    "detected_languages":  transcript_result.get(
+                        "detected_languages", []
+                    ),
+                    "final_folder":        rename_result.get(
+                        "final_folder", str(output_dir)
+                    ),
                     "slots":               all_results,
                     "dry_run":             dry_run,
                 },
