@@ -325,7 +325,7 @@ python scripts/run_session.py       # pre-flight + starts everything
 
 ---
 
-## Phase 7 — Operations Dashboard
+## Phase 7 — Operations Dashboard ✅ COMPLETE
 
 ### Phase 7a — Post-Session HTML Report ✅ COMPLETE
 
@@ -339,18 +339,27 @@ Contents: slot pipeline table (✅/❌/— with detail), files produced with siz
 YouTube links (EN + FR), transcript preview, overall status badge.
 Self-contained HTML — no server required, opens in any browser.
 
-### Phase 7b — Live Terminal Status View 🔜 NEXT
+### Phase 7b — Live Terminal Status View ✅ COMPLETE
 
-**Depends on:** Phase 7a complete (done).
+**Completed:** 2026-04-15
+**Commit:** `9b7d14e` (PR #30)
+**Tests:** 94 passed, 1 skipped
 
-A `rich`-based terminal panel showing real-time stage progress during
-the session: pre-flight result, stream state, stage completion, final table.
+`rich`-based terminal panel (`scripts/session_status.py`) showing real-time
+stage progress during the session: pre-flight result, stream state, per-slot
+status (pending / running / ok / failed / skipped), session completion line.
+
+Integrated into `scripts/run_session.py` with a graceful `ImportError` fallback
+— raw stdout always printed; display is additive and non-blocking.
+
+New dependency: `rich>=13.0`.
 
 ---
 
 ## Phase 8 — Zoom/Epiphan Scenario 🔜 PLANNED
 
-**Depends on:** Phase 7 complete + 10 clean production sessions total.
+**Depends on:** Phase 7 complete ✅ + 10 clean production sessions total.
+**Current session count:** 2 of 10 (sessions `_003` and `_005`, 2026-04-15).
 
 New domain adapter for the Zoom/Epiphan Pearl production scenario:
 live French-language translator, sign language coverage, multiple sources,
