@@ -169,7 +169,10 @@ class StatusDisplay:
             for slot in slots:
                 status = self._slots.get(slot, "pending")
                 bar = _STATUS_DISPLAY.get(status, status)
-                stage_label = Text(f"Stage {stage_num}", style="bold") if first else Text("")
+                stage_label = (
+                    Text(f"Stage {stage_num}", style="bold") if first
+                    else Text("")
+                )
                 first = False
 
                 if status == "ok":
@@ -188,7 +191,10 @@ class StatusDisplay:
             table.add_section()
             table.add_row(
                 Text(""),
-                Text(f"✅ Session complete — report: {self._done_message}", style="green"),
+                Text(
+                    f"✅ Session complete — report: {self._done_message}",
+                    style="green",
+                ),
                 Text(""),
                 Text(""),
             )
