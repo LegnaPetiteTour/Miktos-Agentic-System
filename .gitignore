@@ -38,6 +38,7 @@ data/messages/subscriptions.json
 
 # Session artifacts (runtime output)
 data/sessions/*/
+data/sessions/archive/
 
 # Phase 5 — post-stream domain runtime config
 domains/streamlab_post/config/session_config.yaml

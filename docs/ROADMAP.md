@@ -309,7 +309,7 @@ Four scripts that reduce per-stream friction and prevent the known failure modes
 from recurring at daily/weekly streaming frequency.
 
 | Script | What it does |
-|---|---|
+| --- | --- |
 | `scripts/prepare_session.py` | Prompts for event_name + video_ids, updates session_config.yaml |
 | `scripts/run_session.py` | Single launcher: pre-flight → post-stream → monitor, enforces correct order |
 | `scripts/clear_inbox.py` | Safely moves stale pending messages to delivered/, logs to message.log |
