@@ -3,10 +3,11 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
-import yaml
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scripts.prepare_session import run
+
+import yaml  # noqa: E402
+
+from scripts.prepare_session import run  # noqa: E402
 
 
 def _write_config(tmp_path: Path) -> Path:

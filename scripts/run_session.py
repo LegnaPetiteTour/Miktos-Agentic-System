@@ -26,6 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 def _forward_output(proc: subprocess.Popen) -> None:
     """Forward subprocess stdout to our terminal (runs in daemon thread)."""
+    assert proc.stdout is not None
     for line in proc.stdout:
         print(line.decode(), end="", flush=True)
 

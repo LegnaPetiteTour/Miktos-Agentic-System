@@ -67,4 +67,3 @@ def test_aborting_leaves_inbox_unchanged(tmp_path):
     rc = _run(tmp_path, agent, dry_run=False, confirm="n")
     assert rc == 0
     assert len(list(pending.glob("*.json"))) == 1
-

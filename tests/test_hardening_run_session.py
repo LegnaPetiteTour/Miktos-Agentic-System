@@ -4,7 +4,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scripts.run_session import run
+
+from scripts.run_session import run  # noqa: E402
 
 
 def _make_pre_flight(fail: bool):
