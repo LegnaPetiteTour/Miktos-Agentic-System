@@ -33,6 +33,7 @@ from domains.streamlab_post.workers.audio_worker import AudioExtractWorker
 from domains.streamlab_post.workers.backup_worker import BackupVerificationWorker
 from domains.streamlab_post.workers.notify_worker import NotificationWorker
 from domains.streamlab_post.workers.rename_worker import FileRenameWorker
+from domains.streamlab_post.workers.report_worker import ReportWorker
 from domains.streamlab_post.workers.transcript_worker import TranscriptWorker
 from domains.streamlab_post.workers.translation_worker import TranslationWorker
 from domains.streamlab_post.workers.youtube_worker import YouTubeWorker
@@ -272,6 +273,28 @@ class PostStreamCoordinator:
                     ),
                     "body_template": notification_cfg.get("body_template", ""),
                     "dry_run": dry_run,
+                },
+            },
+            "report": {
+                "worker": ReportWorker(),
+                "required": False,
+                "payload": {
+                    "event_name":          event_name,
+                    "session_date":        session_date,
+                    "session_id":          session_id,
+                    "duration_seconds":    backup_result.get("duration_seconds", 0),
+                    "file_size_bytes":     backup_result.get("file_size_bytes", 0),
+                    "mp3_path":            audio_result.get("mp3_path", ""),
+                    "video_id_en":         en_result.get("video_id", ""),
+                    "title_en":            en_result.get("title", ""),
+                    "video_id_fr":         stage3_results.get("youtube_fr", {}).get("video_id", ""),
+                    "title_fr":            translate_result.get("title_fr", ""),
+                    "transcript_path":     transcript_result.get("transcript_path", ""),
+                    "word_count":          transcript_result.get("word_count", 0),
+                    "detected_languages":  transcript_result.get("detected_languages", []),
+                    "final_folder":        rename_result.get("final_folder", str(output_dir)),
+                    "slots":               all_results,
+                    "dry_run":             dry_run,
                 },
             },
         }
