@@ -8,8 +8,6 @@ import sys
 import types
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -104,7 +102,9 @@ class TestFallbackWhenRichAbsent:
         broken_rich.__getattr__ = _raise  # type: ignore[attr-defined]
         monkeypatch.setitem(sys.modules, "rich", broken_rich)
         for submod in ("rich.live", "rich.table", "rich.text", "rich.console"):
-            monkeypatch.setitem(sys.modules, submod, None)  # type: ignore[call-overload]
+            monkeypatch.setitem(  # type: ignore[call-overload]
+                sys.modules, submod, None
+            )
 
         try:
             import importlib
