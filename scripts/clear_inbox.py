@@ -36,8 +36,8 @@ def _read_summary(path: Path) -> tuple[str, str, str]:
         ts = msg.get("timestamp", "")[:20].replace(" ", "T")
         if not ts.endswith("Z"):
             ts = ts + "Z"
-        event = msg.get("event_type", "unknown")
-        sender = msg.get("sender", "unknown")
+        event = msg.get("message_type", "unknown")
+        sender = msg.get("from_agent", "unknown")
         return ts, event, sender
     except Exception:
         return "unknown", "unknown", "unknown"

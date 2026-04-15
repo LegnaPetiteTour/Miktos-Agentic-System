@@ -15,8 +15,8 @@ def _setup(tmp_path: Path, agent: str, n_messages: int = 0) -> Path:
     for i in range(n_messages):
         msg = {
             "timestamp": "2026-04-13T22:53:14Z",
-            "event_type": "recording_stopped",
-            "sender": "streamlab_monitor",
+            "message_type": "recording_stopped",
+            "from_agent": "streamlab_monitor",
         }
         (pending / f"msg{i}.json").write_text(json.dumps(msg))
     return pending
