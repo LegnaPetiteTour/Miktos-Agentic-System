@@ -55,9 +55,9 @@ _RE_REPORT_PATH = re.compile(r"report[:\s]+([^\s]+\.html)", re.IGNORECASE)
 # Map slot name → stage number
 _SLOT_STAGE: dict[str, int] = {
     "backup_verify": 1, "youtube_en": 1, "audio_extract": 1,
-    "translate": 2,
-    "transcript": 3, "youtube_fr": 3,
-    "file_rename": 4, "notify": 4, "report": 4,
+    "translate": 2, "transcript": 2,
+    "youtube_fr": 3, "file_rename": 3,
+    "notify": 4, "report": 4,
 }
 
 

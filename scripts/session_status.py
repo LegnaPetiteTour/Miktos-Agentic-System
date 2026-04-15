@@ -20,9 +20,9 @@ except ImportError:
 # Canonical slot order (matches coordinator Stage 1–4 definitions)
 _STAGE_SLOTS: dict[int, list[str]] = {
     1: ["backup_verify", "youtube_en", "audio_extract"],
-    2: ["translate"],
-    3: ["transcript", "youtube_fr"],
-    4: ["file_rename", "notify", "report"],
+    2: ["translate", "transcript"],
+    3: ["youtube_fr", "file_rename"],
+    4: ["notify", "report"],
 }
 
 _STATUS_DISPLAY: dict[str, str] = {
