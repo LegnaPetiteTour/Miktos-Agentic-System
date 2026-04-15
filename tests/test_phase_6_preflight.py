@@ -300,9 +300,8 @@ def test_checker_dry_run_all_ok() -> None:
     results = checker.run(dry_run=True)
 
     assert len(results) > 0
-    assert all(r["status"] == "ok" for r in results), (
-        f"Expected all ok in dry-run, got: {[(r['name'], r['status']) for r in results]}"
-    )
+    failures = [(r["name"], r["status"]) for r in results if r["status"] != "ok"]
+    assert not failures, f"Expected all ok in dry-run, got: {failures}"
 
 
 # ---------------------------------------------------------------------------
