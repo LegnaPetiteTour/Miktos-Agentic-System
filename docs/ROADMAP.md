@@ -299,11 +299,11 @@ tests/test_phase_6_preflight.py  ← 14 new tests
 
 ---
 
-## Pre-Phase 7 — Operational Hardening 🔜 NEXT
+## Pre-Phase 7 — Operational Hardening ✅ COMPLETE
 
-**Target:** Before the next production stream.
 **Classification:** Not a numbered phase. Scripts and minor improvements only.
-**Branch:** `hardening/operational-scripts`
+**Commit:** `afa3ba9` (PR #26)
+**Tests:** 82 passed, 1 skipped
 
 Four scripts that reduce per-stream friction and prevent the known failure modes
 from recurring at daily/weekly streaming frequency.
@@ -325,19 +325,23 @@ python scripts/run_session.py       # pre-flight + starts everything
 
 ---
 
-## Phase 7 — Operations Dashboard 🔜 PLANNED
+## Phase 7 — Operations Dashboard
 
-**Depends on:** Hardening complete + 3 clean production sessions.
+### Phase 7a — Post-Session HTML Report ✅ COMPLETE
 
-### Phase 7a — Post-Session HTML Report
+**Commit:** `05b28fa` (PR #28)
+**Tests:** 88 passed, 1 skipped
 
-A new optional Stage 4 worker (`report_worker.py`) that generates
-`data/sessions/<session_name>/session_report.html` after each session closes.
+Optional Stage 4 worker (`report_worker.py`) added to `PostStreamCoordinator`.
+Generates `{session_name}_report.html` in the session folder after each closure.
 
-Contents: slot table (✅/❌ with timing), files produced, YouTube links,
-transcript word count, warnings. Self-contained HTML — no server required.
+Contents: slot pipeline table (✅/❌/— with detail), files produced with sizes,
+YouTube links (EN + FR), transcript preview, overall status badge.
+Self-contained HTML — no server required, opens in any browser.
 
-### Phase 7b — Live Terminal Status View
+### Phase 7b — Live Terminal Status View 🔜 NEXT
+
+**Depends on:** Phase 7a complete (done).
 
 A `rich`-based terminal panel showing real-time stage progress during
 the session: pre-flight result, stream state, stage completion, final table.
