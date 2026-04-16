@@ -356,19 +356,83 @@ New dependency: `rich>=13.0`.
 
 ---
 
-## Phase 8 — Zoom/Epiphan Scenario 🔜 PLANNED
+## Phase 8 — Epiphan Pearl Domain Adapter ✅ COMPLETE
 
-**Depends on:** Phase 7 complete ✅ + 10 clean production sessions total.
-**Current session count:** 2 of 10 (sessions `_003` and `_005`, 2026-04-15).
+**Completed:** 2026-04-16
+**Branch:** `phase-8/epiphan-pearl`
 
-New domain adapter for the Zoom/Epiphan Pearl production scenario:
-live French-language translator, sign language coverage, multiple sources,
-Epiphan hardware switching. Separate from the OBS domain — shares the engine.
+### Phase 8a — Pearl Monitor + Post-Stream Automation ✅
 
-Not yet scoped in detail. Scoping begins after Phase 7a is operational.
+**Commit:** `1e095c3`
+**Tests:** 103 passed, 1 skipped
+
+Proves the engine is genuinely multi-domain: Epiphan Pearl plugs into the
+same engine and post-stream pipeline as OBS with zero engine changes.
+
+- [x] `domains/epiphan/tools/pearl_client.py` — REST v2.0 client, HTTP Basic auth, chunked download
+- [x] `domains/epiphan/tools/pearl_monitor.py` — EpiphanMonitorTool (recording + streaming health)
+- [x] `domains/epiphan/tools/alert_classifier.py` — classify_alert for Pearl alert items
+- [x] `domains/epiphan/config/thresholds.yaml` + `pearl_config.example.yaml`
+- [x] `domains/streamlab_post/workers/recording_download_worker.py` — Pre-Stage 1 pull from Pearl
+- [x] `main_epiphan.py` — outer loop, `--recorder` flag, edge-triggered handoff
+- [x] `scripts/prepare_session.py` — extended with hardware selector + Pearl channel_en/fr prompts
+- [x] `scripts/run_session.py` — routes to `main_epiphan.py` or `main_streamlab.py` by hardware
+
+**Bugs caught during live commissioning (all fixed):**
+
+1. OBS pre-flight blocking epiphan sessions → `checker.py` skips OBS check for `hardware: epiphan`
+2. Pearl API state strings wrong (`"recording"` → `"started"`, publisher path nested)
+3. `str(Path("")) == "."` bypass — epiphan download guard never fired
+4. `post.wait(5)` killed pipeline before completion → now `post.wait(300)`
+5. Ctrl+C SIGINT propagated to post-stream subprocess → `start_new_session=True`
+
+**Live proof — 3 clean Pearl sessions confirmed on disk:**
+
+```text
+2026-04-16_Pearl-Test-001_001   174.71 MB recording   14.83 MB MP3   ✅ report
+2026-04-16_Pearl-Test-002_001   174.71 MB recording   14.83 MB MP3   ✅ report
+2026-04-16_Pearl-Test-003_001   174.71 MB recording   14.83 MB MP3   ✅ report
+```
+
+Pearl device: `192.168.2.45`, firmware 4.24.3.
+Test recorders: channel 2 (EN), channel 3 (FR).
+
+### Phase 8b — Live Layout Control ✅
+
+**Commit:** `190d957`
+**Tests:** 108 passed, 1 skipped
+
+Proves Miktos can issue commands to hardware during a live stream —
+not just react after it ends.
+
+- [x] `scripts/pearl_control.py` — 3-subcommand CLI for live layout switching
+- [x] `domains/epiphan/tools/pearl_client.py` — `get_layouts()` + `get_active_layout()` added
+- [x] `tests/test_phase_8b_layout_control.py` — 5 tests
+
+**CLI:**
+
+```bash
+python scripts/pearl_control.py layouts --channel 2            # list layouts, mark active
+python scripts/pearl_control.py switch  --channel 2 --layout speaker   # fuzzy name match
+python scripts/pearl_control.py switch  --channel 2 --layout 3         # exact ID
+python scripts/pearl_control.py status                         # all channels
+python scripts/pearl_control.py status  --channel 2            # one channel
+```
+
+Name resolution: exact ID → exact name (case-insensitive) → substring match.
+Unknown layout returns an error with available names — API never called.
+
+**Architecture invariant confirmed:** `grep -r 'from engine.graph' domains/epiphan/` → no output.
+Engine unchanged across both sub-phases.
 
 ---
 
-## Phase 9 — Multi-User / Cloud Deployment 🔜 FUTURE
+## Phase 9 — Production Cockpit 🔜 NEXT
 
-Not yet scoped. Depends on Phase 8 and commercial validation of the product.
+**Depends on:** Phase 8 complete ✅ + 5 more clean production sessions (OBS or Pearl).
+**Gate:** 5 sessions to be run before Phase 9 begins.
+
+Unifies both hardware domains (OBS + Pearl) into a single terminal panel —
+the operator's production cockpit for live bilingual streams.
+
+Not yet scoped in detail.
