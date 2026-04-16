@@ -204,12 +204,28 @@ def run(config_path: Path | None, poll_interval: int) -> int:
         pass
     finally:
         # Step 4 — Cleanup
+        # Wait for the post-stream processor to finish its current pipeline run
+        # before terminating.  The pipeline (download → Stage 1-4) can take
+        # several minutes; killing after 5s would leave an empty session folder.
         if post.poll() is None:
-            post.send_signal(signal.SIGTERM)
+            print(
+                "\nWaiting for post-stream pipeline to finish"
+                " (Ctrl+C again to force-quit)…"
+            )
             try:
-                post.wait(timeout=5)
+                post.wait(timeout=300)        # up to 5 min
             except subprocess.TimeoutExpired:
-                post.kill()
+                post.send_signal(signal.SIGTERM)
+                try:
+                    post.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    post.kill()
+            except KeyboardInterrupt:
+                post.send_signal(signal.SIGTERM)
+                try:
+                    post.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    post.kill()
         if display is not None:
             display.stop()
         print("\nSession ended. Post-stream listener stopped.")
