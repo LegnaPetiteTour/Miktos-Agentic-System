@@ -100,10 +100,10 @@ def test_pearl_client_download_recording(tmp_path):
 def test_epiphan_monitor_healthy():
     mock_client = MagicMock(spec=PearlClient)
     mock_client.get_recorder_status.return_value = {
-        "result": {"state": "recording"}
+        "result": {"state": "started"}
     }
     mock_client.get_channel_publisher_status.return_value = {
-        "result": [{"state": "publishing"}]
+        "result": [{"id": "1", "type": "rtmp", "status": {"state": "started", "started": True}}]
     }
 
     monitor = EpiphanMonitorTool(
@@ -125,10 +125,10 @@ def test_epiphan_monitor_healthy():
 def test_epiphan_monitor_recording_stopped():
     mock_client = MagicMock(spec=PearlClient)
     mock_client.get_recorder_status.return_value = {
-        "result": {"state": "idle"}  # not "recording"
+        "result": {"state": "stopped"}  # not "started"
     }
     mock_client.get_channel_publisher_status.return_value = {
-        "result": [{"state": "publishing"}]
+        "result": [{"id": "1", "type": "rtmp", "status": {"state": "started", "started": True}}]
     }
 
     monitor = EpiphanMonitorTool(

@@ -89,10 +89,10 @@ class EpiphanMonitorTool(BaseTool):
         # ── Recording state ──────────────────────────────────────────────
         try:
             rec_status = self._client.get_recorder_status(self._recorder_id)
-            # Pearl returns {"status": "ok", "result": {"state": "recording"}}
+            # Pearl returns {"status": "ok", "result": {"state": "started"}}
             result = rec_status.get("result", {})
             state = result.get("state", "")
-            recording_active = state == "recording"
+            recording_active = state == "started"
         except requests.RequestException:
             recording_active = False
 
@@ -113,8 +113,11 @@ class EpiphanMonitorTool(BaseTool):
             # Pearl returns list of publisher status objects
             result = pub_status.get("result", [])
             publishers = result if isinstance(result, list) else []
+            # Each publisher has a nested "status" sub-object:
+            # {"id": "1", "type": "rtmp", "status": {"state": "started", ...}}
             stream_active = any(
-                p.get("state") == "publishing" for p in publishers
+                p.get("status", {}).get("state") == "started"
+                for p in publishers
             )
         except requests.RequestException:
             stream_active = False
