@@ -102,6 +102,28 @@ class PearlClient:
         )
         resp.raise_for_status()
 
+    def get_layouts(self, channel_id: str) -> list[dict]:
+        """GET /api/channels/{cid}/layouts → list of {id, name} for the channel."""
+        resp = requests.get(
+            f"{self._base}/api/channels/{channel_id}/layouts",
+            auth=self._auth,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("result", [])
+
+    def get_active_layout(self, channel_id: str) -> dict:
+        """GET /api/channels/{cid}/layouts/active → currently active layout {id, name}."""
+        resp = requests.get(
+            f"{self._base}/api/channels/{channel_id}/layouts/active",
+            auth=self._auth,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("result", {})
+
     def switch_layout(self, channel_id: str, layout_id: str) -> None:
         """PUT /api/channels/{cid}/layouts/active → activate a layout."""
         resp = requests.put(
