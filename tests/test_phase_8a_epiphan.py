@@ -1,7 +1,7 @@
 """
 Phase 8a tests — Epiphan Pearl domain adapter.
 
-Eight CI-friendly tests (no live Pearl device required).
+Nine CI-friendly tests (no live Pearl device required).
 
 Tests:
   1. test_pearl_client_get_channels       — mock GET → channel list
@@ -12,6 +12,8 @@ Tests:
   6. test_recording_download_worker_success — mock client → success result
   7. test_recording_download_worker_dry_run — dry_run=True → no network, success
   8. test_recording_download_worker_never_raises — bad host → failure dict, no raise
+  9. test_coordinator_epiphan_pre_stage1  — hardware:epiphan wires download result
+                                            into pipeline (no NameError)
 """
 
 from pathlib import Path
@@ -227,3 +229,76 @@ def test_recording_download_worker_never_raises(monkeypatch):
     assert result["success"] is False
     assert "error" in result
     # No exception propagated
+
+
+# ---------------------------------------------------------------------------
+# 9. Coordinator — hardware:epiphan wires download result into pipeline
+#    Verifies the NameError bug fix: all_results must be initialized before
+#    the Pre-Stage 1 block, not after.
+# ---------------------------------------------------------------------------
+
+def test_coordinator_epiphan_pre_stage1(tmp_path, monkeypatch):
+    """
+    When session_config has hardware:epiphan and no file_path in payload,
+    PostStreamCoordinator must run RecordingDownloadWorker before Stage 1
+    and record the result in all_results — without raising NameError.
+
+    All downstream workers are patched to dry_run no-ops so the test
+    requires no real files or network.
+    """
+    from domains.streamlab_post.coordinator import PostStreamCoordinator
+
+    fake_file = str(tmp_path / "pearl_recording.mp4")
+    Path(fake_file).write_bytes(b"fake")
+
+    session_config = {
+        "hardware": "epiphan",
+        "event_name": "Test Event",
+        "pearl": {
+            "host": "192.168.2.45",
+            "channel_en": "1",
+            "download_dir": str(tmp_path),
+        },
+        "recording": {},
+        "youtube": {},
+        "elevenlabs": {},
+        "notification": {},
+    }
+
+    dl_success = {
+        "success": True,
+        "file_path": fake_file,
+        "file_size_bytes": 4,
+    }
+
+    with patch(
+        "domains.streamlab_post.coordinator.RecordingDownloadWorker"
+    ) as mock_dl_cls, patch.object(
+        PostStreamCoordinator,
+        "_run_stage",
+        return_value={
+            "backup_verify": {"success": True},
+            "youtube_en": {"success": True, "title": "T", "description": "D"},
+            "audio_extract": {"success": True, "mp3_path": fake_file},
+        },
+    ):
+        mock_dl_cls.return_value.run.return_value = dl_success
+
+        coordinator = PostStreamCoordinator(
+            sessions_dir=str(tmp_path / "sessions")
+        )
+        artifact = coordinator.run(
+            payload={"dry_run": True},
+            session_config=session_config,
+        )
+
+    # RecordingDownloadWorker.run() was called once
+    mock_dl_cls.return_value.run.assert_called_once()
+
+    # Pre-Stage 1 result is present in the final artifact under "slots"
+    assert artifact.get("slots", {}).get(
+        "recording_download", {}
+    ).get("success") is True
+
+    # Coordinator did not error out (exit_reason is not an unexpected exception)
+    assert artifact.get("exit_reason") in ("success", "partial_failure")

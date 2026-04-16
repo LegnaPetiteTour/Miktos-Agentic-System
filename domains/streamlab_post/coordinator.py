@@ -107,6 +107,11 @@ class PostStreamCoordinator:
         # ──────────────────────────────────────────────────────────────
         # Pre-Stage 1 — Epiphan: download recording from Pearl
         # ──────────────────────────────────────────────────────────────
+        # Accumulated results — must be initialized before Pre-Stage 1
+        accumulated: dict[str, Any] = {}
+        all_results: dict[str, dict[str, Any]] = {}
+
+        # Pre-Stage 1 — Epiphan: download recording from Pearl before pipeline
         hardware = session_config.get("hardware", "obs")
         if hardware == "epiphan" and not file_path:
             pearl_cfg = session_config.get("pearl", {})
@@ -137,10 +142,6 @@ class PostStreamCoordinator:
                         + dl_result.get("error", "unknown")
                     ),
                 )
-
-        # Accumulated results — enriched after each stage
-        accumulated: dict[str, Any] = {}
-        all_results: dict[str, dict[str, Any]] = {}
 
         # ──────────────────────────────────────────────────────────────
         # Stage 1 — Parallel: backup_verify, youtube_en, audio_extract
