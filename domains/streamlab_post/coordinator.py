@@ -101,7 +101,11 @@ class PostStreamCoordinator:
                 )
                 file_path = str(candidates[0]) if candidates else ""
             else:
-                file_path = str(recordings_path)
+                # Only use recordings_path if it's a non-empty, non-trivial path.
+                # str(Path("")) == "." which is truthy but meaningless — keep ""
+                # so the epiphan hardware block can fire correctly.
+                rp_str = str(recordings_path)
+                file_path = rp_str if rp_str not in ("", ".") else ""
         dry_run = payload.get("dry_run", False)
 
         # ──────────────────────────────────────────────────────────────
