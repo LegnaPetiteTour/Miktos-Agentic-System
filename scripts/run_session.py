@@ -141,12 +141,16 @@ def run(config_path: Path | None, poll_interval: int) -> int:
         display.start()
 
     # Step 2 — Start post-stream listener
+    # start_new_session=True isolates the child from the terminal's process
+    # group so Ctrl+C (SIGINT) does not propagate; we send SIGTERM manually
+    # after the pipeline finishes or on timeout.
     post = subprocess.Popen(
         [sys.executable, str(REPO_ROOT / "main_post_stream.py"),
          "--poll-interval", str(poll_interval)],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         cwd=str(REPO_ROOT),
+        start_new_session=True,
     )
 
     if post.poll() is not None:
