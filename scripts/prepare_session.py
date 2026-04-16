@@ -6,6 +6,7 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -18,12 +19,6 @@ DEFAULT_CONFIG = (
     Path(__file__).resolve().parent.parent
     / "domains/streamlab_post/config/session_config.yaml"
 )
-
-MUTABLE_FIELDS = [
-    ("event_name", None),
-    ("youtube.en.video_id", ("youtube", "en", "video_id")),
-    ("youtube.fr.video_id", ("youtube", "fr", "video_id")),
-]
 
 
 def _get_nested(data: dict, keys: tuple) -> str:
@@ -67,6 +62,7 @@ def run(config_path: Path, dry_run: bool) -> int:
     fr_vid_current = _get_nested(data, ("youtube", "fr", "video_id"))
     hardware_current = data.get("hardware", "obs")
     _pearl_cfg = data.get("pearl", {}) if isinstance(data.get("pearl"), dict) else {}
+    pearl_host_current = _pearl_cfg.get("host", "") or os.getenv("PEARL_HOST", "")
     pearl_en_current = str(_pearl_cfg.get("channel_en", ""))
     pearl_fr_current = str(_pearl_cfg.get("channel_fr", ""))
 
@@ -76,6 +72,7 @@ def run(config_path: Path, dry_run: bool) -> int:
     print(f"  youtube.en.video_id: {en_vid_current!r}")
     print(f"  youtube.fr.video_id: {fr_vid_current!r}")
     if hardware_current == "epiphan":
+        print(f"  pearl.host:          {pearl_host_current!r}")
         print(f"  pearl.channel_en:    {pearl_en_current!r}")
         print(f"  pearl.channel_fr:    {pearl_fr_current!r}")
     print()
@@ -94,12 +91,17 @@ def run(config_path: Path, dry_run: bool) -> int:
     )
     new_event = _prompt("Event name", event_name_current, required=True)
     new_en_vid = _prompt("YouTube EN video_id", en_vid_current, required=False)
-    new_fr_vid = _prompt(
-        "YouTube FR video_id", fr_vid_current, required=False
-    )
+    new_fr_vid = _prompt("YouTube FR video_id", fr_vid_current, required=False)
+
+    new_pearl_host = pearl_host_current
     new_pearl_en = pearl_en_current
     new_pearl_fr = pearl_fr_current
+
     if new_hardware == "epiphan":
+        new_pearl_host = (
+            _prompt("Pearl host (IP address)", pearl_host_current, required=False)
+            or pearl_host_current
+        )
         new_pearl_en = (
             _prompt(
                 "Pearl channel_en (EN recorder ID)",
@@ -127,18 +129,20 @@ def run(config_path: Path, dry_run: bool) -> int:
         changes["youtube.en.video_id"] = (en_vid_current, new_en_vid)
     if new_fr_vid != fr_vid_current:
         changes["youtube.fr.video_id"] = (fr_vid_current, new_fr_vid)
-    if new_pearl_en != pearl_en_current:
-        changes["pearl.channel_en"] = (pearl_en_current, new_pearl_en)
-    if new_pearl_fr != pearl_fr_current:
-        changes["pearl.channel_fr"] = (pearl_fr_current, new_pearl_fr)
+    if new_hardware == "epiphan":
+        if new_pearl_host != pearl_host_current:
+            changes["pearl.host"] = (pearl_host_current, new_pearl_host)
+        if new_pearl_en != pearl_en_current:
+            changes["pearl.channel_en"] = (pearl_en_current, new_pearl_en)
+        if new_pearl_fr != pearl_fr_current:
+            changes["pearl.channel_fr"] = (pearl_fr_current, new_pearl_fr)
 
     if not changes:
         print("\nNo changes.")
-        return 0
-
-    print("\nChanges:")
-    for field, (old, new) in changes.items():
-        print(f"  {field}: {old!r} → {new!r}")
+    else:
+        print("\nChanges:")
+        for field, (old, new) in changes.items():
+            print(f"  {field}: {old!r} → {new!r}")
 
     answer = input("\nWrite? [y/N]: ").strip().lower()
     if answer != "y":
@@ -150,8 +154,13 @@ def run(config_path: Path, dry_run: bool) -> int:
     data["event_name"] = new_event
     _set_nested(data, ("youtube", "en", "video_id"), new_en_vid)
     _set_nested(data, ("youtube", "fr", "video_id"), new_fr_vid)
+
     if new_hardware == "epiphan":
         pearl_block = data.setdefault("pearl", {})
+        # Always write host explicitly so coordinator never falls back to default IP
+        pearl_block["host"] = new_pearl_host
+        pearl_block.setdefault("port", 80)
+        pearl_block.setdefault("download_dir", "~/Downloads/pearl-recordings")
         try:
             pearl_block["channel_en"] = int(new_pearl_en)
         except (ValueError, TypeError):
