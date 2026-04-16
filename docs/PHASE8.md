@@ -4,250 +4,118 @@
 **Vision:** Miktos as the operations hub above the stack — not replacing Pearl,
 but extracting its full power through a unified workflow.
 
-This spec governs two sub-phases with a gate between them.
-
 ---
 
-## Context: What Phase 8 Proves
-
-Phase 5 proved the post-stream pipeline works for one hardware backend (OBS).
-Phase 8 proves the engine is genuinely multi-domain: a second hardware backend
-(Epiphan Pearl) plugs into the same engine, uses the same post-stream workers,
-and the engine requires zero changes.
-
-Phase 8b then proves the second dimension of the vision: Miktos can issue
-commands to hardware during a live stream, not just react after it ends.
-
----
-
-## Pearl API Surface (confirmed from live device at 192.168.2.45)
-
-**Device confirmed:** Pearl-2, firmware 4.24.3
-**Swagger UI:** `http://192.168.2.45/swagger/` (REST API v2.0, OAS 3.0)
-
-### Modern REST API (v2.0) — preferred
-- Base URL: `http://{pearl_ip}/api/`
-- Auth: HTTP Basic Auth (`admin:{password}`)
-- JSON responses
-
-### Confirmed working endpoints
-
-```
-GET  /api/channels
-     → {"status":"ok","result":[{"id":"1","name":"Master-EN"}, ...]}
-
-GET  /api/recorders
-     → 11 recorders: same IDs as channels + {"id":"m1","multisource":true}
-
-GET  /api/recorders/{rid}/archive/files
-GET  /api/recorders/{rid}/archive/files/{fid}  ← download
-GET  /api/system/firmware
-GET  /api/system/ident
-GET  /api/channels/{cid}/publishers/status
-POST /api/channels/{cid}/publishers/control/start
-POST /api/channels/{cid}/publishers/control/stop
-PUT  /api/channels/{cid}/layouts/active
-GET  /api/inputs
-```
-
-### Live API state strings (corrected from commissioning 2026-04-16)
-
-These values were wrong in the initial spec. Corrected from live device behaviour:
-
-| Field | Wrong assumption | Actual value |
-|---|---|---|
-| Recorder active | `state == "recording"` | `state == "started"` |
-| Recorder stopped | `state == "stopped"` | `state == "stopped"` ✅ |
-| Publisher active | `result[n]["state"] == "publishing"` | `result[n]["status"]["state"] == "started"` |
-| Publisher stopped | — | `result[n]["status"]["state"] != "started"` |
-
-Publisher status is a **nested object**: `result` is a list, each item has a
-`"status"` key containing `{"state": "started"}` — not a flat `"state"` key.
-
-### Test recorder configuration (live device, 2026-04-16)
-
-| Field | Value |
-|---|---|
-| Test EN channel/recorder | `2` — "PIMR - Test Master-EN" |
-| Test FR channel/recorder | `3` — "PIMR - Test Master-FR" |
-| Production EN | `1` — "Master-EN" (inactive during testing) |
-| Production FR | `4` — "Master-FR" (inactive during testing) |
-
-`session_config.yaml` uses `channel_en: 2, channel_fr: 3` for all commissioning runs.
-
-### Environment variables
-
-```
-PEARL_HOST=192.168.2.45
-PEARL_PORT=80
-PEARL_PASSWORD=       # empty — no admin password set on this device
-```
-
----
-
-## Phase 8a — Pearl Monitor + Post-Stream Automation ✅ COMPLETE
+## Phase 8a ✅ COMPLETE
 
 **Completed:** 2026-04-16
-**Latest commit:** `1e095c3`
+**Latest commit after commissioning:** `1e095c3`
 **Tests:** 103 passed, 1 skipped
 
-### Files delivered
+See Phase 8a section in prior spec history for full detail.
+6 bugs found and fixed (1 by disk audit, 5 by live commissioning).
+3 clean Pearl sessions run 2026-04-16 to meet Phase 8b gate.
 
-| File | Description |
-|---|---|
-| `domains/epiphan/tools/pearl_client.py` | REST + legacy HTTP client, auth, chunked download |
-| `domains/epiphan/tools/pearl_monitor.py` | EpiphanMonitorTool — health → alert items |
-| `domains/epiphan/tools/alert_classifier.py` | classify_alert for Pearl alert items |
-| `domains/epiphan/config/thresholds.yaml` | Pearl health thresholds |
-| `domains/epiphan/config/pearl_config.example.yaml` | Connection + channel config reference |
-| `domains/streamlab_post/workers/recording_download_worker.py` | Pre-Stage 1 HTTP pull from Pearl |
-| `main_epiphan.py` | Entry point — outer loop, `--recorder` flag, edge-triggered handoff |
-| `scripts/prepare_session.py` | Extended with hardware selector + Pearl channel prompts |
-| `scripts/run_session.py` | Routes to `main_epiphan.py` or `main_streamlab.py` |
-| `domains/streamlab_post/coordinator.py` | Pre-Stage 1 Epiphan block |
-| `domains/streamlab_post/pre_flight/checker.py` | Skip OBS check when `hardware: epiphan` |
-| `tests/test_phase_8a_epiphan.py` | 9 tests |
-| `tests/test_hardening_prepare_session.py` | Fixed 3 tests for hardware prompt |
+---
 
-### Bugs — audit-caught before sealing
+## Phase 8b — Live Layout Control ✅ COMPLETE
 
-**`coordinator.py` NameError (caught by disk audit, fixed `77a2a7e`):**
-`all_results` referenced before initialization in the Pre-Stage 1 Epiphan block.
-Fixed by moving `accumulated`/`all_results` initialization before the block.
-Test `test_coordinator_epiphan_pre_stage1` added to cover this path.
+**Completed:** 2026-04-16
+**Commit:** `190d957`
+**Tests:** 108 passed, 1 skipped
 
-### Bugs — found during live commissioning (2026-04-16)
+### What was built
 
-Five bugs found across two live session attempts. All fixed before a clean run.
+**`scripts/pearl_control.py`** — 3 subcommands:
 
-**Bug 1 — `checker.py` crashed on OBS check for epiphan sessions (`3a2bdb2`):**
-`PreFlightChecker` unconditionally called `obs_check.run()` which tried to
-connect to OBS WebSocket. OBS is not running for Pearl sessions.
-Fix: read `session_config.yaml`, inject synthetic ✅ result when `hardware: epiphan`.
+```bash
+# List all layouts on a channel, marks the active one
+python scripts/pearl_control.py layouts --channel 2
 
-**Bug 2 — Wrong recorder state string in `pearl_monitor.py` (`3a2bdb2`):**
-Code checked `state == "recording"` — Pearl actually returns `"started"`.
-Fix: `state == "started"`.
+# Switch by name (fuzzy) or exact ID
+python scripts/pearl_control.py switch --channel 2 --layout speaker
+python scripts/pearl_control.py switch --channel 2 --layout 3
 
-**Bug 3 — Wrong publisher status path in `pearl_monitor.py` (`3a2bdb2`):**
-Code read `p.get("state")` — Pearl actually returns `p["status"]["state"]`.
-Fix: `p.get("status", {}).get("state") == "started"`.
+# Show active layout — one channel or all
+python scripts/pearl_control.py status
+python scripts/pearl_control.py status --channel 2
+```
 
-**Bug 4 — `str(Path("")) == "."` bypass in `coordinator.py` (`5f59720`):**
-Epiphan handoff payload has no `file_path` or `recordings_path` key.
-`Path("") → "."` → `"."` is truthy → `not file_path` was False →
-the `if hardware == "epiphan" and not file_path:` guard never fired.
-Fix: treat `"."` same as `""` — `rp_str if rp_str not in ("", ".") else ""`.
+Name resolution order: exact ID → exact name (case-insensitive) → substring match.
+Unknown layout returns a clear error with available names listed.
+`switch_layout` is never called if name resolution fails.
 
-**Bug 5 — `post.wait(timeout=5)` killed pipeline before completion (`fccaef0`):**
-`run_session.py` `finally` block sent SIGTERM to `main_post_stream.py` with
-only 5s timeout. Pearl recording download + 4-stage pipeline needs 60–120s+.
-Fix: `post.wait(timeout=300)`.
+**`pearl_client.py`** — 2 new methods:
 
-**Bug 6 — Ctrl+C SIGINT propagated to post-stream subprocess (`1e095c3`):**
-macOS propagates Ctrl+C to all child processes in the foreground group.
-`main_post_stream.py` received SIGINT and exited before polling its inbox.
-Fix: `start_new_session=True` in `subprocess.Popen` — shields the listener
-from terminal SIGINT.
+```python
+get_layouts(channel_id)        # GET /api/channels/{cid}/layouts
+get_active_layout(channel_id)  # GET /api/channels/{cid}/layouts/active
+```
+
+**`tests/test_phase_8b_layout_control.py`** — 5 tests:
+
+1. `test_layout_list_parsed` — mock layouts list, active marked correctly
+2. `test_layout_fuzzy_match` — substring / exact-ID / no-match branches
+3. `test_layout_switch_calls_api` — name resolved, `switch_layout` called with correct ID
+4. `test_layout_switch_unknown_returns_error` — error returned, API never called
+5. `test_status_shows_current_layout` — all channels shown with active layout name
 
 ### Architecture invariant confirmed
 
-```
-grep -r 'from engine.graph' domains/epiphan/  → (no output)
-```
-
-Engine unchanged. All 94 prior tests pass unmodified.
-
----
-
-## Correct Procedure for Pearl Sessions
-
-**Order matters. Follow exactly.**
-
-```
-1. On Pearl-2: start recording on the test channel
-2. python scripts/run_session.py
-3. Watch ticks — alerts=0 means recording active and healthy
-4. On Pearl-2: stop recording
-5. Terminal prints: → Published recording_stopped to N subscriber(s)
-6. Press Ctrl+C once
-7. Terminal prints: Waiting for post-stream pipeline to finish…
-8. DO NOT press Ctrl+C again — wait ~2-3 minutes
-9. Pipeline completes, session report prints, prompt returns
-10. Verify: data/sessions/{session_name}/ contains .mp4/.mov, .mp3, _report.html
-```
-
-**Common mistakes:**
-- Starting `run_session.py` when recording is already stopped →
-  `was_recording_active` never becomes True → handoff never fires
-- Pressing Ctrl+C twice → SIGINT propagated → pipeline killed mid-run
+- Engine unchanged
+- Layout switching is additive — no changes to `PostStreamCoordinator` or any worker
+- All 103 prior tests pass unmodified
+- `PearlClient` never stores credentials
 
 ---
 
-## Phase 8b — Live Layout Control 🔜 NEXT
+## Phase 8 ✅ COMPLETE
 
-**Depends on:** 3 clean Pearl sessions (0 of 3 complete as of 2026-04-16).
+Both sub-phases sealed. The system now has:
+- OBS domain: post-stream automation (reactive)
+- Pearl domain: post-stream automation + live layout control (active)
+- Two proven patterns: reactive and active
 
-### Objective
-
-`scripts/pearl_control.py` — CLI to switch Pearl layouts during a live stream.
-Stage 2 of the vision: Miktos moves from observer to coordinator.
-
-### API endpoint (confirmed from Swagger)
-
-```
-PUT /api/channels/{cid}/layouts/active
-Body: {"id": "{layout_id}"}
-```
-
-### CLI
-
-```bash
-python scripts/pearl_control.py layouts --channel 2
-python scripts/pearl_control.py switch --channel 2 --layout speaker
-python scripts/pearl_control.py switch --channel 3 --layout interpreter
-python scripts/pearl_control.py status
-```
-
-### Tests (`tests/test_phase_8b_layout_control.py`) — ~4 tests
-
-1. `test_layout_list_parsed`
-2. `test_layout_fuzzy_match`
-3. `test_layout_switch_calls_api`
-4. `test_status_shows_current_layout`
-
-### Seal criteria
-
-- Tests pass, prior tests unmodified
-- `layouts --channel 2` returns layout names from live Pearl-2
-- `switch --channel 2 --layout speaker` verified on Pearl-2 touch screen
-- No disruption to recording or streaming during switch
+**Gate to Phase 9:** 10 total clean sessions (currently 5 of 10).
 
 ---
 
-## Architecture Invariants
+## Pearl API Surface (confirmed from live device)
 
-- Engine unchanged across both sub-phases
-- No imports from `engine/graph/` in any new domain file
-- All prior tests pass unmodified
-- `PearlClient` never stores credentials — reads from env vars only
-- `RecordingDownloadWorker` never raises exceptions
-- Layout switching additive — no changes to `PostStreamCoordinator` or any existing worker
+**Device:** Pearl-2 at 192.168.2.45, firmware 4.24.3
+**REST API v2.0 base:** `http://{pearl_ip}/api/`
+**Swagger:** `http://192.168.2.45/swagger/`
+
+### Confirmed state strings (corrected from commissioning)
+
+| Property | Value |
+|---|---|
+| Recorder active | `"started"` |
+| Recorder stopped | `"stopped"` |
+| Publisher active | `result[n]["status"]["state"] == "started"` |
+
+### Test channel config
+
+| Field | Value |
+|---|---|
+| EN channel/recorder | `2` — PIMR Test Master-EN |
+| FR channel/recorder | `3` — PIMR Test Master-FR |
 
 ---
 
-## Pre-Implementation Gate: MET ✅ (2026-04-16)
+## What Phase 9 Becomes
 
-```
-GET /api/channels  → 200 OK, 10 channels
-GET /api/recorders → 200 OK, 11 recorders
-Legacy API confirmed: product_name=Pearl-2, firmware_version=4.24.3
-Swagger: http://192.168.2.45/swagger/ (REST API v2.0, OAS 3.0)
-RecordingDownloadWorker verified: 183 MB downloaded in 3.6s
-```
+With Phase 8 complete, Phase 9 is the production cockpit — the `rich` terminal
+interface from Phase 7b extended into a unified panel:
+- Hardware selector (OBS or Pearl)
+- Live health per domain
+- Current layout per Pearl channel
+- Layout switching via keypress
+- Post-stream stage progress
+
+Terminal-first. Web GUI (Stage 3 of vision) after Phase 9 validated.
 
 ---
 
-*Spec written 2026-04-15. API paths corrected 2026-04-16.*
-*Phase 8a sealed at 77a2a7e; commissioning bugs fixed through 1e095c3.*
-*6 bugs total: 1 caught by disk audit, 5 caught by live commissioning.*
+*Phase 8a sealed 2026-04-16 at 1e095c3, 103 passed.*
+*Phase 8b sealed 2026-04-16 at 190d957, 108 passed.*
