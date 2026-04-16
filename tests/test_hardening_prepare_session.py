@@ -30,7 +30,7 @@ def _write_config(tmp_path: Path) -> Path:
 
 def test_valid_input_writes_correct_fields(tmp_path):
     cfg_path = _write_config(tmp_path)
-    inputs = iter(["New-Event", "new_en_vid", "new_fr_vid", "y"])
+    inputs = iter(["", "New-Event", "new_en_vid", "new_fr_vid", "y"])
     with patch("builtins.input", side_effect=inputs):
         rc = run(cfg_path, dry_run=False)
     assert rc == 0
@@ -46,7 +46,7 @@ def test_valid_input_writes_correct_fields(tmp_path):
 def test_empty_event_name_rejected_then_accepted(tmp_path):
     cfg_path = _write_config(tmp_path)
     # First event_name empty (rejected), second valid
-    inputs = iter(["", "Valid-Event", "", "", "y"])
+    inputs = iter(["", "", "Valid-Event", "", "", "y"])
     with patch("builtins.input", side_effect=inputs):
         rc = run(cfg_path, dry_run=False)
     assert rc == 0
@@ -57,7 +57,7 @@ def test_empty_event_name_rejected_then_accepted(tmp_path):
 def test_enter_on_video_id_preserves_existing_value(tmp_path):
     cfg_path = _write_config(tmp_path)
     # Enter empty string for both video_ids → keeps existing
-    inputs = iter(["New-Event", "", "", "y"])
+    inputs = iter(["", "New-Event", "", "", "y"])
     with patch("builtins.input", side_effect=inputs):
         rc = run(cfg_path, dry_run=False)
     assert rc == 0

@@ -1,0 +1,6 @@
+# Pearl health monitoring thresholds
+
+poll_interval_seconds: 5
+
+stream:
+  disk_space_warning_gb: 10

@@ -32,6 +32,9 @@ from typing import Any
 from domains.streamlab_post.workers.audio_worker import AudioExtractWorker
 from domains.streamlab_post.workers.backup_worker import BackupVerificationWorker
 from domains.streamlab_post.workers.notify_worker import NotificationWorker
+from domains.streamlab_post.workers.recording_download_worker import (
+    RecordingDownloadWorker,
+)
 from domains.streamlab_post.workers.rename_worker import FileRenameWorker
 from domains.streamlab_post.workers.report_worker import ReportWorker
 from domains.streamlab_post.workers.transcript_worker import TranscriptWorker
@@ -100,6 +103,40 @@ class PostStreamCoordinator:
             else:
                 file_path = str(recordings_path)
         dry_run = payload.get("dry_run", False)
+
+        # ──────────────────────────────────────────────────────────────
+        # Pre-Stage 1 — Epiphan: download recording from Pearl
+        # ──────────────────────────────────────────────────────────────
+        hardware = session_config.get("hardware", "obs")
+        if hardware == "epiphan" and not file_path:
+            pearl_cfg = session_config.get("pearl", {})
+            dl_result = RecordingDownloadWorker().run({
+                "pearl_host": pearl_cfg.get("host", ""),
+                "pearl_recorder_id": str(
+                    pearl_cfg.get("channel_en", "1")
+                ),
+                "download_dir": pearl_cfg.get(
+                    "download_dir",
+                    "~/Downloads/pearl-recordings",
+                ),
+                "dry_run": dry_run,
+            })
+            all_results["recording_download"] = dl_result
+            if dl_result.get("success"):
+                file_path = dl_result.get("file_path", "")
+            else:
+                return self._build_artifact(
+                    session_id=session_id,
+                    output_dir=output_dir,
+                    event_name=event_name,
+                    session_date=session_date,
+                    all_results=all_results,
+                    exit_reason="partial_failure",
+                    failure_reason=(
+                        "recording_download failed: "
+                        + dl_result.get("error", "unknown")
+                    ),
+                )
 
         # Accumulated results — enriched after each stage
         accumulated: dict[str, Any] = {}

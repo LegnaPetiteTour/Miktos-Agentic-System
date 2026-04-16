@@ -15,6 +15,7 @@ import sys
 import threading
 from pathlib import Path
 
+import yaml
 from dotenv import load_dotenv
 
 from domains.streamlab_post.pre_flight.checker import PreFlightChecker
@@ -29,6 +30,10 @@ load_dotenv()
 
 # Repo root is one level up from scripts/
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+_SESSION_CONFIG = (
+    REPO_ROOT / "domains/streamlab_post/config/session_config.yaml"
+)
 
 
 # Patterns for extracting status updates from coordinator/worker log lines
@@ -158,11 +163,39 @@ def run(config_path: Path | None, poll_interval: int) -> int:
     print(f"✅  Post-stream listener started (PID {post.pid})")
     print("Starting stream monitor… (Ctrl+C to stop)\n")
 
-    # Step 3 — Stream monitor (foreground, blocks until OBS/operator stops it)
+    # Step 3 — Stream monitor (foreground, blocks until monitor stops)
+    # Determine hardware backend from session config
+    _hardware = "obs"
+    _pearl_cfg: dict = {}
+    try:
+        if _SESSION_CONFIG.exists():
+            with open(_SESSION_CONFIG) as _fh:
+                _sc = yaml.safe_load(_fh) or {}
+            _hardware = _sc.get("hardware", "obs")
+            _pearl_cfg = _sc.get("pearl", {}) if isinstance(
+                _sc.get("pearl"), dict
+            ) else {}
+    except Exception:
+        pass
+
+    if _hardware == "epiphan":
+        _monitor_script = "main_epiphan.py"
+        _monitor_args = [
+            "--handoff",
+            "--recorder", str(_pearl_cfg.get("channel_en", "1")),
+        ]
+    else:
+        _monitor_script = "main_streamlab.py"
+        _monitor_args = ["--handoff"]
+
     monitor = None
     try:
         monitor = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "main_streamlab.py"), "--handoff"],
+            [
+                sys.executable,
+                str(REPO_ROOT / _monitor_script),
+                *_monitor_args,
+            ],
             cwd=str(REPO_ROOT),
         )
         if display is not None:

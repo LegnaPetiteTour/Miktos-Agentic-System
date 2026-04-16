@@ -65,31 +65,72 @@ def run(config_path: Path, dry_run: bool) -> int:
     event_name_current = data.get("event_name", "")
     en_vid_current = _get_nested(data, ("youtube", "en", "video_id"))
     fr_vid_current = _get_nested(data, ("youtube", "fr", "video_id"))
+    hardware_current = data.get("hardware", "obs")
+    _pearl_cfg = data.get("pearl", {}) if isinstance(data.get("pearl"), dict) else {}
+    pearl_en_current = str(_pearl_cfg.get("channel_en", ""))
+    pearl_fr_current = str(_pearl_cfg.get("channel_fr", ""))
 
     print("\nCurrent values:")
+    print(f"  hardware:            {hardware_current!r}")
     print(f"  event_name:          {event_name_current!r}")
     print(f"  youtube.en.video_id: {en_vid_current!r}")
     print(f"  youtube.fr.video_id: {fr_vid_current!r}")
+    if hardware_current == "epiphan":
+        print(f"  pearl.channel_en:    {pearl_en_current!r}")
+        print(f"  pearl.channel_fr:    {pearl_fr_current!r}")
     print()
 
     if dry_run:
         print("Dry run — showing current values only. No changes made.")
         return 0
 
+    new_hardware = (
+        _prompt(
+            "Hardware backend [obs/epiphan]",
+            hardware_current,
+            required=False,
+        )
+        or hardware_current
+    )
     new_event = _prompt("Event name", event_name_current, required=True)
     new_en_vid = _prompt("YouTube EN video_id", en_vid_current, required=False)
     new_fr_vid = _prompt(
         "YouTube FR video_id", fr_vid_current, required=False
     )
+    new_pearl_en = pearl_en_current
+    new_pearl_fr = pearl_fr_current
+    if new_hardware == "epiphan":
+        new_pearl_en = (
+            _prompt(
+                "Pearl channel_en (EN recorder ID)",
+                pearl_en_current,
+                required=False,
+            )
+            or pearl_en_current
+        )
+        new_pearl_fr = (
+            _prompt(
+                "Pearl channel_fr (FR recorder ID)",
+                pearl_fr_current,
+                required=False,
+            )
+            or pearl_fr_current
+        )
 
     # Build diff
     changes = {}
+    if new_hardware != hardware_current:
+        changes["hardware"] = (hardware_current, new_hardware)
     if new_event != event_name_current:
         changes["event_name"] = (event_name_current, new_event)
     if new_en_vid != en_vid_current:
         changes["youtube.en.video_id"] = (en_vid_current, new_en_vid)
     if new_fr_vid != fr_vid_current:
         changes["youtube.fr.video_id"] = (fr_vid_current, new_fr_vid)
+    if new_pearl_en != pearl_en_current:
+        changes["pearl.channel_en"] = (pearl_en_current, new_pearl_en)
+    if new_pearl_fr != pearl_fr_current:
+        changes["pearl.channel_fr"] = (pearl_fr_current, new_pearl_fr)
 
     if not changes:
         print("\nNo changes.")
@@ -105,9 +146,20 @@ def run(config_path: Path, dry_run: bool) -> int:
         return 0
 
     # Apply
+    data["hardware"] = new_hardware
     data["event_name"] = new_event
     _set_nested(data, ("youtube", "en", "video_id"), new_en_vid)
     _set_nested(data, ("youtube", "fr", "video_id"), new_fr_vid)
+    if new_hardware == "epiphan":
+        pearl_block = data.setdefault("pearl", {})
+        try:
+            pearl_block["channel_en"] = int(new_pearl_en)
+        except (ValueError, TypeError):
+            pearl_block["channel_en"] = new_pearl_en
+        try:
+            pearl_block["channel_fr"] = int(new_pearl_fr)
+        except (ValueError, TypeError):
+            pearl_block["channel_fr"] = new_pearl_fr
 
     with open(config_path, "w") as fh:
         yaml.safe_dump(data, fh, allow_unicode=True, sort_keys=False)
