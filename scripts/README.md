@@ -3,7 +3,7 @@
 Operator scripts for daily stream workflow. Run from the repo root with `.venv/bin/python`.
 
 | Script | Purpose |
-|---|---|
+| --- | --- |
 | `prepare_session.py` | Prompt for event name + YouTube video IDs; writes `session_config.yaml`. Run before every stream. |
 | `run_session.py` | Single launcher: pre-flight → post-stream listener → stream monitor. Enforces correct startup order. |
 | `clear_inbox.py` | Safely moves stale pending messages to `delivered/`. Run if a previous session ended uncleanly. |
@@ -27,4 +27,3 @@ python scripts/run_session.py       # start on Pearl, monitor until recording st
 python scripts/pearl_control.py layouts --channel 2   # inspect layouts
 python scripts/pearl_control.py switch  --channel 2 --layout speaker
 ```
-
