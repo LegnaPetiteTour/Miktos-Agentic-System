@@ -103,6 +103,16 @@ def _update_display_from_line(display: "StatusDisplay", text: str) -> None:
         display.set_stream_state("done")
 
 
+def _kill_stale_listener() -> None:
+    """Kill any orphaned main_post_stream.py left over from a previous session."""
+    result = subprocess.run(
+        ["pkill", "-f", "main_post_stream.py"],
+        capture_output=True,
+    )
+    if result.returncode == 0:
+        print("  ⚠️  Killed stale main_post_stream.py from previous session.")
+
+
 def _forward_output(
     proc: subprocess.Popen, display: "StatusDisplay | None" = None
 ) -> None:
@@ -141,6 +151,10 @@ def run(config_path: Path | None, poll_interval: int) -> int:
         display.start()
 
     # Step 2 — Start post-stream listener
+    # Kill any stale instance before launching so it cannot consume the
+    # new session's messages before the fresh process can.
+    _kill_stale_listener()
+
     # start_new_session=True isolates the child from the terminal's process
     # group so Ctrl+C (SIGINT) does not propagate; we send SIGTERM manually
     # after the pipeline finishes or on timeout.
