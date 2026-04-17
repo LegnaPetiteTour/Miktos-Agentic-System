@@ -56,6 +56,10 @@ _RE_SLOT_RUNNING = re.compile(
     re.IGNORECASE,
 )
 _RE_REPORT_PATH = re.compile(r"report[:\s]+([^\s]+\.html)", re.IGNORECASE)
+# Epiphan monitor tick summary: "  [  5] ✅ exit=success | alerts=0 (approved=0, queued=0, ...)"
+_RE_TICK = re.compile(
+    r"\[\s*(\d+)\s*\].*?approved=(\d+).*?queued=(\d+)",
+)
 
 # Map slot name → stage number
 _SLOT_STAGE: dict[str, int] = {
@@ -68,6 +72,16 @@ _SLOT_STAGE: dict[str, int] = {
 
 def _update_display_from_line(display: "StatusDisplay", text: str) -> None:
     """Parse a log line and update the display state if patterns match."""
+    # Monitor tick + alert state
+    m = _RE_TICK.search(text)
+    if m:
+        tick = int(m.group(1))
+        approved = int(m.group(2))
+        queued = int(m.group(3))
+        alert = "critical" if approved > 0 else ("warning" if queued > 0 else "none")
+        display.set_tick(tick, alert=alert, approved=max(approved, queued))
+        return
+
     # Stream state
     tl = text.lower()
     if "monitoring" in tl or "armed" in tl:
@@ -143,10 +157,43 @@ def run(config_path: Path | None, poll_interval: int) -> int:
         print("\nPre-flight failed. Fix the above before streaming.")
         return 1
 
+    # Read session config once — used by both the display and the monitor step.
+    _hardware = "obs"
+    _pearl_cfg: dict = {}
+    try:
+        if _SESSION_CONFIG.exists():
+            with open(_SESSION_CONFIG) as _fh:
+                _sc = yaml.safe_load(_fh) or {}
+            _hardware = _sc.get("hardware", "obs")
+            _pearl_cfg = (
+                _sc.get("pearl", {})
+                if isinstance(_sc.get("pearl"), dict)
+                else {}
+            )
+    except Exception:
+        pass
+
+    # Build Pearl channel map for the cockpit display.
+    _ch_en = str(_pearl_cfg.get("channel_en", ""))
+    _ch_fr = str(_pearl_cfg.get("channel_fr", ""))
+    _pearl_channels: dict[str, str] = {}
+    if _hardware == "epiphan":
+        if _ch_en:
+            _pearl_channels[_ch_en] = "EN"
+        if _ch_fr:
+            _pearl_channels[_ch_fr] = "FR"
+
     # Initialise status display (no-op wrapper when rich is absent)
     display: "StatusDisplay | None" = None
     if _RICH_AVAILABLE:
-        display = StatusDisplay()
+        display = StatusDisplay(
+            hardware=_hardware,
+            pearl_host=_pearl_cfg.get("host", ""),
+            pearl_channels=_pearl_channels if _hardware == "epiphan" else None,
+            layout_log=REPO_ROOT / "data" / "logs" / "layout_log.jsonl"
+            if _hardware == "epiphan"
+            else None,
+        )
         display.set_preflight(True)
         display.start()
 
@@ -182,20 +229,6 @@ def run(config_path: Path | None, poll_interval: int) -> int:
     print("Starting stream monitor… (Ctrl+C to stop)\n")
 
     # Step 3 — Stream monitor (foreground, blocks until monitor stops)
-    # Determine hardware backend from session config
-    _hardware = "obs"
-    _pearl_cfg: dict = {}
-    try:
-        if _SESSION_CONFIG.exists():
-            with open(_SESSION_CONFIG) as _fh:
-                _sc = yaml.safe_load(_fh) or {}
-            _hardware = _sc.get("hardware", "obs")
-            _pearl_cfg = _sc.get("pearl", {}) if isinstance(
-                _sc.get("pearl"), dict
-            ) else {}
-    except Exception:
-        pass
-
     if _hardware == "epiphan":
         _monitor_script = "main_epiphan.py"
         _monitor_args = [

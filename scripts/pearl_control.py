@@ -25,13 +25,18 @@ Subcommands
 """
 
 import argparse
+import json
 import sys
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(dotenv_path=_REPO_ROOT / ".env")
+
+# Layout switch log — read by the cockpit display to show active layouts per channel.
+_LAYOUT_LOG = _REPO_ROOT / "data" / "logs" / "layout_log.jsonl"
 
 # Must import after load_dotenv so PearlClient picks up env vars.
 from domains.epiphan.tools.pearl_client import PearlClient  # noqa: E402
@@ -121,6 +126,19 @@ def cmd_switch(args: argparse.Namespace, client: PearlClient) -> int:
     layout_name = matched.get("name", layout_id)
     client.switch_layout(str(args.channel), layout_id)
     print(f"✅  Channel {args.channel} → layout '{layout_name}' (id={layout_id})")
+
+    # Log the switch so the cockpit display can show the active layout.
+    _LAYOUT_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(_LAYOUT_LOG, "a") as _lf:
+        _lf.write(
+            json.dumps({
+                "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "channel": str(args.channel),
+                "layout_id": layout_id,
+                "layout_name": layout_name,
+            }) + "\n"
+        )
+
     return 0
 
 
