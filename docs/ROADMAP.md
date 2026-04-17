@@ -287,7 +287,7 @@ python scripts/pearl_control.py switch --channel 2 --layout speaker
 ## Phase 9 — Production Cockpit ✅ COMPLETE
 
 **Completed:** 2026-04-17
-**Commit:** `e29c949` (PR #32)
+**Commit:** `6db849d` (PR #32)
 **Tests:** 108 passed, 1 skipped
 
 Unified `rich` terminal panel replacing the split-terminal workflow.
