@@ -15,6 +15,8 @@ Result dict shape:
 
 from pathlib import Path
 
+import yaml
+
 from domains.streamlab_post.pre_flight.checks import (
     obs_check,
     config_check,
@@ -22,6 +24,10 @@ from domains.streamlab_post.pre_flight.checks import (
     inbox_check,
     process_check,
     credentials_check,
+)
+
+_SESSION_CONFIG = (
+    Path(__file__).resolve().parent.parent / "config" / "session_config.yaml"
 )
 
 
@@ -50,9 +56,24 @@ class PreFlightChecker:
         """
         results: list[dict] = []
 
-        # Hard-failure checks — order matters: bail early if OBS is down,
-        # but we always run ALL checks and collect every result.
-        results.append(obs_check.run(dry_run=dry_run))
+        # Determine hardware backend — skip OBS check for epiphan sessions
+        hardware = "obs"
+        try:
+            cfg_file = Path(config_path) if config_path else _SESSION_CONFIG
+            with open(cfg_file) as fh:
+                _cfg = yaml.safe_load(fh) or {}
+            hardware = _cfg.get("hardware", "obs")
+        except Exception:
+            pass
+
+        if hardware == "epiphan":
+            results.append({
+                "name": "obs_connection",
+                "status": "ok",
+                "message": "OBS WebSocket — skipped (hardware: epiphan)",
+            })
+        else:
+            results.append(obs_check.run(dry_run=dry_run))
         results.append(config_check.run(dry_run=dry_run, config_path=config_path))
         results.append(path_check.run(dry_run=dry_run, config_path=config_path))
         results.append(inbox_check.run(dry_run=dry_run))

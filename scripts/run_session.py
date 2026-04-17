@@ -15,6 +15,7 @@ import sys
 import threading
 from pathlib import Path
 
+import yaml
 from dotenv import load_dotenv
 
 from domains.streamlab_post.pre_flight.checker import PreFlightChecker
@@ -29,6 +30,10 @@ load_dotenv()
 
 # Repo root is one level up from scripts/
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+_SESSION_CONFIG = (
+    REPO_ROOT / "domains/streamlab_post/config/session_config.yaml"
+)
 
 
 # Patterns for extracting status updates from coordinator/worker log lines
@@ -51,6 +56,10 @@ _RE_SLOT_RUNNING = re.compile(
     re.IGNORECASE,
 )
 _RE_REPORT_PATH = re.compile(r"report[:\s]+([^\s]+\.html)", re.IGNORECASE)
+# Epiphan monitor tick summary: "  [  5] ✅ exit=success | alerts=0 (approved=0, queued=0, ...)"
+_RE_TICK = re.compile(
+    r"\[\s*(\d+)\s*\].*?approved=(\d+).*?queued=(\d+)",
+)
 
 # Map slot name → stage number
 _SLOT_STAGE: dict[str, int] = {
@@ -63,6 +72,16 @@ _SLOT_STAGE: dict[str, int] = {
 
 def _update_display_from_line(display: "StatusDisplay", text: str) -> None:
     """Parse a log line and update the display state if patterns match."""
+    # Monitor tick + alert state
+    m = _RE_TICK.search(text)
+    if m:
+        tick = int(m.group(1))
+        approved = int(m.group(2))
+        queued = int(m.group(3))
+        alert = "critical" if approved > 0 else ("warning" if queued > 0 else "none")
+        display.set_tick(tick, alert=alert, approved=max(approved, queued))
+        return
+
     # Stream state
     tl = text.lower()
     if "monitoring" in tl or "armed" in tl:
@@ -98,6 +117,16 @@ def _update_display_from_line(display: "StatusDisplay", text: str) -> None:
         display.set_stream_state("done")
 
 
+def _kill_stale_listener() -> None:
+    """Kill any orphaned main_post_stream.py left over from a previous session."""
+    result = subprocess.run(
+        ["pkill", "-f", "main_post_stream.py"],
+        capture_output=True,
+    )
+    if result.returncode == 0:
+        print("  ⚠️  Killed stale main_post_stream.py from previous session.")
+
+
 def _forward_output(
     proc: subprocess.Popen, display: "StatusDisplay | None" = None
 ) -> None:
@@ -128,20 +157,61 @@ def run(config_path: Path | None, poll_interval: int) -> int:
         print("\nPre-flight failed. Fix the above before streaming.")
         return 1
 
+    # Read session config once — used by both the display and the monitor step.
+    _hardware = "obs"
+    _pearl_cfg: dict = {}
+    try:
+        if _SESSION_CONFIG.exists():
+            with open(_SESSION_CONFIG) as _fh:
+                _sc = yaml.safe_load(_fh) or {}
+            _hardware = _sc.get("hardware", "obs")
+            _pearl_cfg = (
+                _sc.get("pearl", {})
+                if isinstance(_sc.get("pearl"), dict)
+                else {}
+            )
+    except Exception:
+        pass
+
+    # Build Pearl channel map for the cockpit display.
+    _ch_en = str(_pearl_cfg.get("channel_en", ""))
+    _ch_fr = str(_pearl_cfg.get("channel_fr", ""))
+    _pearl_channels: dict[str, str] = {}
+    if _hardware == "epiphan":
+        if _ch_en:
+            _pearl_channels[_ch_en] = "EN"
+        if _ch_fr:
+            _pearl_channels[_ch_fr] = "FR"
+
     # Initialise status display (no-op wrapper when rich is absent)
     display: "StatusDisplay | None" = None
     if _RICH_AVAILABLE:
-        display = StatusDisplay()
+        display = StatusDisplay(
+            hardware=_hardware,
+            pearl_host=_pearl_cfg.get("host", ""),
+            pearl_channels=_pearl_channels if _hardware == "epiphan" else None,
+            layout_log=REPO_ROOT / "data" / "logs" / "layout_log.jsonl"
+            if _hardware == "epiphan"
+            else None,
+        )
         display.set_preflight(True)
         display.start()
 
     # Step 2 — Start post-stream listener
+    # Kill any stale instance before launching so it cannot consume the
+    # new session's messages before the fresh process can.
+    _kill_stale_listener()
+
+    # start_new_session=True isolates the child from the terminal's process
+    # group so Ctrl+C (SIGINT) does not propagate; we send SIGTERM manually
+    # after the pipeline finishes or on timeout.
     post = subprocess.Popen(
         [sys.executable, str(REPO_ROOT / "main_post_stream.py"),
          "--poll-interval", str(poll_interval)],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         cwd=str(REPO_ROOT),
+        start_new_session=True,
     )
 
     if post.poll() is not None:
@@ -158,11 +228,25 @@ def run(config_path: Path | None, poll_interval: int) -> int:
     print(f"✅  Post-stream listener started (PID {post.pid})")
     print("Starting stream monitor… (Ctrl+C to stop)\n")
 
-    # Step 3 — Stream monitor (foreground, blocks until OBS/operator stops it)
+    # Step 3 — Stream monitor (foreground, blocks until monitor stops)
+    if _hardware == "epiphan":
+        _monitor_script = "main_epiphan.py"
+        _monitor_args = [
+            "--handoff",
+            "--recorder", str(_pearl_cfg.get("channel_en", "1")),
+        ]
+    else:
+        _monitor_script = "main_streamlab.py"
+        _monitor_args = ["--handoff"]
+
     monitor = None
     try:
         monitor = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "main_streamlab.py"), "--handoff"],
+            [
+                sys.executable,
+                str(REPO_ROOT / _monitor_script),
+                *_monitor_args,
+            ],
             cwd=str(REPO_ROOT),
         )
         if display is not None:
@@ -171,12 +255,28 @@ def run(config_path: Path | None, poll_interval: int) -> int:
         pass
     finally:
         # Step 4 — Cleanup
+        # Wait for the post-stream processor to finish its current pipeline run
+        # before terminating.  The pipeline (download → Stage 1-4) can take
+        # several minutes; killing after 5s would leave an empty session folder.
         if post.poll() is None:
-            post.send_signal(signal.SIGTERM)
+            print(
+                "\nWaiting for post-stream pipeline to finish"
+                " (Ctrl+C again to force-quit)…"
+            )
             try:
-                post.wait(timeout=5)
+                post.wait(timeout=300)        # up to 5 min
             except subprocess.TimeoutExpired:
-                post.kill()
+                post.send_signal(signal.SIGTERM)
+                try:
+                    post.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    post.kill()
+            except KeyboardInterrupt:
+                post.send_signal(signal.SIGTERM)
+                try:
+                    post.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    post.kill()
         if display is not None:
             display.stop()
         print("\nSession ended. Post-stream listener stopped.")

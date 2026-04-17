@@ -1,11 +1,15 @@
 """
-session_status.py — Live terminal status display for run_session.py.
+session_status.py — Unified production cockpit display for run_session.py.
 
 Pure display utility: zero imports from domains/ or engine/.
 Falls back gracefully if rich is not installed.
 """
 
 from __future__ import annotations
+
+import json
+import time
+from pathlib import Path
 
 try:
     from rich.console import Console
@@ -41,14 +45,46 @@ _STREAM_STATE_DISPLAY: dict[str, str] = {
 }
 
 
-class StatusDisplay:
-    """Rich-backed live terminal panel for session progress."""
+def _fmt_elapsed(seconds: float) -> str:
+    """Format elapsed seconds as HH:MM:SS."""
+    h = int(seconds) // 3600
+    m = (int(seconds) % 3600) // 60
+    s = int(seconds) % 60
+    return f"{h:02d}:{m:02d}:{s:02d}"
 
-    def __init__(self) -> None:
-        """Set up the rich Live display. Does not start it yet."""
+
+class StatusDisplay:
+    """Rich-backed unified production cockpit for session progress."""
+
+    def __init__(
+        self,
+        hardware: str = "obs",
+        pearl_host: str = "",
+        pearl_channels: dict[str, str] | None = None,
+        layout_log: Path | None = None,
+    ) -> None:
+        """
+        Set up the rich Live display. Does not start it yet.
+
+        Args:
+            hardware:        'obs' or 'epiphan'
+            pearl_host:      Pearl device IP/hostname (shown in header)
+            pearl_channels:  Mapping of channel_id -> label, e.g. {'2': 'EN', '3': 'FR'}
+            layout_log:      Path to layout_log.jsonl written by pearl_control.py
+        """
+        self._hardware = hardware.lower()
+        self._pearl_host = pearl_host
+        self._pearl_channels: dict[str, str] = pearl_channels or {}
+        self._layout_log = layout_log
+
         self._preflight: bool | None = None
         self._stream_state: str = "armed"
         self._done_message: str = ""
+        self._tick: int = 0
+        self._alert: str = "none"       # none | warning | critical
+        self._approved_count: int = 0
+        self._start_time: float | None = None
+
         # slot_key -> status string
         self._slots: dict[str, str] = {}
         for slots in _STAGE_SLOTS.values():
@@ -72,6 +108,7 @@ class StatusDisplay:
 
     def start(self) -> None:
         """Begin rendering. Call before streaming starts."""
+        self._start_time = time.monotonic()
         if self._live is not None:
             self._live.start()
 
@@ -100,6 +137,15 @@ class StatusDisplay:
         self._stream_state = state
         self._refresh()
 
+    def set_tick(
+        self, tick: int, alert: str = "none", approved: int = 0
+    ) -> None:
+        """Update tick counter and alert state from the monitor loop output."""
+        self._tick = tick
+        self._alert = alert
+        self._approved_count = approved
+        self._refresh()
+
     def set_stage(self, stage: int, slot: str, status: str) -> None:
         """
         Update a slot row in the pipeline table.
@@ -116,6 +162,35 @@ class StatusDisplay:
         self._refresh()
 
     # ------------------------------------------------------------------
+    # Pearl layout log reader
+    # ------------------------------------------------------------------
+
+    def _read_pearl_layouts(self) -> dict[str, str]:
+        """
+        Read the last active layout per channel from layout_log.jsonl.
+        Returns {channel_id: layout_name}.
+        """
+        if not self._layout_log or not self._layout_log.exists():
+            return {}
+        layouts: dict[str, str] = {}
+        try:
+            for raw in self._layout_log.read_text().splitlines():
+                raw = raw.strip()
+                if not raw:
+                    continue
+                try:
+                    entry = json.loads(raw)
+                    cid = str(entry.get("channel", ""))
+                    name = entry.get("layout_name", entry.get("layout_id", "—"))
+                    if cid:
+                        layouts[cid] = name
+                except json.JSONDecodeError:
+                    continue
+        except OSError:
+            pass
+        return layouts
+
+    # ------------------------------------------------------------------
     # Internal rendering
     # ------------------------------------------------------------------
 
@@ -125,26 +200,46 @@ class StatusDisplay:
 
     def _build_table(self) -> "Table":
         if not _RICH_AVAILABLE:
-            # Return empty object; this path should not be reached
             raise RuntimeError("rich not available")
 
+        elapsed_str = (
+            _fmt_elapsed(time.monotonic() - self._start_time)
+            if self._start_time is not None
+            else "00:00:00"
+        )
+
         table = Table(
-            title="Miktos Session Monitor",
+            title="Miktos Production Cockpit",
             show_header=False,
             show_edge=True,
             padding=(0, 1),
         )
-        table.add_column("stage", style="dim", width=9)
-        table.add_column("slot", width=20)
-        table.add_column("bar", width=6)
-        table.add_column("status", width=20)
+        table.add_column("label", style="dim", width=18)
+        table.add_column("value", width=40)
 
-        # Header row — preflight + stream state
-        pf_icon = (
-            "✅" if self._preflight is True
-            else "❌" if self._preflight is False
-            else "…"
+        # ── Hardware header ──────────────────────────────────────────────
+        hw_label = "Epiphan Pearl" if self._hardware == "epiphan" else "OBS"
+        hw_suffix = f"  {self._pearl_host}" if self._pearl_host and self._hardware == "epiphan" else ""
+        table.add_row(
+            Text("Hardware", style="bold"),
+            Text(f"{hw_label}{hw_suffix}", style="bold cyan"),
         )
+        pf_icon = (
+            "✅ pre-flight passed" if self._preflight is True
+            else "❌ pre-flight FAILED" if self._preflight is False
+            else "… pre-flight pending"
+        )
+        pf_style = (
+            "green" if self._preflight is True
+            else "bold red" if self._preflight is False
+            else "dim"
+        )
+        table.add_row(Text(""), Text(pf_icon, style=pf_style))
+        table.add_section()
+
+        # ── Live health ───────────────────────────────────────────────────
+        table.add_row(Text("LIVE HEALTH", style="bold"), Text(""))
+
         stream_raw = _STREAM_STATE_DISPLAY.get(self._stream_state, self._stream_state)
         if self._stream_state == "live":
             stream_text = Text(stream_raw, style="bold green")
@@ -154,23 +249,46 @@ class StatusDisplay:
             stream_text = Text(stream_raw, style="green")
         else:
             stream_text = Text(stream_raw, style="dim")
+        table.add_row(Text("  Stream"), stream_text)
 
-        table.add_row(
-            Text("Pre-flight", style="bold"),
-            pf_icon,
-            Text("Stream", style="bold"),
-            stream_text,
-        )
+        tick_str = f"#{self._tick:>4}" if self._tick else "—"
+        table.add_row(Text("  Tick"), Text(tick_str, style="dim"))
+
+        if self._alert == "critical":
+            alert_text = Text(
+                f"🔴  {self._approved_count} alert(s) approved", style="bold red"
+            )
+        elif self._alert == "warning":
+            alert_text = Text(
+                f"⚠️   {self._approved_count} alert(s) queued", style="yellow"
+            )
+        else:
+            alert_text = Text("none", style="dim green")
+        table.add_row(Text("  Alert"), alert_text)
+        table.add_row(Text("  Elapsed"), Text(elapsed_str, style="dim"))
         table.add_section()
 
-        # Pipeline rows grouped by stage
+        # ── Pearl Layouts ─────────────────────────────────────────────────
+        if self._hardware == "epiphan" and self._pearl_channels:
+            table.add_row(Text("PEARL LAYOUTS", style="bold"), Text(""))
+            pearl_layouts = self._read_pearl_layouts()
+            for cid, clabel in sorted(self._pearl_channels.items()):
+                layout_name = pearl_layouts.get(cid, "—")
+                table.add_row(
+                    Text(f"  Ch {cid} ({clabel})"),
+                    Text(layout_name, style="cyan"),
+                )
+            table.add_section()
+
+        # ── Post-stream pipeline ──────────────────────────────────────────
+        table.add_row(Text("PIPELINE", style="bold"), Text(""))
         for stage_num, slots in _STAGE_SLOTS.items():
             first = True
             for slot in slots:
                 status = self._slots.get(slot, "pending")
                 bar = _STATUS_DISPLAY.get(status, status)
                 stage_label = (
-                    Text(f"Stage {stage_num}", style="bold") if first
+                    Text(f"  Stage {stage_num}", style="bold") if first
                     else Text("")
                 )
                 first = False
@@ -184,19 +302,20 @@ class StatusDisplay:
                 else:
                     bar_text = Text(bar, style="dim")
 
-                table.add_row(stage_label, slot, bar_text, Text(status, style="dim"))
+                row_val = Text()
+                row_val.append(f"{slot:<22}", style="default")
+                row_val.append_text(bar_text)
+                table.add_row(stage_label, row_val)
 
-        # Completion message
+        # ── Session complete ──────────────────────────────────────────────
         if self._done_message:
             table.add_section()
             table.add_row(
                 Text(""),
                 Text(
-                    f"✅ Session complete — report: {self._done_message}",
+                    f"✅  Session complete — {self._done_message}  •  {elapsed_str}",
                     style="green",
                 ),
-                Text(""),
-                Text(""),
             )
 
         return table

@@ -1,0 +1,40 @@
+# Pearl connection and channel configuration reference.
+# Copy to session_config.yaml and fill in the values before a Pearl session.
+
+# Pearl connection
+pearl:
+  host: ""              # Pearl-2 IP address (e.g. 192.168.2.45)
+  port: 80
+  model: "pearl-2"      # pearl-2 | pearl-mini | pearl-nano | pearl-nexus
+  channel_en: ""        # Pearl channel ID for EN stream
+  channel_fr: ""        # Pearl channel ID for FR stream
+  download_dir: "~/Downloads/pearl-recordings"
+
+# NOTE: Channel and recorder IDs are identical on Pearl-2.
+# channel_en is also the recorder ID for EN recordings.
+# IDs are NOT sequential — verify with:
+#   curl -u admin: 'http://{pearl_ip}/api/channels'
+#   curl -u admin: 'http://{pearl_ip}/api/recorders'
+#
+# Reference device (192.168.2.45):
+#   "1"  = Master-EN          "4"  = Master-FR
+#   "8"  = OPH Standard EN    "9"  = OPH Standard FR
+#   "13" = A DAY FR           "14" = ADay EN
+#   "19" = BACKUP EN          "20" = BACKUP FR
+#   "m1" = Recorder 1 (multitrack, multisource:true)
+
+# Session identity (same fields as OBS workflow)
+hardware: "epiphan"
+event_name: ""
+stream_date: ""
+
+# YouTube (same as OBS workflow — workers unchanged)
+youtube:
+  en:
+    channel_id: ""
+    video_id: ""
+    playlist_id: ""
+  fr:
+    channel_id: ""
+    video_id: ""
+    playlist_id: ""

@@ -32,6 +32,9 @@ from typing import Any
 from domains.streamlab_post.workers.audio_worker import AudioExtractWorker
 from domains.streamlab_post.workers.backup_worker import BackupVerificationWorker
 from domains.streamlab_post.workers.notify_worker import NotificationWorker
+from domains.streamlab_post.workers.recording_download_worker import (
+    RecordingDownloadWorker,
+)
 from domains.streamlab_post.workers.rename_worker import FileRenameWorker
 from domains.streamlab_post.workers.report_worker import ReportWorker
 from domains.streamlab_post.workers.transcript_worker import TranscriptWorker
@@ -98,12 +101,51 @@ class PostStreamCoordinator:
                 )
                 file_path = str(candidates[0]) if candidates else ""
             else:
-                file_path = str(recordings_path)
+                # Only use recordings_path if it's a non-empty, non-trivial path.
+                # str(Path("")) == "." which is truthy but meaningless — keep ""
+                # so the epiphan hardware block can fire correctly.
+                rp_str = str(recordings_path)
+                file_path = rp_str if rp_str not in ("", ".") else ""
         dry_run = payload.get("dry_run", False)
 
-        # Accumulated results — enriched after each stage
+        # ──────────────────────────────────────────────────────────────
+        # Pre-Stage 1 — Epiphan: download recording from Pearl
+        # ──────────────────────────────────────────────────────────────
+        # Accumulated results — must be initialized before Pre-Stage 1
         accumulated: dict[str, Any] = {}
         all_results: dict[str, dict[str, Any]] = {}
+
+        # Pre-Stage 1 — Epiphan: download recording from Pearl before pipeline
+        hardware = session_config.get("hardware", "obs")
+        if hardware == "epiphan" and not file_path:
+            pearl_cfg = session_config.get("pearl", {})
+            dl_result = RecordingDownloadWorker().run({
+                "pearl_host": pearl_cfg.get("host", ""),
+                "pearl_recorder_id": str(
+                    pearl_cfg.get("channel_en", "1")
+                ),
+                "download_dir": pearl_cfg.get(
+                    "download_dir",
+                    "~/Downloads/pearl-recordings",
+                ),
+                "dry_run": dry_run,
+            })
+            all_results["recording_download"] = dl_result
+            if dl_result.get("success"):
+                file_path = dl_result.get("file_path", "")
+            else:
+                return self._build_artifact(
+                    session_id=session_id,
+                    output_dir=output_dir,
+                    event_name=event_name,
+                    session_date=session_date,
+                    all_results=all_results,
+                    exit_reason="partial_failure",
+                    failure_reason=(
+                        "recording_download failed: "
+                        + dl_result.get("error", "unknown")
+                    ),
+                )
 
         # ──────────────────────────────────────────────────────────────
         # Stage 1 — Parallel: backup_verify, youtube_en, audio_extract

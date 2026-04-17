@@ -50,6 +50,7 @@ def test_post_process_immediate_exit_triggers_failure():
     mock_post.stdout = iter([])
 
     with patch("scripts.run_session.PreFlightChecker", checker), \
+         patch("scripts.run_session.subprocess.run"), \
          patch("scripts.run_session.subprocess.Popen", return_value=mock_post):
         rc = run(config_path=None, poll_interval=5)
     assert rc == 1

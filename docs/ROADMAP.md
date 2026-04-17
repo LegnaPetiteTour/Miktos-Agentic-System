@@ -183,16 +183,6 @@ Stage 3 (parallel, optional):  youtube_fr      file_rename
 Stage 4 (optional):            notify
 ```
 
-**PR #20 bug fixes (found during live validation 2026-04-13):**
-
-1. `_has_recording_stopped()` included `stream_down` — obs-multi-rtmp plugin
-   keeps `stream_down` permanently present; edge trigger never armed.
-   Fix: check only `recording_stopped`.
-2. `youtube_fr` used YouTube search API — lags 10–60 minutes for new VODs.
-   Fix: switched to uploads playlist API (near-instant).
-3. `transcript` multipart field named `"audio"` instead of `"file"`.
-   Fix: renamed per ElevenLabs Scribe API spec.
-
 **Live proof — session `2026-04-13_Miktos-Demo_005` (confirmed on disk):**
 
 ```text
@@ -202,14 +192,6 @@ Stage 3:  youtube_fr ✅    file_rename ✅
 Stage 4:  notify ✅ (skipped cleanly)
 
 Session closed in 7 seconds. No human involvement.
-
-Files on disk:
-  2026-04-13_Miktos-Demo_005_EN.mov   305.77 MB
-  2026-04-13_Miktos-Demo_005.mp3       11.37 MB
-
-Message log (2026-04-14T05:04:18Z UTC):
-  PUBLISHED  streamlab_monitor -> [3 subscriber(s)]  recording_stopped
-  ACKNOWLEDGED  post_stream_processor  (6 seconds)
 ```
 
 ---
@@ -218,84 +200,13 @@ Message log (2026-04-14T05:04:18Z UTC):
 
 **Completed:** 2026-04-14
 **Commit:** `7a12e05` (PR #22)
-**Tests:** 66 passed, 1 skipped — pytest collects 67 items; the 1 skipped is
-`tests/test_streamlab_domain.py::test_obs_connection_live`, which requires a
-live OBS WebSocket and has been conditionally skipped since Phase 3.
+**Tests:** 66 passed, 1 skipped
 
 **Command to run before every stream:**
 
 ```bash
 python main_preflight.py
 ```
-
-Catches configuration, credential, process, and connectivity problems
-before they propagate into post-stream failures.
-
-**Six checks:**
-
-```text
-1. OBS WebSocket       — can the monitor connect?          hard fail
-2. session_config.yaml — required fields non-empty?        hard fail
-3. Recording path      — exists and writable?              hard fail
-4. Pending inbox       — stale messages present?           hard fail
-5. Duplicate process   — main_streamlab --handoff running? hard fail
-6. Credentials         — tokens valid, API keys set?       soft warn
-    YOUTUBE_REFRESH_TOKEN_EN  — refresh attempted
-    YOUTUBE_REFRESH_TOKEN_FR  — refresh attempted
-    GOOGLE_TRANSLATE_API_KEY  — env var present?
-    ELEVENLABS_API_KEY        — env var present?
-    youtube.en.video_id       — blank = auto-discovery
-    youtube.fr.video_id       — blank = auto-discovery
-    Teams webhook URL         — blank = notify skips
-```
-
-**Output format:**
-
-```text
-  Miktos Pre-Flight Check
-  ───────────────────────────────────────
-  ✅  OBS WebSocket — reachable at localhost:4455
-  ✅  session_config.yaml — all required fields present
-  ✅  Recording path — exists and writable: /Users/…/Movies
-  ✅  Inbox — empty
-  ✅  Duplicate process — none found
-  ✅  YOUTUBE_REFRESH_TOKEN_EN — valid (refresh succeeded)
-  ✅  YOUTUBE_REFRESH_TOKEN_FR — valid (refresh succeeded)
-  ✅  GOOGLE_TRANSLATE_API_KEY — set
-  ✅  ELEVENLABS_API_KEY — set
-  ✅  youtube.en.video_id — set (vz9ecJuLhLs)
-  ⚠️   youtube.fr.video_id — blank (auto-discovery will be used)
-  ⚠️   Teams webhook URL — blank (notify slot will skip)
-  ───────────────────────────────────────
-  READY TO STREAM  (2 warning(s), 0 errors)
-```
-
-**File structure added:**
-
-```text
-domains/streamlab_post/pre_flight/
-  __init__.py
-  checker.py              ← PreFlightChecker
-  checks/
-    __init__.py
-    obs_check.py
-    config_check.py
-    path_check.py
-    inbox_check.py
-    process_check.py
-    credentials_check.py
-main_preflight.py         ← entry point (--dry-run flag)
-tests/test_phase_6_preflight.py  ← 14 new tests
-```
-
-**Live proof — 2026-04-14 (this machine):**
-
-- `--dry-run`: all 12 checks ✅, exit 0
-- Live run: OBS ✅, config ✅, path ✅, inbox ✅, credentials ✅, caught stale
-  `main_streamlab.py --handoff` process (PID 35558) ❌ → exit 1 (correct)
-
-**Invariant:** No engine/ changes. No changes to any existing Phase 1–5 file.
-`PreFlightChecker` is a domain-layer class. All 52 prior tests pass unmodified.
 
 ---
 
@@ -305,23 +216,12 @@ tests/test_phase_6_preflight.py  ← 14 new tests
 **Commit:** `afa3ba9` (PR #26)
 **Tests:** 82 passed, 1 skipped
 
-Four scripts that reduce per-stream friction and prevent the known failure modes
-from recurring at daily/weekly streaming frequency.
-
 | Script | What it does |
 | --- | --- |
 | `scripts/prepare_session.py` | Prompts for event_name + video_ids, updates session_config.yaml |
 | `scripts/run_session.py` | Single launcher: pre-flight → post-stream → monitor, enforces correct order |
 | `scripts/clear_inbox.py` | Safely moves stale pending messages to delivered/, logs to message.log |
 | `scripts/clean_sessions.py` | Archives hex-UUID test sessions, leaves production sessions untouched |
-
-**Post-hardening workflow:**
-
-```bash
-python scripts/prepare_session.py   # update event_name + video_ids
-python scripts/run_session.py       # pre-flight + starts everything
-# Stream in OBS — stop when done. Session closes automatically.
-```
 
 ---
 
@@ -332,12 +232,8 @@ python scripts/run_session.py       # pre-flight + starts everything
 **Commit:** `05b28fa` (PR #28)
 **Tests:** 88 passed, 1 skipped
 
-Optional Stage 4 worker (`report_worker.py`) added to `PostStreamCoordinator`.
-Generates `{session_name}_report.html` in the session folder after each closure.
-
-Contents: slot pipeline table (✅/❌/— with detail), files produced with sizes,
-YouTube links (EN + FR), transcript preview, overall status badge.
-Self-contained HTML — no server required, opens in any browser.
+Optional Stage 4 worker (`report_worker.py`) generates `{session_name}_report.html`
+in the session folder after each closure. Self-contained HTML, no server required.
 
 ### Phase 7b — Live Terminal Status View ✅ COMPLETE
 
@@ -345,30 +241,76 @@ Self-contained HTML — no server required, opens in any browser.
 **Commit:** `9b7d14e` (PR #30)
 **Tests:** 94 passed, 1 skipped
 
-`rich`-based terminal panel (`scripts/session_status.py`) showing real-time
-stage progress during the session: pre-flight result, stream state, per-slot
-status (pending / running / ok / failed / skipped), session completion line.
-
-Integrated into `scripts/run_session.py` with a graceful `ImportError` fallback
-— raw stdout always printed; display is additive and non-blocking.
-
-New dependency: `rich>=13.0`.
+`rich`-based terminal panel showing real-time stage progress. Integrated into
+`run_session.py` with graceful fallback. New dependency: `rich>=13.0`.
 
 ---
 
-## Phase 8 — Zoom/Epiphan Scenario 🔜 PLANNED
+## Phase 8 — Epiphan Pearl Domain Adapter ✅ COMPLETE
 
-**Depends on:** Phase 7 complete ✅ + 10 clean production sessions total.
-**Current session count:** 2 of 10 (sessions `_003` and `_005`, 2026-04-15).
+**Completed:** 2026-04-16
+**Branch:** `phase-8/epiphan-pearl`
 
-New domain adapter for the Zoom/Epiphan Pearl production scenario:
-live French-language translator, sign language coverage, multiple sources,
-Epiphan hardware switching. Separate from the OBS domain — shares the engine.
+### Phase 8a — Pearl Monitor + Post-Stream Automation ✅
 
-Not yet scoped in detail. Scoping begins after Phase 7a is operational.
+**Commit:** `1e095c3`
+**Tests:** 103 passed, 1 skipped
+
+Proves the engine is genuinely multi-domain. Pearl plugs into the same engine
+and post-stream pipeline as OBS with zero engine changes.
+
+- [x] `domains/epiphan/` — PearlClient, EpiphanMonitorTool, alert_classifier
+- [x] `recording_download_worker.py` — Pre-Stage 1 HTTP pull from Pearl
+- [x] `main_epiphan.py` — outer loop, edge-triggered handoff
+- [x] `session_config.yaml` extended with `hardware: epiphan` discriminator
+- [x] `prepare_session.py` / `run_session.py` — hardware-aware routing
+
+**Live proof — 3 clean Pearl sessions on disk (2026-04-16)**
+
+### Phase 8b — Live Layout Control ✅
+
+**Commit:** `190d957`
+**Tests:** 108 passed, 1 skipped
+
+Proves Miktos can issue commands to hardware during a live stream.
+
+- [x] `scripts/pearl_control.py` — layouts / switch / status subcommands
+- [x] `pearl_client.py` — `get_layouts()` + `get_active_layout()` added
+- [x] Name resolution: exact ID → exact name → substring match
+
+```bash
+python scripts/pearl_control.py switch --channel 2 --layout speaker
+```
 
 ---
 
-## Phase 9 — Multi-User / Cloud Deployment 🔜 FUTURE
+## Phase 9 — Production Cockpit ✅ COMPLETE
 
-Not yet scoped. Depends on Phase 8 and commercial validation of the product.
+**Completed:** 2026-04-17
+**Commit:** `e29c949` (PR #32)
+**Tests:** 108 passed, 1 skipped
+
+Unified `rich` terminal panel replacing the split-terminal workflow.
+All prior behaviour preserved — Phase 9 is purely additive.
+
+- [x] `scripts/session_status.py` — `StatusDisplay` extended with hardware context:
+  - Hardware header: `Epiphan Pearl {host}` or `OBS`; pre-flight indicator
+  - Live health: stream state, tick counter `#0042`, alert level, elapsed `HH:MM:SS`
+  - Pearl layouts section (epiphan only): active layout per channel, live from `layout_log.jsonl`
+  - Pipeline: Stages 1–4 per-slot status (pending / running / ✅ / ❌ / —)
+  - Completion row: session folder path + elapsed time
+- [x] `scripts/run_session.py` — config read unified, `_RE_TICK` regex, hardware-aware init
+- [x] `scripts/pearl_control.py` — layout log writer appended on every switch
+- [x] `_kill_stale_listener()` — orphaned `main_post_stream.py` cleanup on startup
+
+**Gate met:** 10 clean production sessions on disk before Phase 9 began
+(5 × OBS, 5 × Pearl, 2026-04-15 through 2026-04-17).
+
+---
+
+## Phase 10 — Web GUI / Unified Operating Surface 🔜 FUTURE
+
+**Depends on:** Phase 9 validated in production + commercial validation.
+
+Stage 3 of the vision: Miktos as the primary interface, with OBS, Pearl,
+Zoom, YouTube, ElevenLabs as underlying adapters. Not yet scoped.
