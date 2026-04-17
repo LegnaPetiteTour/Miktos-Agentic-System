@@ -11,9 +11,7 @@ Tests:
 """
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from domains.epiphan.tools.pearl_client import PearlClient
 from scripts.pearl_control import (

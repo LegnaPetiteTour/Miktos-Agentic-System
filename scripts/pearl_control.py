@@ -113,7 +113,7 @@ def cmd_switch(args: argparse.Namespace, client: PearlClient) -> int:
     matched = _resolve_layout(layouts, args.layout)
     if matched is None:
         names = ", ".join(
-            f'"{l.get("name", l.get("id"))}"' for l in layouts
+            f'"{lay.get("name", lay.get("id"))}"' for lay in layouts
         )
         print(
             f'Layout {args.layout!r} not found on channel {args.channel}.\n'
