@@ -15,6 +15,7 @@ env/
 # Runtime data (not source)
 data/state/*.json
 data/logs/*.log
+data/logs/*.jsonl
 data/review_queue/*.json
 
 # VS Code
