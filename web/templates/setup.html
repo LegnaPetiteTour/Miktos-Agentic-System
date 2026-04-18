@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Session Setup{% endblock %}
+
+{% block content %}
+<div class="panel setup-panel">
+  <h2 class="panel-title">Session Setup</h2>
+  <form id="setup-form"
+        hx-post="/api/session/config"
+        hx-target="#setup-result"
+        hx-swap="innerHTML">
+
+    <div class="field-group">
+      <label class="label" for="event_name">Event Name <span class="required">*</span></label>
+      <input class="input" type="text" id="event_name" name="event_name" required
+             placeholder="e.g. Pearl-Session-005" />
+    </div>
+
+    <div class="field-group">
+      <label class="label">Hardware</label>
+      <div class="radio-row">
+        <label class="radio-label">
+          <input type="radio" name="hardware" value="obs" id="hw-obs" />
+          OBS
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="hardware" value="epiphan" id="hw-epiphan" checked />
+          Epiphan
+        </label>
+      </div>
+    </div>
+
+    <div id="epiphan-fields">
+      <div class="field-group">
+        <label class="label" for="pearl_host">Pearl Host</label>
+        <input class="input" type="text" id="pearl_host" name="pearl_host"
+               placeholder="192.168.2.45" />
+      </div>
+      <div class="field-group">
+        <label class="label" for="channel_en">Channel EN</label>
+        <input class="input" type="number" id="channel_en" name="channel_en" min="1" />
+      </div>
+      <div class="field-group">
+        <label class="label" for="channel_fr">Channel FR</label>
+        <input class="input" type="number" id="channel_fr" name="channel_fr" min="1" />
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="label" for="youtube_en_video_id">YouTube EN Video ID</label>
+      <input class="input" type="text" id="youtube_en_video_id" name="youtube_en_video_id" />
+    </div>
+
+    <div class="field-group">
+      <label class="label" for="youtube_fr_video_id">YouTube FR Video ID</label>
+      <input class="input" type="text" id="youtube_fr_video_id" name="youtube_fr_video_id" />
+    </div>
+
+    <div class="field-actions">
+      <button class="btn-primary" type="submit">Save Config</button>
+    </div>
+  </form>
+
+  <div id="setup-result" class="setup-result"></div>
+</div>
+
+<script>
+// Show / hide Epiphan fields based on hardware radio selection
+document.querySelectorAll('input[name="hardware"]').forEach(radio => {
+  radio.addEventListener("change", () => {
+    document.getElementById("epiphan-fields").style.display =
+      radio.value === "epiphan" ? "block" : "none";
+  });
+});
+
+// Handle HTMX form response display
+document.body.addEventListener("htmx:afterRequest", (e) => {
+  if (e.detail.elt.id !== "setup-form") return;
+  const target = document.getElementById("setup-result");
+  try {
+    const resp = JSON.parse(e.detail.xhr.responseText);
+    if (resp.success) {
+      target.innerHTML = '<p class="msg-success">Config saved.</p>';
+    } else {
+      target.innerHTML = '<p class="msg-error">' + resp.errors.join("<br>") + '</p>';
+    }
+  } catch (_) {
+    target.innerHTML = '<p class="msg-error">Unexpected response.</p>';
+  }
+});
+</script>
+{% endblock %}

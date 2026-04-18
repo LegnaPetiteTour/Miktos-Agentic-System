@@ -22,6 +22,10 @@ dependencies = [
     "msal>=1.24",
     "psutil>=5.9",
     "rich>=13.0",
+    "fastapi>=0.111",
+    "uvicorn>=0.29",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]

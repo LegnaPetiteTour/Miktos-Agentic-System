@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Miktos Cockpit{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.12" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-brand">Miktos</span>
+    <a class="nav-link {% if request.url.path == '/' %}active{% endif %}" href="/">Cockpit</a>
+    <a class="nav-link {% if request.url.path == '/setup' %}active{% endif %}" href="/setup">Setup</a>
+    <a class="nav-link {% if '/sessions' in request.url.path %}active{% endif %}" href="/sessions">Sessions</a>
+  </nav>
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

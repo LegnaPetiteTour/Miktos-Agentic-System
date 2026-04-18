@@ -1,0 +1,169 @@
+/* Miktos Web Cockpit — style.css
+   Design tokens match Phase 9 rich terminal palette. */
+
+:root {
+  --bg:          #0d1117;
+  --surface:     #161b22;
+  --border:      #30363d;
+  --text:        #e6edf3;
+  --muted:       #8b949e;
+  --accent:      #58a6ff;
+  --green:       #3fb950;
+  --yellow:      #d29922;
+  --red:         #f85149;
+  --nav-height:  3rem;
+  --radius:      6px;
+  --gap:         1rem;
+}
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Nav */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1.5rem;
+  height: var(--nav-height);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.nav-brand {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  margin-right: auto;
+}
+.nav-link { color: var(--muted); }
+.nav-link.active { color: var(--text); border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
+
+/* Main */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--gap);
+}
+
+/* Panels */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+}
+.panel-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.2em 0.6em;
+  border-radius: var(--radius);
+  background: var(--border);
+  font-size: 0.85rem;
+}
+
+/* Stream state */
+.state-row { display: flex; align-items: center; gap: 1rem; }
+.state-badge {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+}
+.state-streaming { color: var(--green); }
+.state-stopped   { color: var(--yellow); }
+.state-idle      { color: var(--muted); }
+.state-done      { color: var(--accent); }
+
+/* Health */
+.health-row { display: flex; gap: 0.75rem; margin-bottom: 0.25rem; }
+.label { color: var(--muted); min-width: 4rem; }
+
+/* Pearl layouts */
+.layout-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.25rem; }
+.layout-name { color: var(--text); }
+
+/* Pipeline slots */
+.slot-list { list-style: none; padding: 0; }
+.slot { padding: 0.15rem 0; color: var(--text); }
+
+/* Muted helper */
+.muted { color: var(--muted); }
+.elapsed { font-size: 0.8rem; color: var(--muted); }
+
+/* Setup form */
+.setup-panel { grid-column: 1 / -1; max-width: 560px; }
+.field-group { margin-bottom: 1rem; }
+.field-group .label { display: block; margin-bottom: 0.3rem; font-size: 0.8rem; color: var(--muted); }
+.input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 0.45rem 0.75rem;
+  font-family: inherit;
+  font-size: inherit;
+}
+.input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.required { color: var(--red); }
+.radio-row { display: flex; gap: 1.5rem; }
+.radio-label { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+.field-actions { margin-top: 1.25rem; }
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1.25rem;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-primary:hover { opacity: 0.85; }
+.setup-result { margin-top: 0.75rem; }
+.msg-success { color: var(--green); }
+.msg-error   { color: var(--red); }
+
+/* Sessions table */
+.sessions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sessions-table th {
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.sessions-table td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.session-name { font-family: inherit; }
+.link { color: var(--accent); }
