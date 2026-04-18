@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Report: {{ session_name }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <h2 class="panel-title">
+    Session Report
+    <span class="muted" style="font-size:0.85em;font-weight:normal;">{{ session_name }}</span>
+  </h2>
+  <div id="report-content"
+       hx-get="/api/sessions/{{ session_name }}/report"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <p class="muted">Loading report…</p>
+  </div>
+</div>
+{% endblock %}

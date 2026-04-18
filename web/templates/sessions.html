@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Session History{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <h2 class="panel-title">Session History</h2>
+  <div id="sessions-list"
+       hx-get="/api/sessions"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <p class="muted">Loading…</p>
+  </div>
+</div>
+
+<script>
+// HTMX response handler — renders session rows
+document.body.addEventListener("htmx:afterRequest", (e) => {
+  if (!e.detail.elt.id || e.detail.elt.id !== "sessions-list") return;
+  try {
+    const sessions = JSON.parse(e.detail.xhr.responseText);
+    const target = document.getElementById("sessions-list");
+    if (!sessions.length) {
+      target.innerHTML = '<p class="muted">No named sessions found.</p>';
+      return;
+    }
+    target.innerHTML = `
+      <table class="sessions-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Hardware</th>
+            <th>Report</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sessions.map(s => `
+            <tr>
+              <td class="session-name">${s.name}</td>
+              <td>${s.hardware || '—'}</td>
+              <td>${s.has_report
+                ? `<a href="/sessions/${s.name}" class="link">View</a>`
+                : '<span class="muted">—</span>'}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+  } catch (_) {}
+});
+</script>
+{% endblock %}

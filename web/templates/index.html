@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Live Cockpit{% endblock %}
+
+{% block content %}
+<div id="cockpit"
+     hx-ext="sse"
+     sse-connect="/api/status/stream"
+     sse-swap="message"
+     hx-swap="none">
+
+  <!-- Hardware badge -->
+  <section class="panel" id="panel-hardware">
+    <h2 class="panel-title">Hardware</h2>
+    <div class="badge" id="hardware-badge">—</div>
+  </section>
+
+  <!-- Stream state -->
+  <section class="panel" id="panel-stream">
+    <h2 class="panel-title">Stream</h2>
+    <div class="state-row">
+      <span class="state-badge" id="stream-state">—</span>
+      <span class="elapsed muted" id="session-elapsed"></span>
+    </div>
+  </section>
+
+  <!-- Health -->
+  <section class="panel" id="panel-health">
+    <h2 class="panel-title">Health</h2>
+    <div class="health-row">
+      <span class="label">Ticks</span>
+      <span id="tick-count">0</span>
+    </div>
+    <div class="health-row" id="alerts-row">
+      <span class="label">Alerts</span>
+      <span id="alerts-list" class="muted">none</span>
+    </div>
+  </section>
+
+  <!-- Pearl layouts -->
+  <section class="panel" id="panel-pearl">
+    <h2 class="panel-title">Pearl Layouts</h2>
+    <div id="pearl-layouts"><span class="muted">—</span></div>
+  </section>
+
+  <!-- Pipeline -->
+  <section class="panel" id="panel-pipeline">
+    <h2 class="panel-title">Pipeline</h2>
+    <ul id="pipeline-slots" class="slot-list"><li class="muted">—</li></ul>
+  </section>
+
+</div>
+
+<script>
+// Listen for SSE messages and update DOM directly
+document.addEventListener("DOMContentLoaded", () => {
+  const evtSource = new EventSource("/api/status/stream");
+
+  evtSource.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+
+    // Hardware
+    const hw = document.getElementById("hardware-badge");
+    if (hw) hw.textContent = d.hardware || "—";
+
+    // Stream state
+    const ss = document.getElementById("stream-state");
+    if (ss) {
+      ss.textContent = (d.stream_state || "idle").toUpperCase();
+      ss.className = "state-badge state-" + (d.stream_state || "idle");
+    }
+
+    // Elapsed
+    const el = document.getElementById("session-elapsed");
+    if (el) el.textContent = d.elapsed || "—";
+
+    // Ticks
+    const tc = document.getElementById("tick-count");
+    if (tc) tc.textContent = d.tick ?? 0;
+
+    // Alerts
+    const al = document.getElementById("alerts-list");
+    if (al) al.textContent = d.alerts && d.alerts.length ? d.alerts.join(", ") : "none";
+
+    // Pearl layouts
+    const pl = document.getElementById("pearl-layouts");
+    if (pl) {
+      if (d.pearl_layouts && d.pearl_layouts.length) {
+        pl.innerHTML = d.pearl_layouts.map(l =>
+          `<div class="layout-row"><span class="label">Ch&nbsp;${l.channel}</span>
+           <span class="layout-name">${l.layout_name || l.layout_id}</span></div>`
+        ).join("");
+      } else {
+        pl.innerHTML = '<span class="muted">—</span>';
+      }
+    }
+
+    // Pipeline slots
+    const ps = document.getElementById("pipeline-slots");
+    if (ps) {
+      if (d.pipeline_slots && d.pipeline_slots.length) {
+        ps.innerHTML = d.pipeline_slots.map(s =>
+          `<li class="slot">${s}</li>`
+        ).join("");
+      } else {
+        ps.innerHTML = '<li class="muted">—</li>';
+      }
+    }
+  };
+});
+</script>
+{% endblock %}
