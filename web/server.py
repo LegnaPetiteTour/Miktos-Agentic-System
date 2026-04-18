@@ -25,7 +25,7 @@ from fastapi.responses import HTMLResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
 
-from web.api import pearl, session, status  # noqa: E402
+from web.api import pearl, runner, session, status  # noqa: E402
 
 BASE_DIR = Path(__file__).parent
 
@@ -40,6 +40,7 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 # API routers
 app.include_router(session.router, prefix="/api/session")
 app.include_router(session.sessions_router, prefix="/api/sessions")
+app.include_router(runner.router, prefix="/api/session")
 app.include_router(status.router, prefix="/api/status")
 app.include_router(pearl.router, prefix="/api/pearl")
 

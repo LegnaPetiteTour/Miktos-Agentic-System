@@ -167,3 +167,35 @@ a:hover { text-decoration: underline; }
 }
 .session-name { font-family: inherit; }
 .link { color: var(--accent); }
+
+/* Session control panel */
+.control-row { display: flex; align-items: center; gap: 0.75rem; }
+.btn-start {
+  background: var(--green);
+  color: #000;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.45rem 1rem;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-start:hover { opacity: 0.85; }
+.btn-stop {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.45rem 1rem;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-stop:hover { opacity: 0.85; }
+.btn-finishing {
+  color: var(--yellow);
+  font-size: 0.85rem;
+}
+.hidden { display: none !important; }
