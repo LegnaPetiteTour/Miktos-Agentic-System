@@ -7,10 +7,7 @@ No live Pearl device or OBS required — Pearl tests mock PearlClient.
 
 import json
 import re
-import shutil
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import yaml
