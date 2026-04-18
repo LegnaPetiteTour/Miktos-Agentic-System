@@ -219,7 +219,11 @@ class StatusDisplay:
 
         # ── Hardware header ──────────────────────────────────────────────
         hw_label = "Epiphan Pearl" if self._hardware == "epiphan" else "OBS"
-        hw_suffix = f"  {self._pearl_host}" if self._pearl_host and self._hardware == "epiphan" else ""
+        hw_suffix = (
+            f"  {self._pearl_host}"
+            if self._pearl_host and self._hardware == "epiphan"
+            else ""
+        )
         table.add_row(
             Text("Hardware", style="bold"),
             Text(f"{hw_label}{hw_suffix}", style="bold cyan"),
