@@ -265,7 +265,7 @@ and post-stream pipeline as OBS with zero engine changes.
 - [x] `session_config.yaml` extended with `hardware: epiphan` discriminator
 - [x] `prepare_session.py` / `run_session.py` — hardware-aware routing
 
-**Live proof — 3 clean Pearl sessions on disk (2026-04-16)**
+#### Live proof — 3 clean Pearl sessions on disk (2026-04-16)
 
 ### Phase 8b — Live Layout Control ✅
 

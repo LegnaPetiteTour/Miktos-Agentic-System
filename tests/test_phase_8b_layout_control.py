@@ -6,7 +6,8 @@ Four CI-friendly tests (no live Pearl device required).
 Tests:
   1. test_layout_list_parsed       — get_layouts mock → layouts command prints list
   2. test_layout_fuzzy_match       — _resolve_layout substring match
-  3. test_layout_switch_calls_api  — switch command resolves name and calls switch_layout
+  3. test_layout_switch_calls_api  — switch command resolves name and calls
+     switch_layout
   4. test_status_shows_current_layout — status command prints active layout name
 """
 

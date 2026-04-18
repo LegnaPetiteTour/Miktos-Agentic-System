@@ -56,7 +56,8 @@ _RE_SLOT_RUNNING = re.compile(
     re.IGNORECASE,
 )
 _RE_REPORT_PATH = re.compile(r"report[:\s]+([^\s]+\.html)", re.IGNORECASE)
-# Epiphan monitor tick summary: "  [  5] ✅ exit=success | alerts=0 (approved=0, queued=0, ...)"
+# Epiphan monitor tick summary:
+#   "  [  5] ✅ exit=success | alerts=0 (approved=0, queued=0, ...)"
 _RE_TICK = re.compile(
     r"\[\s*(\d+)\s*\].*?approved=(\d+).*?queued=(\d+)",
 )
