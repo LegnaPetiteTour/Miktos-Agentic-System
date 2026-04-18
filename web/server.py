@@ -3,12 +3,21 @@ web/server.py — FastAPI entry point for the Miktos web cockpit.
 
 Usage (separate terminal, before or after run_session.py):
     cd "/Users/atorrella/Desktop/Miktos Agentic System"
+    .venv/bin/python -m web.server
+        -- OR --
     .venv/bin/python web/server.py
 
 Then open: http://localhost:8000
 """
 
+import sys
 from pathlib import Path
+
+# Ensure project root is on sys.path when this file is run directly
+# (i.e. `python web/server.py`).  Has no effect when run as a module.
+_PROJECT_ROOT = Path(__file__).parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 import uvicorn
 from fastapi import FastAPI, Request
