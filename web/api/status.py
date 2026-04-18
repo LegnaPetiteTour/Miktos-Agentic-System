@@ -146,11 +146,14 @@ def _latest_session_info() -> tuple[list[str], str]:
 
 
 async def _event_stream() -> AsyncGenerator[str, None]:
+    from web.api.runner import get_runner_state  # local import avoids circular deps
+
     while True:
         hardware = _read_hardware()
         stream_state, tick, alerts = _parse_message_log()
         pearl_layouts = _read_pearl_layouts()
         pipeline_slots, elapsed = _latest_session_info()
+        runner = get_runner_state()
 
         payload = {
             "hardware": hardware,
@@ -160,6 +163,8 @@ async def _event_stream() -> AsyncGenerator[str, None]:
             "pearl_layouts": pearl_layouts,
             "pipeline_slots": pipeline_slots,
             "elapsed": elapsed,
+            "session_running": runner["running"],
+            "session_pid": runner["pid"],
         }
         yield f"data: {json.dumps(payload)}\n\n"
         await asyncio.sleep(1)

@@ -14,6 +14,17 @@
     <div class="badge" id="hardware-badge">—</div>
   </section>
 
+  <!-- Session control -->
+  <section class="panel" id="panel-control">
+    <h2 class="panel-title">Session</h2>
+    <div class="control-row">
+      <button class="btn-start" id="btn-start" onclick="startSession()">Start Session</button>
+      <button class="btn-stop hidden" id="btn-stop" onclick="stopSession()">Stop Session</button>
+      <span class="btn-finishing hidden" id="btn-finishing">Finishing…</span>
+    </div>
+    <div id="control-status" class="muted" style="font-size:0.8rem;margin-top:0.4rem;"></div>
+  </section>
+
   <!-- Stream state -->
   <section class="panel" id="panel-stream">
     <h2 class="panel-title">Stream</h2>
@@ -105,7 +116,56 @@ document.addEventListener("DOMContentLoaded", () => {
         ps.innerHTML = '<li class="muted">—</li>';
       }
     }
+
+    // Session control buttons — driven by session_running from SSE
+    const btnStart     = document.getElementById("btn-start");
+    const btnStop      = document.getElementById("btn-stop");
+    const btnFinishing = document.getElementById("btn-finishing");
+    if (btnStart && btnStop && btnFinishing) {
+      const running = !!d.session_running;
+      btnStart.classList.toggle("hidden", running);
+      btnStop.classList.toggle("hidden", !running);
+      btnFinishing.classList.add("hidden");
+    }
   };
 });
+
+async function startSession() {
+  const status = document.getElementById("control-status");
+  if (status) status.textContent = "Starting…";
+  try {
+    const r = await fetch("/api/session/start", { method: "POST" });
+    const body = await r.json();
+    if (r.ok && body.success) {
+      if (status) status.textContent = "Started (PID " + body.pid + ")";
+    } else {
+      if (status) status.textContent = body.error || "Failed to start";
+    }
+  } catch (err) {
+    if (status) status.textContent = "Error: " + err.message;
+  }
+}
+
+async function stopSession() {
+  const btnStop      = document.getElementById("btn-stop");
+  const btnFinishing = document.getElementById("btn-finishing");
+  const status       = document.getElementById("control-status");
+  if (btnStop)      btnStop.classList.add("hidden");
+  if (btnFinishing) btnFinishing.classList.remove("hidden");
+  if (status) status.textContent = "Stopping…";
+  try {
+    const r = await fetch("/api/session/stop", { method: "POST" });
+    const body = await r.json();
+    if (!r.ok || !body.success) {
+      if (btnStop)      btnStop.classList.remove("hidden");
+      if (btnFinishing) btnFinishing.classList.add("hidden");
+      if (status) status.textContent = body.error || "Failed to stop";
+    } else {
+      if (status) status.textContent = "SIGINT sent — pipeline finishing…";
+    }
+  } catch (err) {
+    if (status) status.textContent = "Error: " + err.message;
+  }
+}
 </script>
 {% endblock %}
