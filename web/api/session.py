@@ -43,6 +43,17 @@ def _write_config(data: dict[str, Any]) -> None:
         yaml.dump(data, fh, default_flow_style=False, allow_unicode=True)
 
 
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursively merge *override* into *base*, preserving nested dict keys."""
+    result = base.copy()
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -71,8 +82,7 @@ async def post_config(body: dict[str, Any]) -> JSONResponse:
         return JSONResponse({"success": False, "errors": errors}, status_code=422)
 
     existing = _read_config()
-    existing.update(body)
-    _write_config(existing)
+    _write_config(_deep_merge(existing, body))
     return JSONResponse({"success": True, "errors": []})
 
 
