@@ -97,12 +97,13 @@ def _list_named_sessions(limit: int = 20) -> list[dict]:
         reverse=True,
     )[:limit]
 
+    hardware = _read_config().get("hardware")
     results = []
     for d in dirs:
         report_files = list(d.glob("*_report.html"))
         results.append({
             "name": d.name,
-            "hardware": None,
+            "hardware": hardware,
             "has_report": bool(report_files),
         })
     return results

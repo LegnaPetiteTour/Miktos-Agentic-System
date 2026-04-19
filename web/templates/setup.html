@@ -4,10 +4,7 @@
 {% block content %}
 <div class="panel setup-panel">
   <h2 class="panel-title">Session Setup</h2>
-  <form id="setup-form"
-        hx-post="/api/session/config"
-        hx-target="#setup-result"
-        hx-swap="innerHTML">
+  <form id="setup-form" onsubmit="submitConfig(event)">
 
     <div class="field-group">
       <label class="label" for="event_name">Event Name <span class="required">*</span></label>
@@ -72,20 +69,90 @@ document.querySelectorAll('input[name="hardware"]').forEach(radio => {
   });
 });
 
-// Handle HTMX form response display
-document.body.addEventListener("htmx:afterRequest", (e) => {
-  if (e.detail.elt.id !== "setup-form") return;
+// Submit form as JSON (FastAPI expects application/json, not form-encoded)
+async function submitConfig(event) {
+  event.preventDefault();
+  const form = document.getElementById("setup-form");
+  const data = Object.fromEntries(new FormData(form).entries());
+
+  // Nest pearl fields into the config structure
+  const payload = {
+    event_name: data.event_name || "",
+    hardware: data.hardware || "obs",
+  };
+  if (data.hardware === "epiphan") {
+    payload.pearl = {
+      host: data.pearl_host || "",
+      channel_en: parseInt(data.channel_en) || 2,
+      channel_fr: parseInt(data.channel_fr) || 3,
+    };
+  }
+  if (data.youtube_en_video_id) {
+    payload.youtube = payload.youtube || { en: {}, fr: {} };
+    payload.youtube.en = { video_id: data.youtube_en_video_id };
+  }
+  if (data.youtube_fr_video_id) {
+    payload.youtube = payload.youtube || { en: {}, fr: {} };
+    payload.youtube.fr = { video_id: data.youtube_fr_video_id };
+  }
+
   const target = document.getElementById("setup-result");
   try {
-    const resp = JSON.parse(e.detail.xhr.responseText);
+    const r = await fetch("/api/session/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const resp = await r.json();
     if (resp.success) {
       target.innerHTML = '<p class="msg-success">Config saved.</p>';
     } else {
-      target.innerHTML = '<p class="msg-error">' + resp.errors.join("<br>") + '</p>';
+      target.innerHTML = '<p class="msg-error">' + (resp.errors || []).join("<br>") + '</p>';
     }
-  } catch (_) {
-    target.innerHTML = '<p class="msg-error">Unexpected response.</p>';
+  } catch (err) {
+    target.innerHTML = '<p class="msg-error">Error: ' + err.message + '</p>';
   }
+}
+
+// Pre-populate form with current session_config.yaml values
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const r = await fetch("/api/session/config");
+    if (!r.ok) return;
+    const cfg = await r.json();
+
+    if (cfg.event_name)
+      document.getElementById("event_name").value = cfg.event_name;
+
+    if (cfg.hardware) {
+      const radio = document.querySelector(
+        `input[name="hardware"][value="${cfg.hardware}"]`
+      );
+      if (radio) {
+        radio.checked = true;
+        document.getElementById("epiphan-fields").style.display =
+          cfg.hardware === "epiphan" ? "block" : "none";
+      }
+    }
+
+    if (cfg.pearl) {
+      if (cfg.pearl.host)
+        document.getElementById("pearl_host").value = cfg.pearl.host;
+      if (cfg.pearl.channel_en)
+        document.getElementById("channel_en").value = cfg.pearl.channel_en;
+      if (cfg.pearl.channel_fr)
+        document.getElementById("channel_fr").value = cfg.pearl.channel_fr;
+    }
+
+    if (cfg.youtube) {
+      if (cfg.youtube.en && cfg.youtube.en.video_id)
+        document.getElementById("youtube_en_video_id").value =
+          cfg.youtube.en.video_id;
+      if (cfg.youtube.fr && cfg.youtube.fr.video_id)
+        document.getElementById("youtube_fr_video_id").value =
+          cfg.youtube.fr.video_id;
+    }
+  } catch (_) {}
 });
 </script>
 {% endblock %}
