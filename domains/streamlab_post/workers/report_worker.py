@@ -271,7 +271,10 @@ def _slot_detail(
         title = _esc(result.get("title", ""))
         vid = video_id_en
         if vid:
-            link = f'<a href="https://youtu.be/{_esc(vid)}" target="_blank">youtu.be/{_esc(vid)}</a>'
+            link = (
+                f'<a href="https://youtu.be/{_esc(vid)}"'
+                f' target="_blank">youtu.be/{_esc(vid)}</a>'
+            )
             return f"{title} → {link}" if title else link
         return title
 
@@ -299,7 +302,10 @@ def _slot_detail(
         vid = video_id_fr
         title_fr = _esc(result.get("title", ""))
         if vid:
-            link = f'<a href="https://youtu.be/{_esc(vid)}" target="_blank">youtu.be/{_esc(vid)}</a>'
+            link = (
+                f'<a href="https://youtu.be/{_esc(vid)}"'
+                f' target="_blank">youtu.be/{_esc(vid)}</a>'
+            )
             return f"{title_fr} → {link}" if title_fr else link
         return title_fr
 
@@ -330,7 +336,9 @@ def _render_files_rows(final_folder: str) -> str:
                 f"<tr><td>{_esc(f.name)}</td>"
                 f"<td class='muted'>{_esc(size)}</td></tr>"
             )
-    return "\n        ".join(rows) if rows else "<tr><td colspan='2' class='muted'>—</td></tr>"
+    if not rows:
+        return "<tr><td colspan='2' class='muted'>—</td></tr>"
+    return "\n        ".join(rows)
 
 
 def _render_transcript_section(
@@ -349,10 +357,11 @@ def _render_transcript_section(
         return ""
     preview = content[:200]
     ellipsis = "…" if len(content) > 200 else ""
+    _p_style = "margin-top:8px;font-size:0.85rem;"
     return f"""  <section>
     <h2>{_esc(title)}</h2>
     <pre>{_esc(preview)}{ellipsis}</pre>
-    <p class="muted" style="margin-top:8px;font-size:0.85rem;">Full transcript: {_esc(tp.name)}</p>
+    <p class="muted" style="{_p_style}">Full transcript: {_esc(tp.name)}</p>
   </section>"""
 
 
