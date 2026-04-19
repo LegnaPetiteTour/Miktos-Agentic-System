@@ -114,6 +114,7 @@ class PostStreamCoordinator:
         # Accumulated results — must be initialized before Pre-Stage 1
         accumulated: dict[str, Any] = {}
         all_results: dict[str, dict[str, Any]] = {}
+        fr_file_path = ""
 
         # Pre-Stage 1 — Epiphan: download recording from Pearl before pipeline
         hardware = session_config.get("hardware", "obs")
@@ -146,6 +147,22 @@ class PostStreamCoordinator:
                         + dl_result.get("error", "unknown")
                     ),
                 )
+
+            # FR download — non-fatal; session never blocked by missing FR
+            channel_fr = pearl_cfg.get("channel_fr", 0)
+            if channel_fr:
+                dl_fr_result = RecordingDownloadWorker().run({
+                    "pearl_host": pearl_cfg.get("host", ""),
+                    "pearl_recorder_id": str(channel_fr),
+                    "download_dir": pearl_cfg.get(
+                        "download_dir",
+                        "~/Downloads/pearl-recordings",
+                    ),
+                    "dry_run": dry_run,
+                })
+                all_results["recording_download_fr"] = dl_fr_result
+                if dl_fr_result.get("success"):
+                    fr_file_path = dl_fr_result.get("file_path", "")
 
         # ──────────────────────────────────────────────────────────────
         # Stage 1 — Parallel: backup_verify, youtube_en, audio_extract
@@ -183,6 +200,16 @@ class PostStreamCoordinator:
                     "dry_run": dry_run,
                 },
             },
+            "audio_extract_fr": {
+                "worker": AudioExtractWorker(),
+                "required": False,
+                "payload": {
+                    "file_path": fr_file_path,
+                    "output_dir": str(output_dir),
+                    "output_suffix": "_FR",
+                    "dry_run": dry_run,
+                },
+            },
         }
 
         stage1_results = self._run_stage("Stage 1", stage1_slots, session_id)
@@ -215,6 +242,7 @@ class PostStreamCoordinator:
         # ──────────────────────────────────────────────────────────────
         en_result = stage1_results.get("youtube_en", {})
         audio_result = stage1_results.get("audio_extract", {})
+        fr_audio_result = stage1_results.get("audio_extract_fr", {})
 
         stage2_slots = {
             "translate": {
@@ -236,6 +264,17 @@ class PostStreamCoordinator:
                     "dry_run": dry_run,
                 },
             },
+            "transcript_fr": {
+                "worker": TranscriptWorker(),
+                "required": False,
+                "payload": {
+                    "mp3_path": fr_audio_result.get("mp3_path", ""),
+                    "output_dir": str(output_dir),
+                    "output_suffix": "_FR",
+                    "language_code": "fr",
+                    "dry_run": dry_run,
+                },
+            },
         }
 
         stage2_results = self._run_stage("Stage 2", stage2_slots, session_id)
@@ -249,6 +288,7 @@ class PostStreamCoordinator:
         # ──────────────────────────────────────────────────────────────
         translate_result = stage2_results.get("translate", {})
         transcript_result = stage2_results.get("transcript", {})
+        fr_transcript_result = stage2_results.get("transcript_fr", {})
 
         stage3_slots = {
             "youtube_fr": {
@@ -273,6 +313,11 @@ class PostStreamCoordinator:
                     "mp3_path": audio_result.get("mp3_path", ""),
                     "transcript_path": transcript_result.get("transcript_path", ""),
                     "thumbnail_path": str(output_dir / "thumbnail.jpg"),
+                    "fr_recording_path": fr_file_path,
+                    "fr_mp3_path": fr_audio_result.get("mp3_path", ""),
+                    "fr_transcript_path": fr_transcript_result.get(
+                        "transcript_path", ""
+                    ),
                     "event_name": event_name,
                     "session_date": session_date,
                     "sessions_dir": str(self.sessions_dir),
@@ -341,6 +386,12 @@ class PostStreamCoordinator:
                     "word_count":          transcript_result.get("word_count", 0),
                     "detected_languages":  transcript_result.get(
                         "detected_languages", []
+                    ),
+                    "fr_transcript_path":  fr_transcript_result.get(
+                        "transcript_path", ""
+                    ),
+                    "fr_word_count":       fr_transcript_result.get(
+                        "word_count", 0
                     ),
                     "final_folder":        rename_result.get(
                         "final_folder", str(output_dir)
