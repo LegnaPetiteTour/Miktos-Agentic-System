@@ -39,10 +39,13 @@ class AudioExtractWorker:
         """
         file_path = payload.get("file_path", "")
         output_dir = payload.get("output_dir", "")
+        output_suffix = payload.get("output_suffix", "")
         dry_run = payload.get("dry_run", False)
 
         if dry_run:
-            mp3_path = str(Path(output_dir or "/tmp") / "audio.mp3")
+            mp3_path = str(
+                Path(output_dir or "/tmp") / f"audio{output_suffix}.mp3"
+            )
             return {
                 "success": True,
                 "dry_run": True,
@@ -57,7 +60,7 @@ class AudioExtractWorker:
 
         out_dir = Path(output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
-        mp3_file = out_dir / "audio.mp3"
+        mp3_file = out_dir / f"audio{output_suffix}.mp3"
 
         try:
             result = subprocess.run(

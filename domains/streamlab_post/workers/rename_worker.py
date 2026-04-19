@@ -58,6 +58,9 @@ class FileRenameWorker:
         mp3_path = payload.get("mp3_path", "")
         transcript_path = payload.get("transcript_path", "")
         thumbnail_path = payload.get("thumbnail_path", "")
+        fr_recording_path = payload.get("fr_recording_path", "")
+        fr_mp3_path = payload.get("fr_mp3_path", "")
+        fr_transcript_path = payload.get("fr_transcript_path", "")
         event_name = payload.get("event_name", "Event")
         session_date = payload.get("session_date", "") or date.today().isoformat()
         sessions_dir = Path(payload.get("sessions_dir", "data/sessions"))
@@ -79,16 +82,34 @@ class FileRenameWorker:
 
         if dry_run:
             ext = Path(recording_path).suffix if recording_path else ".mp4"
+            renamed_files: dict[str, str] = {
+                "recording": str(final_folder / f"{session_name}_EN{ext}"),
+                "audio": str(final_folder / f"{session_name}.mp3"),
+                "transcript": str(
+                    final_folder / f"{session_name}_transcript.txt"
+                ),
+                "thumbnail": str(
+                    final_folder / f"{session_name}_thumbnail.jpg"
+                ),
+            }
+            if fr_recording_path:
+                ext_fr = Path(fr_recording_path).suffix
+                renamed_files["fr_recording"] = str(
+                    final_folder / f"{session_name}_FR{ext_fr}"
+                )
+            if fr_mp3_path:
+                renamed_files["fr_audio"] = str(
+                    final_folder / f"{session_name}_FR.mp3"
+                )
+            if fr_transcript_path:
+                renamed_files["fr_transcript"] = str(
+                    final_folder / f"{session_name}_FR_transcript.txt"
+                )
             return {
                 "success": True,
                 "dry_run": True,
                 "final_folder": str(final_folder),
-                "renamed_files": {
-                    "recording": str(final_folder / f"{session_name}_EN{ext}"),
-                    "audio": str(final_folder / f"{session_name}.mp3"),
-                    "transcript": str(final_folder / f"{session_name}_transcript.txt"),
-                    "thumbnail": str(final_folder / f"{session_name}_thumbnail.jpg"),
-                },
+                "renamed_files": renamed_files,
             }
 
         try:
@@ -136,6 +157,28 @@ class FileRenameWorker:
             )
             if thumb_new:
                 renamed["thumbnail"] = thumb_new
+
+            if fr_recording_path and Path(fr_recording_path).exists():
+                ext_fr = Path(fr_recording_path).suffix
+                fr_rec_new = _move(
+                    fr_recording_path,
+                    final_folder / f"{session_name}_FR{ext_fr}",
+                )
+                if fr_rec_new:
+                    renamed["fr_recording"] = fr_rec_new
+
+            fr_mp3_new = _move(
+                fr_mp3_path, final_folder / f"{session_name}_FR.mp3"
+            )
+            if fr_mp3_new:
+                renamed["fr_audio"] = fr_mp3_new
+
+            fr_txt_new = _move(
+                fr_transcript_path,
+                final_folder / f"{session_name}_FR_transcript.txt",
+            )
+            if fr_txt_new:
+                renamed["fr_transcript"] = fr_txt_new
 
         except RuntimeError as exc:
             return {"success": False, "error": str(exc)}

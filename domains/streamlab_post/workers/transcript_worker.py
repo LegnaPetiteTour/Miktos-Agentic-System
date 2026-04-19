@@ -52,6 +52,7 @@ class TranscriptWorker:
         mp3_path = payload.get("mp3_path", "")
         output_dir = payload.get("output_dir", "")
         language_code = payload.get("language_code", "fr")
+        output_suffix = payload.get("output_suffix", "")
         dry_run = payload.get("dry_run", False)
 
         if dry_run:
@@ -63,7 +64,7 @@ class TranscriptWorker:
             )
             out_dir = Path(output_dir or "/tmp")
             out_dir.mkdir(parents=True, exist_ok=True)
-            transcript_path = out_dir / "transcript.txt"
+            transcript_path = out_dir / f"transcript{output_suffix}.txt"
             transcript_path.write_text(transcript_text, encoding="utf-8")
             return {
                 "success": True,
@@ -137,7 +138,7 @@ class TranscriptWorker:
             }
             detected_languages = sorted(langs)
 
-        transcript_path = out_dir / "transcript.txt"
+        transcript_path = out_dir / f"transcript{output_suffix}.txt"
         transcript_path.write_text(transcript_text, encoding="utf-8")
 
         return {
