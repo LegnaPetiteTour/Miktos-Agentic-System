@@ -308,9 +308,44 @@ All prior behaviour preserved — Phase 9 is purely additive.
 
 ---
 
-## Phase 10 — Web GUI / Unified Operating Surface 🔜 FUTURE
+## Phase 10 — Web GUI / Unified Operating Surface ✅ COMPLETE
 
-**Depends on:** Phase 9 validated in production + commercial validation.
+### Phase 10a — Local Web Cockpit ✅
 
-Stage 3 of the vision: Miktos as the primary interface, with OBS, Pearl,
-Zoom, YouTube, ElevenLabs as underlying adapters. Not yet scoped.
+**Completed:** 2026-04-17
+**Commit:** `0e4c392` (PR #36)
+**Tests:** 116 passed, 1 skipped
+
+FastAPI + HTMX browser cockpit replacing the split-terminal workflow.
+All prior behaviour preserved — Phase 10a is purely additive.
+
+- [x] `web/` package — FastAPI app with HTMX frontend
+- [x] SSE `/api/status/stream` — live hardware health, pipeline progress, session history
+- [x] Pearl layout control panel — switch layouts from the browser
+- [x] Session history panel — named sessions with stage outcomes
+- [x] `web/static/` + `web/templates/` — self-contained, no build step
+
+**Launch:** `.venv/bin/python -m web.server` → `http://localhost:8000`
+
+### Phase 10b — Session Launch from GUI ✅
+
+**Completed:** 2026-04-18
+**Commit:** `35201ae` (PR #37)
+**Tests:** 122 passed, 1 skipped
+
+The operator can launch and stop a session entirely from the browser.
+
+- [x] `web/api/runner.py` — module-level `Popen` singleton; `POST /start`, `POST /stop`, `GET /runner`
+- [x] Stop sends `signal.SIGINT` — preserves clean shutdown path in `run_session.py`
+- [x] SSE payload extended with `session_running` + `session_pid`
+- [x] Start / Stop / Finishing… control panel, SSE-driven button state
+- [x] `run_session.py` untouched — terminal fallback unchanged
+
+**Full operator workflow:** open one terminal → `python -m web.server` → open
+`http://localhost:8000` → click **Start Session**. The terminal stays open only
+for the web server; the session runs from the browser.
+
+**Live proof (2026-04-19):** one browser click → Epiphan monitor ran 40 ticks →
+`recording_stopped` detected → pipeline fired → all four output files on disk.
+
+**Phase 10c** (remote access, auth) deferred until an operational need arises.
