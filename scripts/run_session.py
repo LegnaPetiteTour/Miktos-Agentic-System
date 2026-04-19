@@ -265,7 +265,7 @@ def run(config_path: Path | None, poll_interval: int) -> int:
                 " (Ctrl+C again to force-quit)…"
             )
             try:
-                post.wait(timeout=300)        # up to 5 min
+                post.wait(timeout=60)         # pipeline finishes in <30s; 60s is safe margin
             except subprocess.TimeoutExpired:
                 post.send_signal(signal.SIGTERM)
                 try:
