@@ -92,7 +92,10 @@ def _list_named_sessions(limit: int = 20) -> list[dict]:
     if not _SESSIONS_DIR.exists():
         return []
     dirs = sorted(
-        (d for d in _SESSIONS_DIR.iterdir() if d.is_dir() and not _UUID_RE.match(d.name)),
+        (
+            d for d in _SESSIONS_DIR.iterdir()
+            if d.is_dir() and not _UUID_RE.match(d.name)
+        ),
         key=lambda d: d.name,
         reverse=True,
     )[:limit]
