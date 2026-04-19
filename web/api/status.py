@@ -74,7 +74,8 @@ def _parse_message_log() -> tuple[str, int, list[str]]:
             # parts layout: ts  ACTION  source -> target  event_type  msg_id [...]
             # Find the event_type token — it's the 5th whitespace-delimited token
             # in lines like:
-            #   2026-04-17T05:10:30Z  PUBLISHED  epiphan_monitor -> [3 subscriber(s)]  recording_stopped  ...
+            #   2026-04-17T05:10:30Z  PUBLISHED  epiphan_monitor
+            #     -> [3 subscriber(s)]  recording_stopped  ...
             # We split on two-or-more spaces to separate the tab-aligned columns
             cols = re.split(r"\s{2,}", line)
             if len(cols) >= 4:
@@ -117,7 +118,10 @@ def _named_sessions() -> list[Path]:
     if not _SESSIONS_DIR.exists():
         return []
     return sorted(
-        (d for d in _SESSIONS_DIR.iterdir() if d.is_dir() and not _UUID_RE.match(d.name)),
+        (
+            d for d in _SESSIONS_DIR.iterdir()
+            if d.is_dir() and not _UUID_RE.match(d.name)
+        ),
         key=lambda d: d.name,
     )
 
