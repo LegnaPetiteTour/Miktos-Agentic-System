@@ -349,3 +349,57 @@ for the web server; the session runs from the browser.
 `recording_stopped` detected → pipeline fired → all four output files on disk.
 
 **Phase 10c** (remote access, auth) deferred until an operational need arises.
+
+---
+
+## Phase 11 — Dual-Channel Bilingual Pipeline ✅ COMPLETE
+
+**Completed:** 2026-04-19
+**Commit:** `18c0f07` (PR #44)
+**Tests:** 130 passed, 1 skipped
+
+End-to-end bilingual automation: one session produces a 7-file archive
+covering both EN and FR channels, fully unattended.
+
+- [x] `domains/epiphan/audio_worker.py` — dual-channel audio extraction
+- [x] `domains/epiphan/transcript_worker.py` — ElevenLabs Scribe, EN + FR
+- [x] `domains/epiphan/rename_worker.py` — bilingual file naming convention
+- [x] `domains/epiphan/report_worker.py` — session report covering both channels
+- [x] `engine/coordinator/coordinator.py` — FR slots all `required: False` (non-fatal)
+
+**7-file session folder:**
+
+```text
+EN recording (.mp4)
+FR recording (.mp4)
+EN audio (.mp3)
+FR audio (.mp3)
+EN transcript (.txt)
+FR transcript (.txt)
+report.html
+```
+
+**Live proof — session `2026-04-19_Bilingual-Session-002_001` (420 MB on disk):**
+
+```text
+Stage 1: backup_verify ✅  audio_extract_en ✅  audio_extract_fr ✅
+Stage 2: transcript_en ✅  transcript_fr ✅
+Stage 3: rename_en ✅      rename_fr ✅
+Stage 4: report ✅
+
+7 files on disk. No human involvement.
+```
+
+---
+
+## Stage 2 — Local Installable App
+
+**Status:** In progress. See [docs/PRODUCT.md](PRODUCT.md) for the full product path.
+
+Phases 0–11 deliver a working prototype validated in production.
+Stage 2 packages it so a non-technical operator can install and run
+Miktos without developer assistance.
+
+**Next phases:**
+- Phase 12: First-run onboarding wizard (credentials, hardware setup — no terminal)
+- Phase 13: Electron packaging (.dmg Mac app)
