@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Step 3: ElevenLabs{% endblock %}
+
+{% block content %}
+<div class="onboarding-shell">
+  <h1>Step 3 — ElevenLabs API Key</h1>
+
+  {% if error %}
+  <div class="banner-error">⚠️ {{ error }}</div>
+  {% endif %}
+  {% if success %}
+  <div class="banner-success">✅ {{ success }}</div>
+  {% endif %}
+
+  <p class="muted">
+    Find your API key at
+    <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank">elevenlabs.io → Settings → API Keys</a>.
+  </p>
+
+  <p>Status: {% if creds.elevenlabs %}✅ Key saved{% else %}❌ Not configured{% endif %}</p>
+
+  <form id="elevenlabs-form">
+    <label>API Key
+      <input type="password" id="elevenlabs-key" placeholder="sk_…" style="width:100%">
+    </label>
+    <button type="submit" class="btn-start">Validate &amp; Save</button>
+  </form>
+  <div id="elevenlabs-status" class="muted"></div>
+
+  <div class="wizard-nav">
+    <a href="/onboarding/step/translate" class="muted">← Back</a>
+    <a href="/onboarding/step/hardware" class="btn-start">Next: Hardware →</a>
+  </div>
+</div>
+
+<script>
+document.getElementById("elevenlabs-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const status = document.getElementById("elevenlabs-status");
+  status.textContent = "Validating…";
+  const resp = await fetch("/api/onboarding/validate/elevenlabs", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({api_key: document.getElementById("elevenlabs-key").value.trim()}),
+  });
+  const data = await resp.json();
+  if (data.success) {
+    status.textContent = "✅ Key validated and saved.";
+  } else {
+    status.textContent = "❌ " + (data.error || "Validation failed");
+  }
+});
+</script>
+{% endblock %}

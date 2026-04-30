@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Step 2: Google Translate{% endblock %}
+
+{% block content %}
+<div class="onboarding-shell">
+  <h1>Step 2 — Google Translate API Key</h1>
+
+  {% if error %}
+  <div class="banner-error">⚠️ {{ error }}</div>
+  {% endif %}
+  {% if success %}
+  <div class="banner-success">✅ {{ success }}</div>
+  {% endif %}
+
+  <p class="muted">
+    Create an API key in
+    <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>
+    with the Cloud Translation API enabled.
+  </p>
+
+  <p>Status: {% if creds.translate %}✅ Key saved{% else %}❌ Not configured{% endif %}</p>
+
+  <form id="translate-form">
+    <label>API Key
+      <input type="password" id="translate-key" placeholder="AIza…" style="width:100%">
+    </label>
+    <button type="submit" class="btn-start">Validate &amp; Save</button>
+  </form>
+  <div id="translate-status" class="muted"></div>
+
+  <div class="wizard-nav">
+    <a href="/onboarding/step/youtube" class="muted">← Back</a>
+    <a href="/onboarding/step/elevenlabs" class="btn-start">Next: ElevenLabs →</a>
+  </div>
+</div>
+
+<script>
+document.getElementById("translate-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const status = document.getElementById("translate-status");
+  status.textContent = "Validating…";
+  const resp = await fetch("/api/onboarding/validate/translate", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({api_key: document.getElementById("translate-key").value.trim()}),
+  });
+  const data = await resp.json();
+  if (data.success) {
+    status.textContent = "✅ Key validated and saved.";
+  } else {
+    status.textContent = "❌ " + (data.error || "Validation failed");
+  }
+});
+</script>
+{% endblock %}

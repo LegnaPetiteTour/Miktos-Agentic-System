@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Step 1: YouTube{% endblock %}
+
+{% block content %}
+<div class="onboarding-shell">
+  <h1>Step 1 — YouTube Credentials</h1>
+
+  {% if error %}
+  <div class="banner-error">⚠️ {{ error }}</div>
+  {% endif %}
+  {% if success %}
+  <div class="banner-success">✅ {{ success }}</div>
+  {% endif %}
+
+  <p class="muted">
+    Create OAuth 2.0 Desktop App credentials in
+    <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>.
+    Enable the YouTube Data API v3 first.
+  </p>
+
+  <section class="wizard-section">
+    <h2>1a. Client credentials</h2>
+    <form id="client-form">
+      <label>Client ID
+        <input type="text" id="client-id" placeholder="xxxxxxxx.apps.googleusercontent.com" style="width:100%">
+      </label>
+      <label>Client Secret
+        <input type="password" id="client-secret" placeholder="GOCSPX-..." style="width:100%">
+      </label>
+      <button type="submit" class="btn-start">Save credentials</button>
+    </form>
+    <div id="client-status" class="muted"></div>
+  </section>
+
+  <section class="wizard-section">
+    <h2>1b. Authorize channels</h2>
+    <p>Status:
+      EN {% if creds.youtube_en %}✅ authorized{% else %}❌ not authorized{% endif %} ·
+      FR {% if creds.youtube_fr %}✅ authorized{% else %}❌ not authorized{% endif %}
+    </p>
+    {% if creds.youtube_client %}
+    <a href="/onboarding/youtube/authorize?channel=en" class="btn-start">Authorize EN Channel</a>
+    <a href="/onboarding/youtube/authorize?channel=fr" class="btn-start">Authorize FR Channel</a>
+    {% else %}
+    <p class="muted">Save client credentials above first.</p>
+    {% endif %}
+  </section>
+
+  <div class="wizard-nav">
+    <a href="/onboarding" class="muted">← Back to overview</a>
+    <a href="/onboarding/step/translate" class="btn-start">Next: Google Translate →</a>
+  </div>
+</div>
+
+<script>
+document.getElementById("client-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const status = document.getElementById("client-status");
+  status.textContent = "Saving…";
+  const resp = await fetch("/api/onboarding/youtube/client", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      client_id: document.getElementById("client-id").value.trim(),
+      client_secret: document.getElementById("client-secret").value.trim(),
+    }),
+  });
+  const data = await resp.json();
+  if (data.success) {
+    status.textContent = "✅ Saved. You can now authorize channels below.";
+    setTimeout(() => location.reload(), 800);
+  } else {
+    status.textContent = "❌ " + (data.error || "Unknown error");
+  }
+});
+</script>
+{% endblock %}

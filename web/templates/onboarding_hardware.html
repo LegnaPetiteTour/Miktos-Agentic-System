@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Step 4: Hardware{% endblock %}
+
+{% block content %}
+<div class="onboarding-shell">
+  <h1>Step 4 — Hardware Connection</h1>
+
+  {% if error %}
+  <div class="banner-error">⚠️ {{ error }}</div>
+  {% endif %}
+  {% if success %}
+  <div class="banner-success">✅ {{ success }}</div>
+  {% endif %}
+
+  <p>Status: {% if creds.hardware %}✅ Configured ({{ creds.hardware }}){% else %}❌ Not configured{% endif %}</p>
+
+  <div id="hw-tabs">
+    <button onclick="showTab('epiphan')" class="btn-start" id="tab-epiphan">Epiphan Pearl</button>
+    <button onclick="showTab('obs')" class="btn-start" id="tab-obs">OBS WebSocket</button>
+  </div>
+
+  <div id="tab-epiphan-body" class="wizard-section">
+    <h2>Epiphan Pearl</h2>
+    <form id="pearl-form">
+      <label>Pearl IP Address
+        <input type="text" id="pearl-host" placeholder="192.168.2.45" style="width:100%">
+      </label>
+      <label>Port
+        <input type="number" id="pearl-port" value="80" style="width:8rem">
+      </label>
+      <button type="submit" class="btn-start">Test Connection</button>
+    </form>
+    <div id="pearl-status" class="muted"></div>
+  </div>
+
+  <div id="tab-obs-body" class="wizard-section" style="display:none">
+    <h2>OBS WebSocket</h2>
+    <form id="obs-form">
+      <label>Host
+        <input type="text" id="obs-host" placeholder="localhost" style="width:100%">
+      </label>
+      <label>Port
+        <input type="number" id="obs-port" value="4455" style="width:8rem">
+      </label>
+      <label>Password
+        <input type="password" id="obs-password" placeholder="OBS WebSocket password" style="width:100%">
+      </label>
+      <button type="submit" class="btn-start">Test Connection</button>
+    </form>
+    <div id="obs-status" class="muted"></div>
+  </div>
+
+  <div class="wizard-nav">
+    <a href="/onboarding/step/elevenlabs" class="muted">← Back</a>
+    <a href="/onboarding/step/ready" class="btn-start">Next: Ready →</a>
+  </div>
+</div>
+
+<script>
+function showTab(name) {
+  document.getElementById("tab-epiphan-body").style.display = name === "epiphan" ? "" : "none";
+  document.getElementById("tab-obs-body").style.display = name === "obs" ? "" : "none";
+}
+
+document.getElementById("pearl-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const status = document.getElementById("pearl-status");
+  status.textContent = "Testing…";
+  const resp = await fetch("/api/onboarding/validate/pearl", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      host: document.getElementById("pearl-host").value.trim(),
+      port: parseInt(document.getElementById("pearl-port").value, 10),
+    }),
+  });
+  const data = await resp.json();
+  if (data.success) {
+    status.textContent = "✅ Pearl connected" + (data.firmware ? " — firmware " + data.firmware : "") + ". Config saved.";
+  } else {
+    status.textContent = "❌ " + (data.error || "Connection failed");
+  }
+});
+
+document.getElementById("obs-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const status = document.getElementById("obs-status");
+  status.textContent = "Testing…";
+  const resp = await fetch("/api/onboarding/validate/obs", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      host: document.getElementById("obs-host").value.trim(),
+      port: parseInt(document.getElementById("obs-port").value, 10),
+      password: document.getElementById("obs-password").value,
+    }),
+  });
+  const data = await resp.json();
+  if (data.success) {
+    status.textContent = "✅ OBS connected" + (data.version ? " — v" + data.version : "") + ". Config saved.";
+  } else {
+    status.textContent = "❌ " + (data.error || "Connection failed");
+  }
+});
+</script>
+{% endblock %}

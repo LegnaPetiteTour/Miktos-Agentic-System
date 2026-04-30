@@ -401,5 +401,6 @@ Stage 2 packages it so a non-technical operator can install and run
 Miktos without developer assistance.
 
 **Next phases:**
+
 - Phase 12: First-run onboarding wizard (credentials, hardware setup — no terminal)
 - Phase 13: Electron packaging (.dmg Mac app)
