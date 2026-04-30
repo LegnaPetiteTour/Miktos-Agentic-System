@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Step 5: Ready{% endblock %}
+
+{% block content %}
+<div class="onboarding-shell">
+  <h1>Step 5 — Setup Summary</h1>
+
+  <ul class="ready-list">
+    <li>YouTube client credentials: {% if creds.youtube_client %}✅ Saved{% else %}❌ Missing{% endif %}</li>
+    <li>YouTube EN channel: {% if creds.youtube_en %}✅ Authorized{% else %}❌ Not authorized{% endif %}</li>
+    <li>YouTube FR channel: {% if creds.youtube_fr %}✅ Authorized{% else %}❌ Not authorized{% endif %}</li>
+    <li>Google Translate: {% if creds.translate %}✅ Configured{% else %}❌ Missing{% endif %}</li>
+    <li>ElevenLabs: {% if creds.elevenlabs %}✅ Configured{% else %}❌ Missing{% endif %}</li>
+    <li>Hardware: {% if creds.hardware %}✅ {{ creds.hardware }}{% else %}❌ Not configured{% endif %}</li>
+  </ul>
+
+  {% if all_done %}
+  <div class="banner-success">
+    ✅ Miktos is ready. <a href="/">Start your first session →</a>
+  </div>
+  {% else %}
+  <div class="banner-warning">
+    ⚠️ Some items are still incomplete. Return to the steps above to complete setup.
+  </div>
+  <p>
+    <a href="/onboarding/step/youtube" class="btn-start">← Back to Step 1</a>
+  </p>
+  {% endif %}
+</div>
+{% endblock %}

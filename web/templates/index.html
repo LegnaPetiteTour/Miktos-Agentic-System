@@ -2,6 +2,12 @@
 {% block title %}Miktos — Live Cockpit{% endblock %}
 
 {% block content %}
+{% if missing_credentials %}
+<div class="banner-warning">
+  ⚠️ Setup incomplete — some credentials are missing.
+  <a href="/onboarding">Complete setup →</a>
+</div>
+{% endif %}
 <div id="cockpit"
      hx-ext="sse"
      sse-connect="/api/status/stream"

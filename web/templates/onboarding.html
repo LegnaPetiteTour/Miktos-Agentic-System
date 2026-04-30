@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Onboarding{% endblock %}
+
+{% block content %}
+<div class="onboarding-shell">
+  <h1>Operator Setup Wizard</h1>
+
+  {% if error %}
+  <div class="banner-error">⚠️ {{ error }}</div>
+  {% endif %}
+  {% if success %}
+  <div class="banner-success">✅ {{ success }}</div>
+  {% endif %}
+
+  <nav class="wizard-steps">
+    <a class="wizard-step {% if step == 'youtube' %}active{% endif %}" href="/onboarding/step/youtube">
+      {% if creds.youtube_client and creds.youtube_en and creds.youtube_fr %}✅{% else %}1{% endif %}
+      YouTube
+    </a>
+    <a class="wizard-step {% if step == 'translate' %}active{% endif %}" href="/onboarding/step/translate">
+      {% if creds.translate %}✅{% else %}2{% endif %}
+      Translate
+    </a>
+    <a class="wizard-step {% if step == 'elevenlabs' %}active{% endif %}" href="/onboarding/step/elevenlabs">
+      {% if creds.elevenlabs %}✅{% else %}3{% endif %}
+      ElevenLabs
+    </a>
+    <a class="wizard-step {% if step == 'hardware' %}active{% endif %}" href="/onboarding/step/hardware">
+      {% if creds.hardware %}✅{% else %}4{% endif %}
+      Hardware
+    </a>
+    <a class="wizard-step {% if step == 'ready' %}active{% endif %}" href="/onboarding/step/ready">
+      5 Ready
+    </a>
+  </nav>
+
+  <div class="wizard-body">
+    <p class="muted">Select a step above to configure each credential.</p>
+    <p>
+      <strong>Status:</strong>
+      YouTube client {% if creds.youtube_client %}✅{% else %}❌{% endif %} ·
+      EN {% if creds.youtube_en %}✅{% else %}❌{% endif %} ·
+      FR {% if creds.youtube_fr %}✅{% else %}❌{% endif %} ·
+      Translate {% if creds.translate %}✅{% else %}❌{% endif %} ·
+      ElevenLabs {% if creds.elevenlabs %}✅{% else %}❌{% endif %} ·
+      Hardware {% if creds.hardware %}✅ ({{ creds.hardware }}){% else %}❌{% endif %}
+    </p>
+    <p><a href="/onboarding/step/youtube" class="btn-start">Begin →</a></p>
+  </div>
+</div>
+{% endblock %}

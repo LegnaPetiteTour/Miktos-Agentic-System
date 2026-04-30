@@ -25,7 +25,7 @@ from fastapi.responses import HTMLResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
 
-from web.api import pearl, runner, session, status  # noqa: E402
+from web.api import onboarding, pearl, runner, session, status  # noqa: E402
 
 BASE_DIR = Path(__file__).parent
 
@@ -43,6 +43,8 @@ app.include_router(session.sessions_router, prefix="/api/sessions")
 app.include_router(runner.router, prefix="/api/session")
 app.include_router(status.router, prefix="/api/status")
 app.include_router(pearl.router, prefix="/api/pearl")
+app.include_router(onboarding.api_router, prefix="/api/onboarding")
+app.include_router(onboarding.view_router, prefix="/onboarding")
 
 
 # ---------------------------------------------------------------------------
@@ -52,7 +54,20 @@ app.include_router(pearl.router, prefix="/api/pearl")
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request=request, name="index.html")
+    creds = onboarding.check_credentials()
+    missing_credentials = not all([
+        creds["youtube_client"],
+        creds["youtube_en"],
+        creds["youtube_fr"],
+        creds["translate"],
+        creds["elevenlabs"],
+        creds["hardware"],
+    ])
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"missing_credentials": missing_credentials},
+    )
 
 
 @app.get("/setup", response_class=HTMLResponse)
