@@ -11,6 +11,9 @@ env/
 
 # Environment
 .env
+.env.backup
+.env.*.backup
+*.env.bak
 
 # Runtime data (not source)
 data/state/*.json
