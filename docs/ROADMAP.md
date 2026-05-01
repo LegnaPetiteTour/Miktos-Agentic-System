@@ -445,7 +445,7 @@ Applications, launch — no terminal, no Python, no `pip install`.
 **Gate 2 checklist (all PASS):**
 
 | Check | Result |
-|-------|--------|
+| ----- | ------ |
 | DMG produced | ✅ `Miktos-0.1.0.dmg` 127 MB, arm64 + x64 |
 | Loading screen (HTTP 200 on `/`) | ✅ |
 | Server starts within 60 s | ✅ ~21 s |
