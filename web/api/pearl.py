@@ -7,7 +7,6 @@ POST /api/pearl/switch                → switches layout + appends layout_log.j
 
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 
 import requests as _requests
 from fastapi import APIRouter
@@ -15,10 +14,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from domains.epiphan.tools.pearl_client import PearlClient
+from engine.paths import get_data_dir
 
 router = APIRouter()
 
-_LAYOUT_LOG = Path("data/logs/layout_log.jsonl")
+_LAYOUT_LOG = get_data_dir() / "logs" / "layout_log.jsonl"
 
 
 # ---------------------------------------------------------------------------

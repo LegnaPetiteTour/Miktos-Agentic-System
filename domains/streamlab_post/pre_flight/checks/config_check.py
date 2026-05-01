@@ -14,10 +14,10 @@ from pathlib import Path
 
 import yaml
 
+from engine.paths import get_config_dir
 
-_CONFIG_PATH = (
-    Path(__file__).parent.parent.parent / "config" / "session_config.yaml"
-)
+
+_CONFIG_PATH = get_config_dir() / "session_config.yaml"
 
 _REQUIRED = [
     ("event_name", lambda cfg: cfg.get("event_name", "")),

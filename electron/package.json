@@ -1,0 +1,49 @@
+{
+  "name": "miktos",
+  "version": "0.1.0",
+  "description": "Miktos Agentic System — Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac"
+  },
+  "dependencies": {
+    "electron": "^30.0.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.miktos.app",
+    "productName": "Miktos",
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        }
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.video",
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "Miktos Installer",
+      "artifactName": "Miktos-${version}.dmg"
+    },
+    "extraResources": [
+      {
+        "from": "../dist/miktos-server",
+        "to": "miktos-server"
+      }
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "build/**"
+    ]
+  }
+}

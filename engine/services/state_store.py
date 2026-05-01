@@ -8,12 +8,12 @@ Designed to be swappable for SQLite or a real DB in v2.
 
 import json
 import uuid
-from pathlib import Path
 from datetime import datetime
 from engine.graph.state import RunState
+from engine.paths import get_data_dir
 
 
-STATE_DIR = Path("data/state")
+STATE_DIR = get_data_dir() / "state"
 
 
 def generate_run_id() -> str:

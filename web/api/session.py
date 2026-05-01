@@ -8,7 +8,6 @@ GET  /api/sessions/{name}/report    → inline _report.html content
 """
 
 import re
-from pathlib import Path
 from typing import Any
 
 import yaml
@@ -16,10 +15,12 @@ from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
+from engine.paths import get_config_dir, get_data_dir
+
 router = APIRouter()
 
-_CONFIG_PATH = Path("domains/streamlab_post/config/session_config.yaml")
-_SESSIONS_DIR = Path("data/sessions")
+_CONFIG_PATH = get_config_dir() / "session_config.yaml"
+_SESSIONS_DIR = get_data_dir() / "sessions"
 
 _REQUIRED_FIELDS = {"event_name", "hardware"}
 _UUID_RE = re.compile(r"^[0-9a-f]{12}$")

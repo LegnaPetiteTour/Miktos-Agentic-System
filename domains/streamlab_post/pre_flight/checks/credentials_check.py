@@ -29,10 +29,10 @@ from pathlib import Path
 import requests  # type: ignore[import]
 import yaml
 
+from engine.paths import get_config_dir
 
-_CONFIG_PATH = (
-    Path(__file__).parent.parent.parent / "config" / "session_config.yaml"
-)
+
+_CONFIG_PATH = get_config_dir() / "session_config.yaml"
 
 _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 
