@@ -27,12 +27,14 @@ import yaml
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
+from engine.paths import get_config_dir, get_data_dir
+
 router = APIRouter()
 
-_CONFIG_PATH = Path("domains/streamlab_post/config/session_config.yaml")
-_MESSAGE_LOG = Path("data/messages/message.log")
-_LAYOUT_LOG = Path("data/logs/layout_log.jsonl")
-_SESSIONS_DIR = Path("data/sessions")
+_CONFIG_PATH = get_config_dir() / "session_config.yaml"
+_MESSAGE_LOG = get_data_dir() / "messages" / "message.log"
+_LAYOUT_LOG = get_data_dir() / "logs" / "layout_log.jsonl"
+_SESSIONS_DIR = get_data_dir() / "sessions"
 
 _UUID_RE = re.compile(r"^[0-9a-f]{12}$")
 _LOG_LINE_RE = re.compile(

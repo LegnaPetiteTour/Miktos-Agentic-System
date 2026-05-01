@@ -12,8 +12,10 @@ require manual clearing before streaming.
 
 from pathlib import Path
 
+from engine.paths import get_data_dir
 
-_PENDING_DIR = Path("data/messages/post_stream_processor/pending")
+
+_PENDING_DIR = get_data_dir() / "messages" / "post_stream_processor" / "pending"
 
 
 def run(dry_run: bool = False, pending_dir: str | Path | None = None) -> dict:

@@ -25,12 +25,14 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from engine.paths import get_config_dir, get_env_path
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-_ENV_PATH = Path(".env")
-_CONFIG_PATH = Path("domains/streamlab_post/config/session_config.yaml")
+_ENV_PATH = get_env_path()
+_CONFIG_PATH = get_config_dir() / "session_config.yaml"
 _BASE_DIR = Path(__file__).parent.parent
 _templates = Jinja2Templates(directory=_BASE_DIR / "templates")
 
