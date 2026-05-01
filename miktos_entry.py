@@ -44,12 +44,12 @@ except ImportError:
 # Launch the web server.
 # ---------------------------------------------------------------------------
 import uvicorn  # noqa: E402
+from web.server import app as _web_app  # noqa: E402 — static import so PyInstaller bundles it
 
-if __name__ == "__main__":
-    uvicorn.run(
-        "web.server:app",
-        host="127.0.0.1",
-        port=8000,
-        reload=False,
-        log_level="info",
-    )
+uvicorn.run(
+    _web_app,
+    host="127.0.0.1",
+    port=8000,
+    reload=False,
+    log_level="info",
+)
