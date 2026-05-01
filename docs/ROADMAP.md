@@ -394,13 +394,83 @@ Stage 4: report ✅
 
 ## Stage 2 — Local Installable App
 
-**Status:** In progress. See [docs/PRODUCT.md](PRODUCT.md) for the full product path.
-
 Phases 0–11 deliver a working prototype validated in production.
 Stage 2 packages it so a non-technical operator can install and run
 Miktos without developer assistance.
 
-**Next phases:**
+---
 
-- Phase 12: First-run onboarding wizard (credentials, hardware setup — no terminal)
-- Phase 13: Electron packaging (.dmg Mac app)
+## Phase 12 — Operator Onboarding Wizard ✅ COMPLETE
+
+**Completed:** 2026-04-19
+**Commit:** `145fd99` (PR #48)
+**Tests:** 140 passed, 1 skipped
+
+First-run onboarding flow so a non-technical operator can enter credentials
+and configure hardware without touching a terminal or a `.env` file.
+
+- [x] `GET /api/onboarding/status` — reports per-service credential state
+- [x] Browser-based onboarding panel in the web cockpit
+- [x] Credentials written to `~/Library/Application Support/Miktos/config/.env`
+  via `engine/paths.get_env_path()` (OS-appropriate, never in the project tree)
+- [x] Hardware selection (OBS / Epiphan Pearl) persisted across restarts
+- [x] All prior API routes unaffected — Phase 12 is purely additive
+
+---
+
+## Phase 13 — Electron Packaging (.dmg) ✅ COMPLETE
+
+**Completed:** 2026-05-01
+**Commit:** `39eb65e` (PR #52)
+**Tests:** 140 passed, 1 skipped
+**Artifact:** `Miktos-0.1.0.dmg` — 127 MB, arm64 + x64, Apple-signed
+
+Miktos ships as a native macOS app. Double-click the DMG, drag to
+Applications, launch — no terminal, no Python, no `pip install`.
+
+- [x] `miktos_entry.py` — PyInstaller entry point; bootstraps `MIKTOS_DATA_DIR`,
+  creates user data dirs, loads `.env`, hands off to uvicorn
+- [x] `miktos.spec` — single-file PyInstaller spec; bundles `web`, `domains`,
+  `engine`, templates, static assets, and all third-party dependencies
+- [x] `electron/` — Electron 30 shell; spawns `miktos-server`, polls `/` up to 60 s,
+  shows loading window then cockpit `BrowserWindow`; tray icon with Quit
+- [x] `electron/main.js` — kills `miktos-server` on `before-quit` (no orphan processes)
+- [x] `electron/build/icon.icns` — macOS app icon (1024 × 1024 dark indigo + white M)
+- [x] `electron/build/tray-icon.png` — 16 × 16 RGBA white M on transparent background
+- [x] `electron/package.json` — `electron` in `devDependencies` (electron-builder enforces this)
+- [x] `engine/paths.py` — `get_data_dir()` returns `MIKTOS_DATA_DIR` when set (packaged)
+  or project-root `data/` (dev); all path calls migrated across `web/`, `domains/`, `engine/`
+- [x] `.gitignore` — `electron/node_modules/`, `electron/dist/`, `electron/package-lock.json`
+
+**Gate 2 checklist (all PASS):**
+
+| Check | Result |
+|-------|--------|
+| DMG produced | ✅ `Miktos-0.1.0.dmg` 127 MB, arm64 + x64 |
+| Loading screen (HTTP 200 on `/`) | ✅ |
+| Server starts within 60 s | ✅ ~21 s |
+| `/api/onboarding/status` valid JSON | ✅ |
+| Quit leaves no orphan `miktos-server` process | ✅ `pgrep` exit 1 |
+| Electron process exits cleanly | ✅ |
+
+**Lesson learned — PyInstaller string-import trap:**
+`uvicorn.run("web.server:app", ...)` silently excludes `web.server` from the
+PYZ archive because PyInstaller's static analyser cannot follow string-based
+module paths. Fix: `from web.server import app as _web_app` + pass the object
+directly. The comment in `miktos_entry.py` documents the why.
+
+---
+
+## Phase 14 — Live Switching Surface 🔜 NEXT
+
+First operator-visible control surface inside the packaged app.
+Lets the operator switch Pearl layouts and trigger OBS scene changes
+directly from the Miktos cockpit — no shell, no `pearl_control.py`.
+
+**Planned scope:**
+
+- Live layout switcher panel in the web cockpit (hardware-aware)
+- OBS scene list + one-click switch via existing WebSocket client
+- Pearl channel status + layout grid, sourced from `layout_log.jsonl`
+- Keyboard shortcuts for common switches (configurable)
+- All actions surfaced through existing FastAPI routes — no new backend layer
