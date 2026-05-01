@@ -49,3 +49,8 @@ domains/streamlab_post/config/session_config.yaml
 # session_config.example.yaml is the committed reference
 !domains/streamlab_post/config/session_config.example.yaml
 
+
+# Electron build artifacts
+electron/node_modules/
+electron/package-lock.json
+electron/dist/
