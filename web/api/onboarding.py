@@ -39,23 +39,18 @@ _templates = Jinja2Templates(directory=_BASE_DIR / "templates")
 _YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 _YOUTUBE_REDIRECT_URI = "http://localhost:8000/onboarding/youtube/callback"
 
+# Stores the in-progress OAuth flow keyed by channel ("en" | "fr").
+# Required so the PKCE code verifier generated in /authorize is available
+# in /callback — creating a new Flow in the callback loses the verifier.
+_pending_flows: dict[str, Any] = {}
+
 # ---------------------------------------------------------------------------
 # .env helpers
 # ---------------------------------------------------------------------------
 
 
 def write_env_key(key: str, value: str) -> None:
-    """Atomically write or update a single key in .env.
-
-    Safety rules (from spec):
-    1. Read current .env into memory first.
-    2. Parse line by line, preserving comments and blank lines.
-    3. If key exists: replace that line only.
-    4. If key does not exist: append at the end.
-    5. Write atomically via temp file + rename.
-    6. Never delete or modify keys that are not being updated.
-    7. Never log or return the value.
-    """
+    """Atomically write or update a single key in .env."""
     lines: list[str] = []
     found = False
 
@@ -63,7 +58,6 @@ def write_env_key(key: str, value: str) -> None:
         raw = _ENV_PATH.read_text(encoding="utf-8")
         for line in raw.splitlines(keepends=True):
             stripped = line.rstrip("\r\n")
-            # Match lines of the form KEY=... or KEY= (even if value is empty)
             if stripped.startswith(f"{key}=") or stripped == key:
                 lines.append(f"{key}={value}\n")
                 found = True
@@ -71,12 +65,10 @@ def write_env_key(key: str, value: str) -> None:
                 lines.append(line)
 
     if not found:
-        # Ensure the file ends with a newline before appending
         if lines and not lines[-1].endswith("\n"):
             lines.append("\n")
         lines.append(f"{key}={value}\n")
 
-    # Atomic write: write to temp file in same dir, then rename
     tmp_fd, tmp_path = tempfile.mkstemp(dir=_ENV_PATH.parent, prefix=".env.tmp.")
     try:
         with os.fdopen(tmp_fd, "w", encoding="utf-8") as fh:
@@ -91,8 +83,6 @@ def write_env_key(key: str, value: str) -> None:
 
 
 def read_env_keys() -> dict[str, str]:
-    """Return a dict of key→value from .env. Values are not redacted here —
-    callers must not log or expose them to clients."""
     if not _ENV_PATH.exists():
         return {}
     result: dict[str, str] = {}
@@ -107,18 +97,6 @@ def read_env_keys() -> dict[str, str]:
 
 
 def check_credentials() -> dict[str, Any]:
-    """Return a presence map for all required credential keys.
-
-    Returns:
-        {
-            youtube_client: bool,
-            youtube_en: bool,
-            youtube_fr: bool,
-            translate: bool,
-            elevenlabs: bool,
-            hardware: str | None,   # "epiphan" | "obs" | None
-        }
-    """
     keys = read_env_keys()
     hardware: str | None = None
     if _CONFIG_PATH.exists():
@@ -237,13 +215,11 @@ api_router = APIRouter()
 
 @api_router.get("/status")
 async def onboarding_status() -> JSONResponse:
-    """Return credential presence map — no values exposed."""
     return JSONResponse(check_credentials())
 
 
 @api_router.post("/youtube/client")
 async def save_youtube_client(body: YoutubeClientBody) -> JSONResponse:
-    """Save YouTube Client ID and Secret to .env."""
     if not body.client_id or not body.client_secret:
         return JSONResponse(
             {"success": False, "error": "client_id and client_secret are required"},
@@ -256,7 +232,6 @@ async def save_youtube_client(body: YoutubeClientBody) -> JSONResponse:
 
 @api_router.post("/validate/translate")
 async def validate_translate(body: ApiKeyBody) -> JSONResponse:
-    """Validate a Google Translate API key; write to .env only on success."""
     try:
         resp = _requests.get(
             "https://translation.googleapis.com/language/translate/v2/languages",
@@ -266,14 +241,12 @@ async def validate_translate(body: ApiKeyBody) -> JSONResponse:
         resp.raise_for_status()
     except _requests.RequestException as exc:
         return JSONResponse({"success": False, "error": str(exc)})
-
     write_env_key("GOOGLE_TRANSLATE_API_KEY", body.api_key)
     return JSONResponse({"success": True, "error": None})
 
 
 @api_router.post("/validate/elevenlabs")
 async def validate_elevenlabs(body: ApiKeyBody) -> JSONResponse:
-    """Validate an ElevenLabs API key; write to .env only on success."""
     try:
         resp = _requests.get(
             "https://api.elevenlabs.io/v1/user",
@@ -283,14 +256,12 @@ async def validate_elevenlabs(body: ApiKeyBody) -> JSONResponse:
         resp.raise_for_status()
     except _requests.RequestException as exc:
         return JSONResponse({"success": False, "error": str(exc)})
-
     write_env_key("ELEVENLABS_API_KEY", body.api_key)
     return JSONResponse({"success": True, "error": None})
 
 
 @api_router.post("/validate/pearl")
 async def validate_pearl(body: PearlBody) -> JSONResponse:
-    """Test Pearl connection; write hardware config only on success."""
     try:
         resp = _requests.get(
             f"http://{body.host}:{body.port}/api/channels",
@@ -302,28 +273,19 @@ async def validate_pearl(body: PearlBody) -> JSONResponse:
         return JSONResponse({"success": False, "firmware": None, "error": str(exc)})
     except Exception:
         firmware = None
-
     _write_hardware_config("epiphan", body.host, body.port)
     return JSONResponse({"success": True, "firmware": firmware, "error": None})
 
 
 @api_router.post("/validate/obs")
 async def validate_obs(body: ObsBody) -> JSONResponse:
-    """Test OBS WebSocket connection; write hardware config only on success."""
     try:
         import obsws_python as obs  # type: ignore[import-untyped]
-
-        cl = obs.ReqClient(
-            host=body.host,
-            port=body.port,
-            password=body.password,
-            timeout=5,
-        )
+        cl = obs.ReqClient(host=body.host, port=body.port, password=body.password, timeout=5)
         version: str = cl.get_version().obs_version
         cl.disconnect()
     except Exception as exc:
         return JSONResponse({"success": False, "version": None, "error": str(exc)})
-
     _write_hardware_config("obs", body.host, body.port, password=body.password)
     return JSONResponse({"success": True, "version": version, "error": None})
 
@@ -347,12 +309,7 @@ async def onboarding_index(
     return _templates.TemplateResponse(
         request=request,
         name="onboarding.html",
-        context={
-            "step": step,
-            "creds": creds,
-            "error": error,
-            "success": success,
-        },
+        context={"step": step, "creds": creds, "error": error, "success": success},
     )
 
 
@@ -416,7 +373,8 @@ async def step_ready(request: Request) -> HTMLResponse:
 
 @view_router.get("/youtube/authorize")
 async def youtube_authorize(channel: str = "") -> RedirectResponse:
-    """Redirect to Google OAuth consent screen for the given channel."""
+    """Redirect to Google OAuth consent screen. Store the flow object so the
+    PKCE code verifier is available in the callback."""
     if channel not in ("en", "fr"):
         return RedirectResponse("/onboarding?error=invalid_channel")
 
@@ -435,6 +393,8 @@ async def youtube_authorize(channel: str = "") -> RedirectResponse:
             state=channel,
             prompt="consent",
         )
+        # Store the flow so the callback can reuse the same PKCE code verifier
+        _pending_flows[channel] = flow
     except Exception as exc:
         return RedirectResponse(f"/onboarding?error={exc!s:.80}")
 
@@ -447,7 +407,8 @@ async def youtube_callback(
     state: str = "",
     error: str = "",
 ) -> RedirectResponse:
-    """Handle Google OAuth callback, exchange code for refresh token, write .env."""
+    """Handle Google OAuth callback. Reuse the stored flow to preserve the
+    PKCE code verifier — creating a new flow here would lose it."""
     if error:
         return RedirectResponse(f"/onboarding?error=oauth_{error}")
 
@@ -457,15 +418,18 @@ async def youtube_callback(
     if not code:
         return RedirectResponse("/onboarding?error=missing_code")
 
-    keys = read_env_keys()
-    client_id = keys.get("YOUTUBE_CLIENT_ID", "")
-    client_secret = keys.get("YOUTUBE_CLIENT_SECRET", "")
-
-    if not client_id or not client_secret:
-        return RedirectResponse("/onboarding?error=missing_youtube_client")
+    # Retrieve the flow stored during /authorize
+    flow = _pending_flows.pop(state, None)
+    if flow is None:
+        # Fallback: rebuild the flow without PKCE verifier (may fail with PKCE-strict servers)
+        keys = read_env_keys()
+        client_id = keys.get("YOUTUBE_CLIENT_ID", "")
+        client_secret = keys.get("YOUTUBE_CLIENT_SECRET", "")
+        if not client_id or not client_secret:
+            return RedirectResponse("/onboarding?error=missing_youtube_client")
+        flow = _make_youtube_flow(client_id, client_secret)
 
     try:
-        flow = _make_youtube_flow(client_id, client_secret)
         flow.fetch_token(code=code)
         refresh_token = flow.credentials.refresh_token
     except Exception as exc:
