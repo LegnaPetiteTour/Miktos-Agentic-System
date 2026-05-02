@@ -1,0 +1,55 @@
+{# panel_switcher.html — OBS scene switcher panel (HTMX partial) #}
+<section class="panel" id="panel-switcher">
+  <h2 class="panel-title">Scene Switcher</h2>
+  <div id="switcher-scenes"><span class="muted">Loading…</span></div>
+  <div id="switcher-status" class="muted" style="font-size:0.8rem;margin-top:0.4rem;"></div>
+</section>
+
+<script>
+(function () {
+  async function loadScenes() {
+    try {
+      const r = await fetch("/api/switcher/obs/scenes");
+      const d = await r.json();
+      const el = document.getElementById("switcher-scenes");
+      if (!el) return;
+      if (d.error) {
+        el.innerHTML = '<span class="muted">OBS offline</span>';
+        return;
+      }
+      el.innerHTML = (d.scenes || []).map(s =>
+        `<button class="btn-scene${s === d.current ? ' btn-scene-active' : ''}"
+                 onclick="switchScene('${s.replace(/'/g, "\\'")}')">` +
+          escHtml(s) +
+        `</button>`
+      ).join(" ");
+    } catch { /* ignore */ }
+  }
+
+  async function switchScene(name) {
+    const st = document.getElementById("switcher-status");
+    if (st) st.textContent = "Switching…";
+    try {
+      const r = await fetch("/api/switcher/obs/switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scene_name: name }),
+      });
+      const d = await r.json();
+      if (st) st.textContent = d.success ? ("✓ " + name) : (d.error || "Failed");
+    } catch (err) {
+      const st = document.getElementById("switcher-status");
+      if (st) st.textContent = "Error: " + err.message;
+    }
+    loadScenes();
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  window.switchScene = switchScene;
+  loadScenes();
+  setInterval(loadScenes, 10000);
+})();
+</script>

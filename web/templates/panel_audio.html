@@ -1,0 +1,59 @@
+{# panel_audio.html — OBS audio input mute/volume panel (HTMX partial) #}
+<section class="panel" id="panel-audio">
+  <h2 class="panel-title">Audio</h2>
+  <div id="audio-inputs"><span class="muted">Loading…</span></div>
+</section>
+
+<script>
+(function () {
+  async function loadInputs() {
+    try {
+      const r = await fetch("/api/audio/inputs");
+      const d = await r.json();
+      const el = document.getElementById("audio-inputs");
+      if (!el) return;
+      if (d.error) {
+        el.innerHTML = '<span class="muted">OBS offline</span>';
+        return;
+      }
+      if (!d.inputs || d.inputs.length === 0) {
+        el.innerHTML = '<span class="muted">No audio inputs</span>';
+        return;
+      }
+      el.innerHTML = d.inputs.map(inp => {
+        const muted = inp.muted === true;
+        const volStr = inp.volume_db != null ? inp.volume_db.toFixed(1) + " dB" : "—";
+        const safeN = escHtml(inp.name);
+        const rawN  = inp.name.replace(/'/g, "\\'");
+        return `<div class="audio-row">
+          <span class="label" title="${safeN}">${safeN}</span>
+          <button class="btn-mute${muted ? ' btn-mute-active' : ''}"
+                  onclick="toggleMute('${rawN}', ${!muted})">
+            ${muted ? "Unmute" : "Mute"}
+          </button>
+          <span class="muted" style="font-size:0.8rem;">${volStr}</span>
+        </div>`;
+      }).join("");
+    } catch { /* ignore */ }
+  }
+
+  async function toggleMute(name, muted) {
+    try {
+      await fetch("/api/audio/mute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input_name: name, muted: muted }),
+      });
+    } catch { /* ignore */ }
+    loadInputs();
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  window.toggleMute = toggleMute;
+  loadInputs();
+  setInterval(loadInputs, 15000);
+})();
+</script>
