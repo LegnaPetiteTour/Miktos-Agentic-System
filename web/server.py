@@ -25,7 +25,17 @@ from fastapi.responses import HTMLResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
 
-from web.api import onboarding, pearl, runner, session, status  # noqa: E402
+from web.api import (  # noqa: E402
+    audio_control,
+    captions,
+    health,
+    onboarding,
+    pearl,
+    runner,
+    session,
+    status,
+    switcher,
+)
 
 BASE_DIR = Path(__file__).parent
 
@@ -45,6 +55,10 @@ app.include_router(status.router, prefix="/api/status")
 app.include_router(pearl.router, prefix="/api/pearl")
 app.include_router(onboarding.api_router, prefix="/api/onboarding")
 app.include_router(onboarding.view_router, prefix="/onboarding")
+app.include_router(switcher.router, prefix="/api/switcher")
+app.include_router(health.router, prefix="/api/health")
+app.include_router(audio_control.router, prefix="/api/audio")
+app.include_router(captions.router, prefix="/api/captions")
 
 
 # ---------------------------------------------------------------------------
@@ -85,6 +99,31 @@ async def session_report(request: Request, name: str) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request, name="report.html", context={"session_name": name}
     )
+
+
+# ---------------------------------------------------------------------------
+# HTMX panel partials (Phase 14)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/panels/switcher", response_class=HTMLResponse)
+async def panel_switcher(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_switcher.html")
+
+
+@app.get("/panels/health", response_class=HTMLResponse)
+async def panel_health(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_health.html")
+
+
+@app.get("/panels/audio", response_class=HTMLResponse)
+async def panel_audio(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_audio.html")
+
+
+@app.get("/panels/captions", response_class=HTMLResponse)
+async def panel_captions(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_captions.html")
 
 
 # ---------------------------------------------------------------------------

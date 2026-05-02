@@ -65,6 +65,18 @@
     <ul id="pipeline-slots" class="slot-list"><li class="muted">—</li></ul>
   </section>
 
+  <!-- Scene Switcher (Phase 14) -->
+  <div hx-get="/panels/switcher" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Health (Phase 14) -->
+  <div hx-get="/panels/health" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Audio Control (Phase 14) -->
+  <div hx-get="/panels/audio" hx-trigger="load" hx-swap="outerHTML"></div>
+
+  <!-- Captions (Phase 14) -->
+  <div hx-get="/panels/captions" hx-trigger="load" hx-swap="outerHTML"></div>
+
 </div>
 
 <script>

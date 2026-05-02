@@ -1,0 +1,45 @@
+{# panel_captions.html — Live caption feed panel (HTMX partial) #}
+<section class="panel" id="panel-captions">
+  <h2 class="panel-title">Captions</h2>
+  <div id="captions-feed"
+       style="max-height:12rem;overflow-y:auto;font-size:0.85rem;line-height:1.5;">
+    <span class="muted">Waiting for captions…</span>
+  </div>
+</section>
+
+<script>
+(function () {
+  const feed = document.getElementById("captions-feed");
+  if (!feed) return;
+
+  const evtSource = new EventSource("/api/captions/stream");
+
+  evtSource.onmessage = (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      const row = document.createElement("div");
+      row.className = "caption-row";
+      const chSpan = document.createElement("span");
+      chSpan.className = "label";
+      chSpan.textContent = d.channel || "—";
+      const txtSpan = document.createElement("span");
+      txtSpan.textContent = " " + (d.text || "");
+      row.appendChild(chSpan);
+      row.appendChild(txtSpan);
+
+      // Remove placeholder on first real caption
+      const placeholder = feed.querySelector(".muted");
+      if (placeholder) placeholder.remove();
+
+      feed.appendChild(row);
+      // Keep last 50 entries
+      while (feed.children.length > 50) feed.removeChild(feed.firstChild);
+      feed.scrollTop = feed.scrollHeight;
+    } catch { /* ignore */ }
+  };
+
+  evtSource.onerror = () => {
+    // SSE reconnects automatically; leave feed as-is
+  };
+})();
+</script>

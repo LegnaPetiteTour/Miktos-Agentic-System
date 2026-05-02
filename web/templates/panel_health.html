@@ -1,0 +1,52 @@
+{# panel_health.html — Hardware & network health panel (HTMX partial) #}
+<section class="panel" id="panel-health-hw">
+  <h2 class="panel-title">Health</h2>
+  <div id="health-obs" class="health-row">
+    <span class="label">OBS</span>
+    <span class="muted">—</span>
+  </div>
+  <div id="health-pearl" class="health-row">
+    <span class="label">Pearl</span>
+    <span class="muted">—</span>
+  </div>
+  <div id="health-network" class="health-row">
+    <span class="label">Network</span>
+    <span class="muted">—</span>
+  </div>
+  <button class="btn-refresh" onclick="refreshHealth()" style="margin-top:0.5rem;font-size:0.8rem;">Refresh</button>
+</section>
+
+<script>
+(function () {
+  function badge(ok) {
+    return ok
+      ? '<span class="state-badge state-streaming">OK</span>'
+      : '<span class="state-badge state-idle">Offline</span>';
+  }
+
+  async function refreshHealth() {
+    try {
+      const r = await fetch("/api/health/snapshot");
+      const d = await r.json();
+
+      const obsEl = document.getElementById("health-obs");
+      if (obsEl) obsEl.innerHTML =
+        `<span class="label">OBS</span> ${badge(d.obs_ok)}` +
+        (d.obs_version ? ` <span class="muted">${d.obs_version}</span>` : "");
+
+      const pearlEl = document.getElementById("health-pearl");
+      if (pearlEl) pearlEl.innerHTML =
+        `<span class="label">Pearl</span> ${badge(d.pearl_ok)}` +
+        (d.pearl_firmware ? ` <span class="muted">${d.pearl_firmware}</span>` : "");
+
+      const netEl = document.getElementById("health-network");
+      if (netEl) netEl.innerHTML =
+        `<span class="label">Network</span> ` +
+        `<span class="muted">${d.network_quality || "—"}</span>`;
+    } catch { /* ignore */ }
+  }
+
+  refreshHealth();
+  setInterval(refreshHealth, 30000);
+})();
+</script>
