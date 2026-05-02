@@ -28,6 +28,9 @@
       <label>Port
         <input type="number" id="pearl-port" value="80" style="width:8rem">
       </label>
+      <label>Admin Password
+        <input type="password" id="pearl-password" placeholder="Pearl admin password" style="width:100%">
+      </label>
       <button type="submit" class="btn-start">Test Connection</button>
     </form>
     <div id="pearl-status" class="muted"></div>
@@ -72,6 +75,7 @@ document.getElementById("pearl-form").addEventListener("submit", async (e) => {
     body: JSON.stringify({
       host: document.getElementById("pearl-host").value.trim(),
       port: parseInt(document.getElementById("pearl-port").value, 10),
+      password: document.getElementById("pearl-password").value,
     }),
   });
   const data = await resp.json();

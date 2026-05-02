@@ -193,6 +193,7 @@ class ApiKeyBody(BaseModel):
 class PearlBody(BaseModel):
     host: str
     port: int
+    password: str = ""  # Pearl admin password for Basic Auth
 
 
 class ObsBody(BaseModel):
@@ -262,18 +263,31 @@ async def validate_elevenlabs(body: ApiKeyBody) -> JSONResponse:
 
 @api_router.post("/validate/pearl")
 async def validate_pearl(body: PearlBody) -> JSONResponse:
+    """Test Pearl connection using Basic Auth (admin / password).
+    Writes hardware config to session_config.yaml and PEARL_PASSWORD to .env on success."""
     try:
+        # Pearl always requires HTTP Basic Auth with username "admin".
+        # Even with no password set, omitting auth entirely returns 401.
         resp = _requests.get(
             f"http://{body.host}:{body.port}/api/channels",
+            auth=("admin", body.password),  # always send Basic Auth
             timeout=5,
         )
         resp.raise_for_status()
-        firmware: str | None = resp.json().get("firmware") if resp.text else None
+        firmware: str | None = None
+        try:
+            firmware = resp.json().get("firmware")
+        except Exception:
+            pass
     except _requests.RequestException as exc:
         return JSONResponse({"success": False, "firmware": None, "error": str(exc)})
-    except Exception:
-        firmware = None
+
     _write_hardware_config("epiphan", body.host, body.port)
+    # Write Pearl host and password to .env so PearlClient can use them
+    write_env_key("PEARL_HOST", body.host)
+    write_env_key("PEARL_PORT", str(body.port))
+    if body.password:
+        write_env_key("PEARL_PASSWORD", body.password)
     return JSONResponse({"success": True, "firmware": firmware, "error": None})
 
 
@@ -421,7 +435,6 @@ async def youtube_callback(
     # Retrieve the flow stored during /authorize
     flow = _pending_flows.pop(state, None)
     if flow is None:
-        # Fallback: rebuild the flow without PKCE verifier (may fail with PKCE-strict servers)
         keys = read_env_keys()
         client_id = keys.get("YOUTUBE_CLIENT_ID", "")
         client_secret = keys.get("YOUTUBE_CLIENT_SECRET", "")
