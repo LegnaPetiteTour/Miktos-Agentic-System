@@ -28,9 +28,11 @@ from fastapi.templating import Jinja2Templates  # noqa: E402
 from web.api import (  # noqa: E402
     audio_control,
     captions,
+    graphics,
     health,
     onboarding,
     pearl,
+    preview,
     runner,
     session,
     status,
@@ -59,6 +61,8 @@ app.include_router(switcher.router, prefix="/api/switcher")
 app.include_router(health.router, prefix="/api/health")
 app.include_router(audio_control.router, prefix="/api/audio")
 app.include_router(captions.router, prefix="/api/captions")
+app.include_router(preview.router, prefix="/api/preview")
+app.include_router(graphics.router, prefix="/api/graphics")
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +128,16 @@ async def panel_audio(request: Request) -> HTMLResponse:
 @app.get("/panels/captions", response_class=HTMLResponse)
 async def panel_captions(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="panel_captions.html")
+
+
+@app.get("/panels/preview", response_class=HTMLResponse)
+async def panel_preview(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_preview.html")
+
+
+@app.get("/panels/graphics", response_class=HTMLResponse)
+async def panel_graphics(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_graphics.html")
 
 
 # ---------------------------------------------------------------------------

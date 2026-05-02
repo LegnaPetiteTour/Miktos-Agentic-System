@@ -1,0 +1,46 @@
+{# panel_preview.html — Live thumbnail preview panel (HTMX partial) #}
+<section class="panel" id="panel-preview">
+  <h2 class="panel-title">Preview</h2>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+    <div style="flex:1;min-width:120px;text-align:center;">
+      <div class="muted" style="font-size:0.75rem;margin-bottom:0.25rem;">Pearl EN</div>
+      <img id="thumb-pearl-en" src="" alt="Pearl EN"
+           style="width:100%;border-radius:4px;border:1px solid var(--border, #333);background:#111;min-height:68px;" />
+    </div>
+    <div style="flex:1;min-width:120px;text-align:center;">
+      <div class="muted" style="font-size:0.75rem;margin-bottom:0.25rem;">Pearl FR</div>
+      <img id="thumb-pearl-fr" src="" alt="Pearl FR"
+           style="width:100%;border-radius:4px;border:1px solid var(--border, #333);background:#111;min-height:68px;" />
+    </div>
+    <div style="flex:1;min-width:120px;text-align:center;">
+      <div class="muted" style="font-size:0.75rem;margin-bottom:0.25rem;">OBS</div>
+      <img id="thumb-obs" src="" alt="OBS"
+           style="width:100%;border-radius:4px;border:1px solid var(--border, #333);background:#111;min-height:68px;" />
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  async function refreshThumb(source) {
+    try {
+      const r = await fetch("/api/preview/thumbnail?source=" + source);
+      const d = await r.json();
+      const imgId = "thumb-" + source.replace("_", "-");
+      const img = document.getElementById(imgId);
+      if (img && d.data) {
+        img.src = "data:" + d.content_type + ";base64," + d.data;
+      }
+    } catch { /* ignore */ }
+  }
+
+  function refreshAll() {
+    refreshThumb("pearl_en");
+    refreshThumb("pearl_fr");
+    refreshThumb("obs");
+  }
+
+  refreshAll();
+  setInterval(refreshAll, 2000);
+})();
+</script>
