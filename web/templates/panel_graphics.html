@@ -1,0 +1,97 @@
+{# panel_graphics.html — Lower thirds, transitions, intro/outro panel (HTMX partial) #}
+<section class="panel" id="panel-graphics">
+  <h2 class="panel-title">Graphics</h2>
+
+  {# --- Lower Thirds --- #}
+  <fieldset style="border:1px solid var(--border, #444);border-radius:4px;padding:0.5rem;margin-bottom:0.75rem;">
+    <legend style="font-size:0.8rem;padding:0 0.25rem;">Lower Third</legend>
+    <input id="lt-name"  type="text" placeholder="Name"         class="input-field" style="width:100%;margin-bottom:0.35rem;" />
+    <input id="lt-title" type="text" placeholder="Title"        class="input-field" style="width:100%;margin-bottom:0.35rem;" />
+    <input id="lt-org"   type="text" placeholder="Organization" class="input-field" style="width:100%;margin-bottom:0.5rem;" />
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn btn-primary" onclick="lowerThirdOn()" style="flex:1;">On Air</button>
+      <button class="btn"             onclick="lowerThirdOff()" style="flex:1;">Off Air</button>
+    </div>
+    <div id="lt-status" class="muted" style="font-size:0.75rem;margin-top:0.35rem;"></div>
+  </fieldset>
+
+  {# --- Transition --- #}
+  <fieldset style="border:1px solid var(--border, #444);border-radius:4px;padding:0.5rem;margin-bottom:0.75rem;">
+    <legend style="font-size:0.8rem;padding:0 0.25rem;">Transition</legend>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+      <select id="tx-type" class="input-field" style="flex:1;">
+        <option value="cut">Cut</option>
+        <option value="fade">Fade</option>
+        <option value="wipe">Wipe</option>
+      </select>
+      <button class="btn btn-primary" onclick="doTransition()" style="flex:1;">Transition</button>
+    </div>
+    <div id="tx-status" class="muted" style="font-size:0.75rem;margin-top:0.35rem;"></div>
+  </fieldset>
+
+  {# --- Intro / Outro --- #}
+  <fieldset style="border:1px solid var(--border, #444);border-radius:4px;padding:0.5rem;">
+    <legend style="font-size:0.8rem;padding:0 0.25rem;">Bumpers</legend>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn" onclick="triggerClip('intro')" style="flex:1;">▶ Intro</button>
+      <button class="btn" onclick="triggerClip('outro')" style="flex:1;">▶ Outro</button>
+    </div>
+    <div id="clip-status" class="muted" style="font-size:0.75rem;margin-top:0.35rem;"></div>
+  </fieldset>
+</section>
+
+<script>
+(function () {
+  function setStatus(id, msg, ok) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = msg;
+      el.style.color = ok ? "var(--color-ok, #4caf50)" : "var(--color-err, #f44336)";
+    }
+  }
+
+  async function apiPost(path, body) {
+    const r = await fetch(path, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body),
+    });
+    return r.json();
+  }
+
+  window.lowerThirdOn = async function () {
+    const name  = document.getElementById("lt-name").value.trim();
+    const title = document.getElementById("lt-title").value.trim();
+    const org   = document.getElementById("lt-org").value.trim();
+    if (!name) { setStatus("lt-status", "Name is required.", false); return; }
+    try {
+      const d = await apiPost("/api/graphics/lower_third", {name, title, org});
+      setStatus("lt-status", d.ok ? "On Air: " + d.text : "Error: " + d.error, d.ok);
+    } catch (e) { setStatus("lt-status", "Request failed.", false); }
+  };
+
+  window.lowerThirdOff = async function () {
+    try {
+      const r = await fetch("/api/graphics/lower_third", {method: "DELETE"});
+      const d = await r.json();
+      setStatus("lt-status", d.ok ? "Off Air." : "Error: " + d.error, d.ok);
+    } catch (e) { setStatus("lt-status", "Request failed.", false); }
+  };
+
+  window.doTransition = async function () {
+    const type = document.getElementById("tx-type").value;
+    try {
+      const d = await apiPost("/api/graphics/transition", {type});
+      setStatus("tx-status", d.ok ? "Transitioned (" + type + ")." : "Error: " + d.error, d.ok);
+    } catch (e) { setStatus("tx-status", "Request failed.", false); }
+  };
+
+  window.triggerClip = async function (clip) {
+    try {
+      const r = await fetch("/api/graphics/" + clip, {method: "POST"});
+      const d = await r.json();
+      setStatus("clip-status", d.ok ? clip + " triggered." : "Error: " + d.error, d.ok);
+    } catch (e) { setStatus("clip-status", "Request failed.", false); }
+  };
+})();
+</script>
