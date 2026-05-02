@@ -212,6 +212,6 @@ def test_captions_append_ok(tmp_path, monkeypatch):
     assert data["entry"]["text"] == "Bonjour le monde"
 
     import json
-    lines = [json.loads(l) for l in tmp_file.read_text().splitlines() if l.strip()]
+    lines = [json.loads(ln) for ln in tmp_file.read_text().splitlines() if ln.strip()]
     assert len(lines) == 1
     assert lines[0]["text"] == "Bonjour le monde"
