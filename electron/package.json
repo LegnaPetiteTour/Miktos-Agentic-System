@@ -1,6 +1,6 @@
 {
   "name": "miktos",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Miktos Agentic System — Desktop App",
   "main": "main.js",
   "scripts": {
