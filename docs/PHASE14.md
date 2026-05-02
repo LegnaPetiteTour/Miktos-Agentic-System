@@ -27,6 +27,7 @@ entire live event. Four capabilities:
 
 Two columns side by side: EN channel (Pearl recorder 2 / OBS) and FR
 channel (Pearl recorder 3). Each column shows:
+
 - Current active layout/scene name (highlighted)
 - All available layouts/scenes as clickable buttons
 - Transition indicator when a switch is in progress
@@ -35,11 +36,13 @@ channel (Pearl recorder 3). Each column shows:
 ### How it works
 
 **Pearl:** wraps the existing `pearl_control.py` API
+
 - `GET /api/pearl/layouts/{channel_id}` — already exists (Phase 10a)
 - `POST /api/pearl/switch` — already exists (Phase 10a)
 - Auto-refresh every 4 seconds via existing SSE stream
 
 **OBS:** new integration
+
 - `GET /api/obs/scenes` — new endpoint, calls OBS WebSocket `GetSceneList`
 - `POST /api/obs/switch` — new endpoint, calls OBS WebSocket `SetCurrentProgramScene`
 - `GET /api/obs/current` — new endpoint, calls `GetCurrentProgramScene`
@@ -58,7 +61,7 @@ channel (Pearl recorder 3). Each column shows:
 The Pearl half already exists in `web/api/pearl.py` — `switcher.py`
 extends it with OBS equivalents and adds a unified endpoint:
 
-```
+```text
 GET  /api/switcher/state
      → {pearl: {ch2: {active: str, layouts: [...]},
                 ch3: {active: str, layouts: [...]}},
@@ -71,12 +74,12 @@ The SSE stream in `status.py` adds `switcher_state` to its payload.
 
 ## Feature 2 — Stream Health Dashboard
 
-### What it shows
+### Health Metrics
 
 Per-channel health panel:
 
 | Metric | Source | Update rate |
-|---|---|---|
+| --- | --- | --- |
 | Upload speed (Mbps) | macOS `networkQuality` CLI | Every 30s |
 | Pearl streaming bitrate | Pearl `GET /api/channels/{id}/publishers` | Every 5s |
 | Pearl stream state | Pearl API | Every 5s |
@@ -85,6 +88,7 @@ Per-channel health panel:
 | OBS output state | OBS WebSocket `GetOutputStatus` | Every 5s |
 
 Visual encoding quality indicator per channel:
+
 - 🟢 Green: bitrate > 80% of target, dropped frames < 0.5%
 - 🟡 Yellow: bitrate 50–80%, dropped frames 0.5–2%
 - 🔴 Red: bitrate < 50%, dropped frames > 2%
@@ -122,6 +126,7 @@ configuration and streaming status, not sample-level audio data.
 OBS WebSocket has `GetInputVolume` but not live VU levels.
 
 **What IS achievable:**
+
 - **Volume controls:** Pearl channel volume is configurable via API
   (`PATCH /api/channels/{id}/audio`). Miktos can expose a fader.
 - **Mute controls:** Pearl and OBS both support mute via API.
@@ -130,16 +135,18 @@ OBS WebSocket has `GetInputVolume` but not live VU levels.
   but adds a significant dependency (BlackHole install, audio routing).
 
 **Phase 14 delivers:**
+
 - Volume faders per channel (Pearl audio level via API)
 - Mute/unmute per channel (Pearl + OBS)
 - Visual indicator: muted / active / unknown
 
 **Phase 15 (deferred):**
+
 - Live VU meter visualization (requires BlackHole or similar audio tap)
 
 ### New endpoint: `POST /api/audio/mute`
 
-```
+```text
 POST /api/audio/mute
      Body: {channel: "pearl_en" | "pearl_fr" | "obs", mute: bool}
      → Calls Pearl PATCH /api/channels/{id}/audio or OBS SetInputMute
@@ -152,12 +159,13 @@ POST /api/audio/mute
 ### Overview
 
 Live captions have two parts:
+
 1. **Caption monitor** — real-time transcript visible in Miktos cockpit
 2. **YouTube caption push** — captions delivered to YouTube viewers
 
 ### Architecture
 
-```
+```text
 Audio source (BlackHole virtual device)
     │
     ▼
@@ -176,6 +184,7 @@ audio to both speakers AND BlackHole simultaneously.
 Miktos captures audio from BlackHole.
 
 Install command (one-time, shown in Miktos setup):
+
 ```bash
 brew install blackhole-2ch
 ```
@@ -193,6 +202,7 @@ segments, _ = model.transcribe(audio_chunk, language="en")
 ```
 
 For bilingual:
+
 - EN channel caption worker: `language="en"`
 - FR channel caption worker: `language="fr"`
 
@@ -219,7 +229,8 @@ def push_caption(ingestion_url: str, text: str) -> None:
 ```
 
 The ingestion URL is retrieved from YouTube via:
-```
+
+```text
 GET /youtube/v3/liveBroadcasts?part=contentDetails&id={video_id}
     → contentDetails.monitorStream.embedHtml contains ingestion URL
 ```
@@ -249,7 +260,7 @@ class CaptionWorker:
 
 ### New endpoints: `web/api/captions.py`
 
-```
+```text
 POST /api/captions/start
      Body: {channel: "en"|"fr", audio_device: str,
             ingestion_url: str|None}
@@ -287,7 +298,7 @@ Added to `/setup` form and `/onboarding` wizard (new step: Captions).
 
 ## New Files Summary
 
-```
+```text
 domains/captioning/
   __init__.py
   caption_worker.py      ← audio capture + STT + YouTube push
@@ -313,7 +324,7 @@ web/templates/index.html ← MODIFIED: 4 new panels in cockpit
 
 ## Cockpit Layout After Phase 14
 
-```
+```text
 ┌──────────────────────────────────────────────────┐
 │ HARDWARE  [epiphan]   SESSION [Start] [Stop]          │
 ├──────────────────────────────────────────────────┤
@@ -342,7 +353,7 @@ web/templates/index.html ← MODIFIED: 4 new panels in cockpit
 
 ## New Dependencies
 
-```
+```text
 faster-whisper>=1.0    ← local STT (no API key, free)
 sounddevice>=0.4       ← audio capture from virtual device
 obsws-python>=1.7      ← already in project (Phase 3)
@@ -359,6 +370,7 @@ faster-whisper model: downloads on first caption use (~150 MB for small).
 ~12 tests, mocked hardware, no live Pearl/OBS/audio required:
 
 **Switcher:**
+
 1. `test_pearl_layouts_endpoint` — returns layout list per channel
 2. `test_pearl_switch_endpoint` — calls switch and returns success
 3. `test_obs_scenes_endpoint` — returns scene list (mocked WS)
