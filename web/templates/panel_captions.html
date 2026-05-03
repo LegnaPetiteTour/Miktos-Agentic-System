@@ -1,8 +1,29 @@
-{# panel_captions.html — Live caption feed panel (HTMX partial) #}
+{# panel_captions.html — Live caption feed + reliability dashboard (HTMX partial) #}
 <section class="panel" id="panel-captions">
   <h2 class="panel-title">Captions</h2>
+
+  {# Reliability dashboard #}
+  <div id="caption-stats-bar" style="display:flex;gap:0.75rem;align-items:center;margin-bottom:0.5rem;font-size:0.78rem;flex-wrap:wrap;">
+    <span>
+      <span class="muted">Rate:</span>
+      <strong id="caption-rate">—</strong>
+      <span class="muted">/min</span>
+    </span>
+    <span>
+      <span class="muted">Lag:</span>
+      <strong id="caption-lag">—</strong>
+    </span>
+    <span id="caption-stale-badge" style="display:none;">
+      <span class="state-badge state-idle">STALE</span>
+    </span>
+    <span id="caption-ok-badge" style="display:none;">
+      <span class="state-badge state-streaming">LIVE</span>
+    </span>
+  </div>
+
+  {# Live caption feed #}
   <div id="captions-feed"
-       style="max-height:12rem;overflow-y:auto;font-size:0.85rem;line-height:1.5;">
+       style="max-height:10rem;overflow-y:auto;font-size:0.85rem;line-height:1.5;">
     <span class="muted">Waiting for captions…</span>
   </div>
 </section>
@@ -10,36 +31,60 @@
 <script>
 (function () {
   const feed = document.getElementById("captions-feed");
-  if (!feed) return;
 
-  const evtSource = new EventSource("/api/captions/stream");
+  // --- SSE live feed ---
+  if (feed) {
+    const evtSource = new EventSource("/api/captions/stream");
 
-  evtSource.onmessage = (e) => {
+    evtSource.onmessage = (e) => {
+      try {
+        const d = JSON.parse(e.data);
+        const row = document.createElement("div");
+        row.className = "caption-row";
+        const chSpan = document.createElement("span");
+        chSpan.className = "label";
+        chSpan.textContent = d.channel || "—";
+        const txtSpan = document.createElement("span");
+        txtSpan.textContent = " " + (d.text || "");
+        row.appendChild(chSpan);
+        row.appendChild(txtSpan);
+
+        const placeholder = feed.querySelector(".muted");
+        if (placeholder) placeholder.remove();
+
+        feed.appendChild(row);
+        while (feed.children.length > 50) feed.removeChild(feed.firstChild);
+        feed.scrollTop = feed.scrollHeight;
+      } catch { /* ignore */ }
+    };
+  }
+
+  // --- Reliability stats polling ---
+  async function refreshStats() {
     try {
-      const d = JSON.parse(e.data);
-      const row = document.createElement("div");
-      row.className = "caption-row";
-      const chSpan = document.createElement("span");
-      chSpan.className = "label";
-      chSpan.textContent = d.channel || "—";
-      const txtSpan = document.createElement("span");
-      txtSpan.textContent = " " + (d.text || "");
-      row.appendChild(chSpan);
-      row.appendChild(txtSpan);
+      const r = await fetch("/api/captions/stats");
+      const d = await r.json();
 
-      // Remove placeholder on first real caption
-      const placeholder = feed.querySelector(".muted");
-      if (placeholder) placeholder.remove();
+      const rateEl  = document.getElementById("caption-rate");
+      const lagEl   = document.getElementById("caption-lag");
+      const staleEl = document.getElementById("caption-stale-badge");
+      const okEl    = document.getElementById("caption-ok-badge");
 
-      feed.appendChild(row);
-      // Keep last 50 entries
-      while (feed.children.length > 50) feed.removeChild(feed.firstChild);
-      feed.scrollTop = feed.scrollHeight;
+      if (rateEl) {
+        // count_last_60s is per-minute equivalent
+        rateEl.textContent = d.count_last_60s ?? "0";
+      }
+      if (lagEl) {
+        lagEl.textContent = d.lag_seconds !== null && d.lag_seconds !== undefined
+          ? d.lag_seconds + "s"
+          : "—";
+      }
+      if (staleEl) staleEl.style.display = d.stale ? "" : "none";
+      if (okEl)    okEl.style.display    = d.stale ? "none" : "";
     } catch { /* ignore */ }
-  };
+  }
 
-  evtSource.onerror = () => {
-    // SSE reconnects automatically; leave feed as-is
-  };
+  refreshStats();
+  setInterval(refreshStats, 10000);
 })();
 </script>

@@ -1,0 +1,53 @@
+{# panel_action_log.html — Operator action log panel (HTMX partial) #}
+<section class="panel" id="panel-action-log">
+  <h2 class="panel-title">Action Log</h2>
+  <div id="action-log-list"
+       style="max-height:11rem;overflow-y:auto;font-size:0.78rem;line-height:1.6;">
+    <span class="muted">Loading…</span>
+  </div>
+  <button class="btn-refresh"
+          onclick="refreshActionLog()"
+          style="margin-top:0.4rem;font-size:0.75rem;">
+    Refresh
+  </button>
+</section>
+
+<script>
+(function () {
+  async function refreshActionLog() {
+    try {
+      const r = await fetch("/api/action_log/recent?limit=20");
+      const d = await r.json();
+      const list = document.getElementById("action-log-list");
+      if (!list) return;
+
+      const entries = (d.entries || []).slice().reverse();  // newest first
+      if (!entries.length) {
+        list.innerHTML = '<span class="muted">No actions recorded yet.</span>';
+        return;
+      }
+
+      list.innerHTML = entries.map(e => {
+        const ts = (e.ts || "").replace("T", " ").replace("Z", " UTC");
+        const actor  = e.actor  || "—";
+        const action = e.action || "—";
+        const result = e.result || "ok";
+        const ok = result === "ok";
+        const badge = ok
+          ? '<span class="state-badge state-streaming" style="font-size:0.7rem;">ok</span>'
+          : '<span class="state-badge state-idle"      style="font-size:0.7rem;">' + result + '</span>';
+        return `<div style="border-bottom:1px solid var(--border,#333);padding:0.15rem 0;">
+          <span class="muted">${ts}</span>
+          <span class="label" style="margin-left:0.4rem;">${actor}</span>
+          <span style="margin-left:0.3rem;">${action}</span>
+          <span style="margin-left:0.3rem;">${badge}</span>
+        </div>`;
+      }).join("");
+    } catch { /* ignore */ }
+  }
+
+  window.refreshActionLog = refreshActionLog;
+  refreshActionLog();
+  setInterval(refreshActionLog, 15000);
+})();
+</script>

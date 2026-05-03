@@ -1,0 +1,82 @@
+{# panel_safe_mode.html — Emergency / safe-mode control panel (HTMX partial) #}
+<section class="panel" id="panel-safe-mode">
+  <h2 class="panel-title">Emergency</h2>
+
+  <div id="safe-mode-state"
+       style="text-align:center;padding:0.5rem 0 0.75rem;">
+    <span class="muted" style="font-size:0.8rem;">Checking…</span>
+  </div>
+
+  <div style="display:flex;gap:0.5rem;">
+    <button id="btn-safe-activate"
+            class="btn"
+            onclick="activateSafeMode()"
+            style="flex:1;background:#b71c1c;color:#fff;font-weight:700;font-size:0.9rem;padding:0.6rem;">
+      ⛔ Emergency Stop
+    </button>
+    <button id="btn-safe-deactivate"
+            class="btn"
+            onclick="deactivateSafeMode()"
+            style="flex:1;font-size:0.85rem;">
+      ✅ Resume
+    </button>
+  </div>
+
+  <div id="safe-mode-msg" class="muted"
+       style="font-size:0.75rem;margin-top:0.4rem;text-align:center;"></div>
+</section>
+
+<script>
+(function () {
+  function renderState(d) {
+    const stateEl = document.getElementById("safe-mode-state");
+    if (!stateEl) return;
+    if (d.active) {
+      stateEl.innerHTML =
+        '<span class="state-badge state-idle" style="font-size:0.9rem;padding:0.3rem 0.8rem;">SAFE MODE ACTIVE</span>' +
+        (d.ts ? '<div class="muted" style="font-size:0.72rem;margin-top:0.25rem;">Since ' + d.ts.replace("T", " ").replace("Z", " UTC") + '</div>' : "");
+    } else {
+      stateEl.innerHTML =
+        '<span class="state-badge state-streaming" style="font-size:0.9rem;padding:0.3rem 0.8rem;">NORMAL OPERATION</span>';
+    }
+  }
+
+  async function refreshState() {
+    try {
+      const r = await fetch("/api/safe_mode/state");
+      const d = await r.json();
+      renderState(d);
+    } catch { /* ignore */ }
+  }
+
+  async function activateSafeMode() {
+    const msg = document.getElementById("safe-mode-msg");
+    try {
+      const r = await fetch("/api/safe_mode/activate", {method: "POST"});
+      const d = await r.json();
+      renderState(d);
+      if (msg) msg.textContent = "Emergency stop activated.";
+    } catch (e) {
+      if (msg) msg.textContent = "Request failed.";
+    }
+  }
+
+  async function deactivateSafeMode() {
+    const msg = document.getElementById("safe-mode-msg");
+    try {
+      const r = await fetch("/api/safe_mode/deactivate", {method: "POST"});
+      const d = await r.json();
+      renderState(d);
+      if (msg) msg.textContent = "Safe mode cleared.";
+    } catch (e) {
+      if (msg) msg.textContent = "Request failed.";
+    }
+  }
+
+  window.activateSafeMode   = activateSafeMode;
+  window.deactivateSafeMode = deactivateSafeMode;
+
+  refreshState();
+  setInterval(refreshState, 20000);
+})();
+</script>
