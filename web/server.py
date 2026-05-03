@@ -26,6 +26,8 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
 
 from web.api import (  # noqa: E402
+    action_log,
+    adapters,
     audio_control,
     captions,
     graphics,
@@ -34,6 +36,7 @@ from web.api import (  # noqa: E402
     pearl,
     preview,
     runner,
+    safe_mode,
     session,
     status,
     switcher,
@@ -63,6 +66,9 @@ app.include_router(audio_control.router, prefix="/api/audio")
 app.include_router(captions.router, prefix="/api/captions")
 app.include_router(preview.router, prefix="/api/preview")
 app.include_router(graphics.router, prefix="/api/graphics")
+app.include_router(adapters.router, prefix="/api/adapters")
+app.include_router(action_log.router, prefix="/api/action_log")
+app.include_router(safe_mode.router, prefix="/api/safe_mode")
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +144,16 @@ async def panel_preview(request: Request) -> HTMLResponse:
 @app.get("/panels/graphics", response_class=HTMLResponse)
 async def panel_graphics(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="panel_graphics.html")
+
+
+@app.get("/panels/action_log", response_class=HTMLResponse)
+async def panel_action_log(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_action_log.html")
+
+
+@app.get("/panels/safe_mode", response_class=HTMLResponse)
+async def panel_safe_mode(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_safe_mode.html")
 
 
 # ---------------------------------------------------------------------------
