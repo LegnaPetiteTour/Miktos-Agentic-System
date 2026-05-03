@@ -15,6 +15,11 @@
     <a class="nav-link {% if request.url.path == '/setup' %}active{% endif %}" href="/setup">Setup</a>
     <a class="nav-link {% if '/sessions' in request.url.path %}active{% endif %}" href="/sessions">Sessions</a>
     <a class="nav-link {% if '/onboarding' in request.url.path %}active{% endif %}" href="/onboarding">Onboarding</a>
+    {% if auth_enabled %}
+    <form method="post" action="/logout" style="margin:0;margin-left:auto;">
+      <button type="submit" class="nav-link nav-logout" style="background:none;border:none;cursor:pointer;padding:0;">Sign out</button>
+    </form>
+    {% endif %}
   </nav>
   <main class="main">
     {% block content %}{% endblock %}
