@@ -1,0 +1,93 @@
+{# panel_rehearsal.html — Rehearsal / simulation mode control panel (HTMX partial) #}
+<section class="panel" id="panel-rehearsal">
+  <h2 class="panel-title">Rehearsal Mode</h2>
+
+  {# State banner #}
+  <div id="rehearsal-state-banner"
+       style="text-align:center;padding:0.5rem 0 0.6rem;">
+    <span class="muted" style="font-size:0.8rem;">Checking…</span>
+  </div>
+
+  {# Toggle buttons #}
+  <div style="display:flex;gap:0.5rem;">
+    <button id="btn-rehearsal-start"
+            class="btn"
+            onclick="startRehearsal()"
+            style="flex:1;font-size:0.85rem;">
+      🎬 Enter Rehearsal
+    </button>
+    <button id="btn-rehearsal-stop"
+            class="btn"
+            onclick="stopRehearsal()"
+            style="flex:1;font-size:0.85rem;">
+      ✅ Exit Rehearsal
+    </button>
+  </div>
+
+  {# Explainer #}
+  <div class="muted" style="font-size:0.72rem;margin-top:0.5rem;line-height:1.5;">
+    In rehearsal mode all hardware commands are simulated.
+    No Pearl or OBS connection is opened.
+    Use this to train operators, dry-run cue lists, or demo without a live studio.
+  </div>
+
+  <div id="rehearsal-msg" class="muted"
+       style="font-size:0.75rem;margin-top:0.3rem;text-align:center;"></div>
+</section>
+
+<script>
+(function () {
+  function renderState(d) {
+    const banner = document.getElementById("rehearsal-state-banner");
+    if (!banner) return;
+    if (d.active) {
+      banner.innerHTML =
+        '<span class="state-badge" style="background:#856404;color:#fff;font-size:0.9rem;padding:0.3rem 0.8rem;">REHEARSAL ACTIVE</span>' +
+        (d.ts ? '<div class="muted" style="font-size:0.72rem;margin-top:0.25rem;">Since ' + d.ts.replace("T", " ").replace("Z", " UTC") + '</div>' : "");
+      document.body.setAttribute("data-rehearsal", "true");
+    } else {
+      banner.innerHTML =
+        '<span class="state-badge state-streaming" style="font-size:0.9rem;padding:0.3rem 0.8rem;">LIVE MODE</span>';
+      document.body.removeAttribute("data-rehearsal");
+    }
+  }
+
+  async function refreshRehearsalState() {
+    try {
+      const r = await fetch("/api/rehearsal/state");
+      const d = await r.json();
+      renderState(d);
+    } catch { /* ignore */ }
+  }
+
+  async function startRehearsal() {
+    const msg = document.getElementById("rehearsal-msg");
+    try {
+      const r = await fetch("/api/rehearsal/start", {method: "POST"});
+      const d = await r.json();
+      renderState(d);
+      if (msg) msg.textContent = "Rehearsal mode activated.";
+    } catch {
+      if (msg) msg.textContent = "Request failed.";
+    }
+  }
+
+  async function stopRehearsal() {
+    const msg = document.getElementById("rehearsal-msg");
+    try {
+      const r = await fetch("/api/rehearsal/stop", {method: "POST"});
+      const d = await r.json();
+      renderState(d);
+      if (msg) msg.textContent = "Rehearsal mode deactivated.";
+    } catch {
+      if (msg) msg.textContent = "Request failed.";
+    }
+  }
+
+  window.startRehearsal = startRehearsal;
+  window.stopRehearsal  = stopRehearsal;
+
+  refreshRehearsalState();
+  setInterval(refreshRehearsalState, 10000);
+})();
+</script>

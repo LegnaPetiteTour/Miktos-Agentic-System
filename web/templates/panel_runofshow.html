@@ -1,0 +1,147 @@
+{# panel_runofshow.html — Run-of-show control panel (HTMX partial) #}
+<section class="panel" id="panel-runofshow">
+  <h2 class="panel-title">Run of Show</h2>
+
+  {# Template loader #}
+  <div style="display:flex;gap:0.4rem;margin-bottom:0.75rem;align-items:center;">
+    <select id="ros-template-select" style="flex:1;font-size:0.8rem;">
+      <option value="">— load template —</option>
+    </select>
+    <button class="btn" onclick="rosLoadTemplate()" style="font-size:0.8rem;">Load</button>
+  </div>
+
+  {# Progress #}
+  <div id="ros-progress" class="muted" style="font-size:0.75rem;margin-bottom:0.4rem;"></div>
+
+  {# Show name #}
+  <div id="ros-show-name" style="font-weight:600;font-size:0.85rem;margin-bottom:0.5rem;"></div>
+
+  {# Active cue — primary display #}
+  <div id="ros-active-cue"
+       style="border:2px solid var(--accent,#6c6ef7);border-radius:4px;padding:0.5rem 0.7rem;margin-bottom:0.4rem;min-height:2.5rem;">
+    <div class="muted" style="font-size:0.72rem;margin-bottom:0.1rem;">ACTIVE CUE</div>
+    <div id="ros-active-label" style="font-size:1rem;font-weight:700;">—</div>
+    <div id="ros-active-notes" class="muted" style="font-size:0.72rem;margin-top:0.15rem;"></div>
+  </div>
+
+  {# Next cue — secondary display #}
+  <div id="ros-next-cue"
+       style="border:1px solid var(--border,#333);border-radius:4px;padding:0.4rem 0.7rem;margin-bottom:0.6rem;min-height:1.8rem;">
+    <div class="muted" style="font-size:0.7rem;margin-bottom:0.05rem;">NEXT</div>
+    <div id="ros-next-label" style="font-size:0.85rem;">—</div>
+  </div>
+
+  {# Advance button #}
+  <button id="btn-ros-advance"
+          onclick="rosAdvance()"
+          class="btn"
+          style="width:100%;font-size:0.95rem;font-weight:700;padding:0.5rem;">
+    ▶ Advance
+  </button>
+
+  {# Cue list #}
+  <div id="ros-cue-list"
+       style="margin-top:0.75rem;max-height:9rem;overflow-y:auto;font-size:0.76rem;">
+  </div>
+</section>
+
+<script>
+(function () {
+  // Populate template selector on load
+  async function loadTemplateList() {
+    try {
+      const r = await fetch("/api/templates");
+      const d = await r.json();
+      const sel = document.getElementById("ros-template-select");
+      if (!sel) return;
+      (d.templates || []).forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = `${t.name} (${t.cue_count} cues)`;
+        sel.appendChild(opt);
+      });
+    } catch { /* ignore */ }
+  }
+
+  async function rosLoadTemplate() {
+    const sel = document.getElementById("ros-template-select");
+    if (!sel || !sel.value) return;
+    try {
+      const r = await fetch("/api/runofshow/load", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({template: sel.value}),
+      });
+      const d = await r.json();
+      renderState(d);
+    } catch { /* ignore */ }
+  }
+
+  async function rosAdvance() {
+    try {
+      const r = await fetch("/api/runofshow/advance", {method: "POST"});
+      const d = await r.json();
+      renderState(d);
+    } catch { /* ignore */ }
+  }
+
+  async function rosJump(cueId) {
+    try {
+      const r = await fetch(`/api/runofshow/jump/${encodeURIComponent(cueId)}`, {method: "POST"});
+      const d = await r.json();
+      renderState(d);
+    } catch { /* ignore */ }
+  }
+
+  function renderState(d) {
+    const progressEl   = document.getElementById("ros-progress");
+    const showNameEl   = document.getElementById("ros-show-name");
+    const activeLabelEl = document.getElementById("ros-active-label");
+    const activeNotesEl = document.getElementById("ros-active-notes");
+    const nextLabelEl  = document.getElementById("ros-next-label");
+    const advanceBtn   = document.getElementById("btn-ros-advance");
+    const cueListEl    = document.getElementById("ros-cue-list");
+
+    if (progressEl)   progressEl.textContent = d.progress || "";
+    if (showNameEl)   showNameEl.textContent  = d.show_name || "";
+
+    const active = d.active_cue;
+    if (activeLabelEl) activeLabelEl.textContent = active ? active.label : "—";
+    if (activeNotesEl) activeNotesEl.textContent = active && active.notes ? active.notes : "";
+
+    const next = d.next_cue;
+    if (nextLabelEl)  nextLabelEl.textContent  = next ? next.label : "— end of show —";
+    if (advanceBtn)   advanceBtn.disabled       = d.at_end || !d.show_id;
+
+    // Render cue list with jump links
+    if (cueListEl && Array.isArray(d.cues)) {
+      cueListEl.innerHTML = d.cues.map((cue, idx) => {
+        const isActive = idx === d.active_cue_index;
+        const style = isActive
+          ? "padding:0.15rem 0.4rem;background:var(--accent-dim,#2a2a50);border-radius:3px;cursor:default;"
+          : "padding:0.15rem 0.4rem;cursor:pointer;opacity:0.75;";
+        const onclick = isActive ? "" : `onclick="rosJump('${cue.id}')"`;
+        return `<div style="${style}" ${onclick} title="${cue.notes || ''}">
+          <span style="opacity:0.5;">${idx + 1}.</span> ${cue.label}
+        </div>`;
+      }).join("");
+    }
+  }
+
+  async function refreshState() {
+    try {
+      const r = await fetch("/api/runofshow/show");
+      const d = await r.json();
+      renderState(d);
+    } catch { /* ignore */ }
+  }
+
+  window.rosLoadTemplate = rosLoadTemplate;
+  window.rosAdvance      = rosAdvance;
+  window.rosJump         = rosJump;
+
+  loadTemplateList();
+  refreshState();
+  setInterval(refreshState, 5000);
+})();
+</script>

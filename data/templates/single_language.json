@@ -1,0 +1,55 @@
+{
+  "id": "single_language",
+  "name": "Single-Language Event",
+  "description": "Simple single-language presentation or talk. Minimal cues.",
+  "cues": [
+    {
+      "id": "pre_roll",
+      "label": "Pre-Roll",
+      "notes": "Hold while setting up. Display title slate.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "intro",
+      "label": "Introduction",
+      "notes": "Host introduces the speaker or event.",
+      "scene": "Main",
+      "lower_third": "title_card",
+      "transition": "fade"
+    },
+    {
+      "id": "main_content",
+      "label": "Main Presentation",
+      "notes": "Primary speaker or content. Apply lower third with name.",
+      "scene": "Speaker",
+      "lower_third": "speaker_name",
+      "transition": "cut"
+    },
+    {
+      "id": "qa",
+      "label": "Q&A",
+      "notes": "Open to audience questions.",
+      "scene": "Wide",
+      "lower_third": "qa_label",
+      "transition": "fade"
+    },
+    {
+      "id": "outro",
+      "label": "Closing",
+      "notes": "Host closes. Thank attendees.",
+      "scene": "Main",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "post_roll",
+      "label": "Post-Roll",
+      "notes": "End slate. Stop stream after all participants have left.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "fade"
+    }
+  ]
+}

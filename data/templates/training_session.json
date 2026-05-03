@@ -1,0 +1,71 @@
+{
+  "id": "training_session",
+  "name": "Training Session",
+  "description": "Internal training or workshop: intro, content blocks, Q&A, wrap-up.",
+  "cues": [
+    {
+      "id": "pre_roll",
+      "label": "Pre-Roll",
+      "notes": "Hold while participants join. Display agenda or title slide.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "welcome",
+      "label": "Welcome & Agenda",
+      "notes": "Facilitator introduces goals, agenda, and housekeeping.",
+      "scene": "Main",
+      "lower_third": "session_title",
+      "transition": "fade"
+    },
+    {
+      "id": "block_1",
+      "label": "Content Block 1",
+      "notes": "First content segment. May include screen share.",
+      "scene": "Presenter",
+      "lower_third": "block_title",
+      "transition": "cut"
+    },
+    {
+      "id": "break",
+      "label": "Break",
+      "notes": "Mid-session break. Display break slate.",
+      "scene": "",
+      "lower_third": "break_slate",
+      "transition": "fade"
+    },
+    {
+      "id": "block_2",
+      "label": "Content Block 2",
+      "notes": "Second content segment.",
+      "scene": "Presenter",
+      "lower_third": "block_title",
+      "transition": "cut"
+    },
+    {
+      "id": "qa",
+      "label": "Q&A",
+      "notes": "Open questions. Wide shot or gallery view.",
+      "scene": "Wide",
+      "lower_third": "qa_label",
+      "transition": "fade"
+    },
+    {
+      "id": "wrap_up",
+      "label": "Wrap-Up & Next Steps",
+      "notes": "Facilitator summarises and announces follow-up actions.",
+      "scene": "Main",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "post_roll",
+      "label": "Post-Roll",
+      "notes": "End slate. Stop recording after participants leave.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "fade"
+    }
+  ]
+}

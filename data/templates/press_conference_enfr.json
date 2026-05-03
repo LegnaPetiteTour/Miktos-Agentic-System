@@ -1,0 +1,63 @@
+{
+  "id": "press_conference_enfr",
+  "name": "Press Conference EN/FR",
+  "description": "Bilingual press conference: opening remarks, multiple speakers, Q&A, closing.",
+  "cues": [
+    {
+      "id": "pre_roll",
+      "label": "Pre-Roll / Holding Slate",
+      "notes": "Display while waiting for start time. Unmute only when live.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "intro",
+      "label": "Opening Remarks",
+      "notes": "Host or MC introduces the event and confirms bilingual feed.",
+      "scene": "Main",
+      "lower_third": "title_card",
+      "transition": "fade"
+    },
+    {
+      "id": "speaker_1",
+      "label": "Speaker 1",
+      "notes": "First designated speaker. Apply lower third with name/title.",
+      "scene": "Speaker",
+      "lower_third": "speaker_name",
+      "transition": "cut"
+    },
+    {
+      "id": "speaker_2",
+      "label": "Speaker 2",
+      "notes": "Second speaker. Update lower third.",
+      "scene": "Speaker",
+      "lower_third": "speaker_name",
+      "transition": "cut"
+    },
+    {
+      "id": "qa",
+      "label": "Q&A Session",
+      "notes": "Questions from journalists. Wide shot preferred. Clear lower third.",
+      "scene": "Wide",
+      "lower_third": "qa_label",
+      "transition": "fade"
+    },
+    {
+      "id": "outro",
+      "label": "Closing Remarks",
+      "notes": "MC closes the event. Title card back on screen.",
+      "scene": "Main",
+      "lower_third": "title_card",
+      "transition": "fade"
+    },
+    {
+      "id": "post_roll",
+      "label": "Post-Roll / End Slate",
+      "notes": "Hold until stream ends. Mute microphones.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "fade"
+    }
+  ]
+}

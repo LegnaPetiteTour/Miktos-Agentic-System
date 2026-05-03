@@ -1,0 +1,47 @@
+{
+  "id": "emergency_briefing",
+  "name": "Emergency Briefing",
+  "description": "Urgent unplanned briefing: rapid setup, core statement, questions, close.",
+  "cues": [
+    {
+      "id": "live_slate",
+      "label": "Live — On Air",
+      "notes": "Start immediately. No pre-roll — stream may already be live.",
+      "scene": "Main",
+      "lower_third": "breaking_label",
+      "transition": "cut"
+    },
+    {
+      "id": "opening",
+      "label": "Opening Statement",
+      "notes": "Official reads prepared statement. Keep lower third with name/title.",
+      "scene": "Speaker",
+      "lower_third": "speaker_name",
+      "transition": "cut"
+    },
+    {
+      "id": "additional_official",
+      "label": "Additional Official (if present)",
+      "notes": "Second official or expert. Update lower third. Skip if not needed.",
+      "scene": "Speaker",
+      "lower_third": "speaker_name",
+      "transition": "cut"
+    },
+    {
+      "id": "questions",
+      "label": "Media Questions",
+      "notes": "Brief questions only. Wide shot. Clear lower third.",
+      "scene": "Wide",
+      "lower_third": "",
+      "transition": "cut"
+    },
+    {
+      "id": "close",
+      "label": "Closing",
+      "notes": "Official indicates end. Stop recording immediately after.",
+      "scene": "Main",
+      "lower_third": "",
+      "transition": "cut"
+    }
+  ]
+}
