@@ -350,7 +350,7 @@ connection. All cockpit `{% if hardware == 'epiphan' %}` replaced by capability 
 
 ---
 
-## Phase 17 — Run-of-Show + Rehearsal Mode 🔜 NEXT
+## Phase 17 — Run-of-Show + Rehearsal Mode ✅ COMPLETE
 
 Session intelligence: structured event sequence, safe practice mode,
 and session templates.
@@ -360,7 +360,22 @@ and session templates.
 - Session templates (press conference, council announcement, training, etc.)
 - Improved post-event reports with run-of-show adherence
 
-**Target:** ~185 passed, 1 skip
+**Result:** 187 passed, 1 skip
+
+---
+
+## Phase 18 — Docker + Cockpit Layout 🔜 NEXT
+
+Self-hosted deployment and cockpit multi-column grid restructure.
+
+- Docker container + `docker-compose.yml` for institutional IT deployment
+- Cockpit layout: multi-column grid (left: EN channel, right: FR channel,
+  centre: production actions, right sidebar: health + automation)
+- Single-password auth: shared password in `.env`, JWT tokens, no user database
+  (full role management is Pro tier / Stage 3)
+- Audit log persistence across container restarts
+
+**Target:** ~200 passed, 1 skip
 
 ---
 
@@ -375,6 +390,6 @@ Cloud-hosted, multi-tenant. Depends on Stage 3 validated.
 
 ---
 
-*Last updated: 2026-05-02*
-*Phases 0–16: complete and validated.*
+*Last updated: 2026-05-03*
+*Phases 0–17: complete and validated.*
 *See docs/VISION.md and docs/PRODUCT.md for full product direction.*
