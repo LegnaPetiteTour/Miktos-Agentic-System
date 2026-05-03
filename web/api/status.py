@@ -134,7 +134,7 @@ def _latest_session_info() -> tuple[list[str], str]:
     if not sessions:
         return [], "—"
     latest = sessions[-1]
-    slots = [f.name for f in sorted(latest.iterdir())]
+    slots = [f.name for f in sorted(latest.iterdir()) if not _UUID_RE.match(f.name)]
     try:
         mtime = latest.stat().st_mtime
         age_s = int(datetime.now(timezone.utc).timestamp() - mtime)
