@@ -90,15 +90,6 @@ Correctness : PASS (200/200 actions match)
 - [x] message_trigger_node + build_graph_with_messaging() — additive
 - [x] main_streamlab.py --handoff / main_kosmos.py --listen
 
-**Live round-trip proof:**
-
-```text
-1. Inbox polled  → recording_ready from streamlab_monitor
-2. Kosmos ran    → 159 files classified from ~/Movies, exit=success
-3. Acknowledged  → moved to kosmos_organizer/delivered/
-4. Reply posted  → recording_organized, files_processed: 159
-```
-
 ---
 
 ## Phase 4c — Team / Task Delegation ✅ COMPLETE
@@ -114,16 +105,6 @@ Correctness : PASS (200/200 actions match)
 - [x] main_coordinator.py — --poll-interval / --once entry point
 - [x] data/sessions/ — session artifacts per run
 
-**Live proof (session 05b7a3154d20 confirmed on disk):**
-
-```text
-Session 05b7a3154d20
-├── organize   ✅  videos (0.95)
-├── thumbnail  ❌  moov atom not found  (stub — expected)
-└── metadata   ✅  session.json  (0.0s)
-exit: success | posted session_complete → streamlab_monitor
-```
-
 ---
 
 ## Phase 4d — Event Bus (Pub/Sub) ✅ COMPLETE
@@ -137,42 +118,25 @@ exit: success | posted session_complete → streamlab_monitor
 - [x] bus.subscribe(topic, agent_id) — atomic JSON registry, idempotent
 - [x] bus.unsubscribe(topic, agent_id) — atomic removal, no-op if absent
 - [x] bus.publish(topic, from_agent, payload) — fan-out to N subscribers
-- [x] data/messages/subscriptions.example.json — format reference, committed
 - [x] main_streamlab.py --handoff now uses publish("recording_stopped")
-- [x] scripts/dmo_preview.py — live one-publish two-delivery proof
-
-**Live proof — message.log (confirmed on disk at 2026-04-09T23:05:55Z):**
-
-```text
-PUBLISHED  streamlab_monitor -> [2 subscriber(s)]  recording_stopped
-POSTED     streamlab_monitor -> session_coordinator  recording_stopped
-POSTED     streamlab_monitor -> kosmos_organizer    recording_stopped
-ACKNOWLEDGED  (both)
-```
 
 ---
 
 ## Phase 5 — Post-Stream Closure Engine ✅ COMPLETE
 
 **Completed:** 2026-04-14
-**Commits:** PR #18 (initial) + PR #19 (5 bugs) + PR #20 (3 bugs from live validation)
+**Commits:** PR #18 + PR #19 + PR #20
 **Tests:** 52/52 passing, 1 skipped
 
 **Product:** Eliminates the manual post-stream checklist for bilingual EN/FR
 institutional live streams. One stream-end event → full session closure.
 
 - [x] domains/streamlab_post/ — new domain, engine unchanged
-- [x] BackupVerificationWorker — file exists, size threshold, ffprobe validation
-- [x] AudioExtractWorker — ffmpeg MP3 extraction from recording
-- [x] YouTubeWorker — Data API v3, EN + FR channels, uploads playlist auto-detect
-- [x] TranslationWorker — Google Translate API v2, EN→FR title + description
-- [x] TranscriptWorker — ElevenLabs Scribe API, bilingual, speaker-labeled
-- [x] FileRenameWorker — YYYY-MM-DD_EventName_NNN_EN convention
-- [x] NotificationWorker — Teams webhook + Graph API email, transcript attached
+- [x] BackupVerificationWorker, AudioExtractWorker, YouTubeWorker
+- [x] TranslationWorker, TranscriptWorker, FileRenameWorker, NotificationWorker
 - [x] PostStreamCoordinator — 4-stage execution, inter-stage payload enrichment
 - [x] main_post_stream.py — --dry-run / --once / --poll-interval entry point
 - [x] scripts/youtube_auth.py — one-time OAuth2 refresh token setup
-- [x] session_config.example.yaml — operator config reference
 
 **4-stage execution model:**
 
@@ -183,17 +147,6 @@ Stage 3 (parallel, optional):  youtube_fr      file_rename
 Stage 4 (optional):            notify
 ```
 
-**Live proof — session `2026-04-13_Miktos-Demo_005` (confirmed on disk):**
-
-```text
-Stage 1:  backup_verify ✅  youtube_en ✅  audio_extract ✅
-Stage 2:  translate ✅     transcript ✅ (105 words)
-Stage 3:  youtube_fr ✅    file_rename ✅
-Stage 4:  notify ✅ (skipped cleanly)
-
-Session closed in 7 seconds. No human involvement.
-```
-
 ---
 
 ## Phase 6 — Pre-Stream Readiness Check ✅ COMPLETE
@@ -202,153 +155,70 @@ Session closed in 7 seconds. No human involvement.
 **Commit:** `7a12e05` (PR #22)
 **Tests:** 66 passed, 1 skipped
 
-**Command to run before every stream:**
-
-```bash
-python main_preflight.py
-```
-
 ---
 
 ## Pre-Phase 7 — Operational Hardening ✅ COMPLETE
 
-**Classification:** Not a numbered phase. Scripts and minor improvements only.
 **Commit:** `afa3ba9` (PR #26)
 **Tests:** 82 passed, 1 skipped
-
-| Script | What it does |
-| --- | --- |
-| `scripts/prepare_session.py` | Prompts for event_name + video_ids, updates session_config.yaml |
-| `scripts/run_session.py` | Single launcher: pre-flight → post-stream → monitor, enforces correct order |
-| `scripts/clear_inbox.py` | Safely moves stale pending messages to delivered/, logs to message.log |
-| `scripts/clean_sessions.py` | Archives hex-UUID test sessions, leaves production sessions untouched |
 
 ---
 
 ## Phase 7 — Operations Dashboard ✅ COMPLETE
 
-### Phase 7a — Post-Session HTML Report ✅ COMPLETE
+### Phase 7a — Post-Session HTML Report ✅
 
-**Commit:** `05b28fa` (PR #28)
-**Tests:** 88 passed, 1 skipped
+**Commit:** `05b28fa` (PR #28) | **Tests:** 88 passed, 1 skipped
 
-Optional Stage 4 worker (`report_worker.py`) generates `{session_name}_report.html`
-in the session folder after each closure. Self-contained HTML, no server required.
+### Phase 7b — Live Terminal Status View ✅
 
-### Phase 7b — Live Terminal Status View ✅ COMPLETE
-
-**Completed:** 2026-04-15
-**Commit:** `9b7d14e` (PR #30)
-**Tests:** 94 passed, 1 skipped
-
-`rich`-based terminal panel showing real-time stage progress. Integrated into
-`run_session.py` with graceful fallback. New dependency: `rich>=13.0`.
+**Commit:** `9b7d14e` (PR #30) | **Tests:** 94 passed, 1 skipped
 
 ---
 
 ## Phase 8 — Epiphan Pearl Domain Adapter ✅ COMPLETE
 
 **Completed:** 2026-04-16
-**Branch:** `phase-8/epiphan-pearl`
 
 ### Phase 8a — Pearl Monitor + Post-Stream Automation ✅
 
-**Commit:** `1e095c3`
-**Tests:** 103 passed, 1 skipped
-
-Proves the engine is genuinely multi-domain. Pearl plugs into the same engine
-and post-stream pipeline as OBS with zero engine changes.
-
-- [x] `domains/epiphan/` — PearlClient, EpiphanMonitorTool, alert_classifier
-- [x] `recording_download_worker.py` — Pre-Stage 1 HTTP pull from Pearl
-- [x] `main_epiphan.py` — outer loop, edge-triggered handoff
-- [x] `session_config.yaml` extended with `hardware: epiphan` discriminator
-- [x] `prepare_session.py` / `run_session.py` — hardware-aware routing
-
-#### Live proof — 3 clean Pearl sessions on disk (2026-04-16)
+**Commit:** `1e095c3` | **Tests:** 103 passed, 1 skipped
 
 ### Phase 8b — Live Layout Control ✅
 
-**Commit:** `190d957`
-**Tests:** 108 passed, 1 skipped
-
-Proves Miktos can issue commands to hardware during a live stream.
-
-- [x] `scripts/pearl_control.py` — layouts / switch / status subcommands
-- [x] `pearl_client.py` — `get_layouts()` + `get_active_layout()` added
-- [x] Name resolution: exact ID → exact name → substring match
-
-```bash
-python scripts/pearl_control.py switch --channel 2 --layout speaker
-```
+**Commit:** `190d957` | **Tests:** 108 passed, 1 skipped
 
 ---
 
 ## Phase 9 — Production Cockpit ✅ COMPLETE
 
 **Completed:** 2026-04-17
-**Commit:** `6db849d` (PR #32)
+**Commit:** `6db849d` (PR #32+#33)
 **Tests:** 108 passed, 1 skipped
 
-Unified `rich` terminal panel replacing the split-terminal workflow.
-All prior behaviour preserved — Phase 9 is purely additive.
-
-- [x] `scripts/session_status.py` — `StatusDisplay` extended with hardware context:
-  - Hardware header: `Epiphan Pearl {host}` or `OBS`; pre-flight indicator
-  - Live health: stream state, tick counter `#0042`, alert level, elapsed `HH:MM:SS`
-  - Pearl layouts section (epiphan only): active layout per channel, live from `layout_log.jsonl`
-  - Pipeline: Stages 1–4 per-slot status (pending / running / ✅ / ❌ / —)
-  - Completion row: session folder path + elapsed time
-- [x] `scripts/run_session.py` — config read unified, `_RE_TICK` regex, hardware-aware init
-- [x] `scripts/pearl_control.py` — layout log writer appended on every switch
-- [x] `_kill_stale_listener()` — orphaned `main_post_stream.py` cleanup on startup
-
-**Gate met:** 10 clean production sessions on disk before Phase 9 began
-(5 × OBS, 5 × Pearl, 2026-04-15 through 2026-04-17).
+Unified `rich` terminal panel. Hardware header, live health, Pearl layouts,
+pipeline progress, completion row. Gate: 10 clean production sessions.
 
 ---
 
-## Phase 10 — Web GUI / Unified Operating Surface ✅ COMPLETE
+## Phase 10 — Web Cockpit ✅ COMPLETE
 
 ### Phase 10a — Local Web Cockpit ✅
 
-**Completed:** 2026-04-17
-**Commit:** `0e4c392` (PR #36)
-**Tests:** 116 passed, 1 skipped
+**Completed:** 2026-04-17 | **Commit:** `0e4c392` (PR #36) | **Tests:** 116 passed
 
-FastAPI + HTMX browser cockpit replacing the split-terminal workflow.
-All prior behaviour preserved — Phase 10a is purely additive.
-
-- [x] `web/` package — FastAPI app with HTMX frontend
-- [x] SSE `/api/status/stream` — live hardware health, pipeline progress, session history
-- [x] Pearl layout control panel — switch layouts from the browser
-- [x] Session history panel — named sessions with stage outcomes
-- [x] `web/static/` + `web/templates/` — self-contained, no build step
+FastAPI + HTMX browser cockpit. SSE live status, Pearl layout control,
+session history, inline report viewer.
 
 **Launch:** `.venv/bin/python -m web.server` → `http://localhost:8000`
 
 ### Phase 10b — Session Launch from GUI ✅
 
-**Completed:** 2026-04-18
-**Commit:** `35201ae` (PR #37)
-**Tests:** 122 passed, 1 skipped
+**Completed:** 2026-04-18 | **Commit:** `35201ae` (PR #37) | **Tests:** 122 passed
 
-The operator can launch and stop a session entirely from the browser.
+Start/Stop session from browser. SIGINT-based clean shutdown. Terminal fallback preserved.
 
-- [x] `web/api/runner.py` — module-level `Popen` singleton; `POST /start`, `POST /stop`, `GET /runner`
-- [x] Stop sends `signal.SIGINT` — preserves clean shutdown path in `run_session.py`
-- [x] SSE payload extended with `session_running` + `session_pid`
-- [x] Start / Stop / Finishing… control panel, SSE-driven button state
-- [x] `run_session.py` untouched — terminal fallback unchanged
-
-**Full operator workflow:** open one terminal → `python -m web.server` → open
-`http://localhost:8000` → click **Start Session**. The terminal stays open only
-for the web server; the session runs from the browser.
-
-**Live proof (2026-04-19):** one browser click → Epiphan monitor ran 40 ticks →
-`recording_stopped` detected → pipeline fired → all four output files on disk.
-
-**Phase 10c** (remote access, auth) deferred until an operational need arises.
+**Phase 10c** (remote access, auth) — deferred until operational need arises.
 
 ---
 
@@ -358,119 +228,153 @@ for the web server; the session runs from the browser.
 **Commit:** `18c0f07` (PR #44)
 **Tests:** 130 passed, 1 skipped
 
-End-to-end bilingual automation: one session produces a 7-file archive
-covering both EN and FR channels, fully unattended.
+Both Pearl channels (EN recorder 2 + FR recorder 3) downloaded and processed
+in a single session. All FR slots `required: False`.
 
-- [x] `domains/epiphan/audio_worker.py` — dual-channel audio extraction
-- [x] `domains/epiphan/transcript_worker.py` — ElevenLabs Scribe, EN + FR
-- [x] `domains/epiphan/rename_worker.py` — bilingual file naming convention
-- [x] `domains/epiphan/report_worker.py` — session report covering both channels
-- [x] `engine/coordinator/coordinator.py` — FR slots all `required: False` (non-fatal)
-
-**7-file session folder:**
+**Session folder (7 files, 420 MB live proof):**
 
 ```text
-EN recording (.mp4)
-FR recording (.mp4)
-EN audio (.mp3)
-FR audio (.mp3)
-EN transcript (.txt)
-FR transcript (.txt)
-report.html
-```
-
-**Live proof — session `2026-04-19_Bilingual-Session-002_001` (420 MB on disk):**
-
-```text
-Stage 1: backup_verify ✅  audio_extract_en ✅  audio_extract_fr ✅
-Stage 2: transcript_en ✅  transcript_fr ✅
-Stage 3: rename_en ✅      rename_fr ✅
-Stage 4: report ✅
-
-7 files on disk. No human involvement.
+EventName_EN, EventName_FR, EventName.mp3, EventName_FR.mp3
+EventName_transcript.txt, EventName_FR_transcript.txt, EventName_report.html
 ```
 
 ---
 
 ## Stage 2 — Local Installable App
 
-Phases 0–11 deliver a working prototype validated in production.
-Stage 2 packages it so a non-technical operator can install and run
-Miktos without developer assistance.
-
 ---
 
 ## Phase 12 — Operator Onboarding Wizard ✅ COMPLETE
 
-**Completed:** 2026-04-19
+**Completed:** 2026-04-30
 **Commit:** `145fd99` (PR #48)
 **Tests:** 140 passed, 1 skipped
 
-First-run onboarding flow so a non-technical operator can enter credentials
-and configure hardware without touching a terminal or a `.env` file.
+Five-step browser wizard. New operator: zero to first session without
+touching a terminal or editing a config file.
 
-- [x] `GET /api/onboarding/status` — reports per-service credential state
-- [x] Browser-based onboarding panel in the web cockpit
-- [x] Credentials written to `~/Library/Application Support/Miktos/config/.env`
-  via `engine/paths.get_env_path()` (OS-appropriate, never in the project tree)
-- [x] Hardware selection (OBS / Epiphan Pearl) persisted across restarts
-- [x] All prior API routes unaffected — Phase 12 is purely additive
+Steps: YouTube OAuth (EN + FR) → Google Translate → ElevenLabs
+→ Hardware connection test → Ready.
+
+`write_env_key()` atomic, preserves existing keys, never exposes values.
 
 ---
 
 ## Phase 13 — Electron Packaging (.dmg) ✅ COMPLETE
 
-**Completed:** 2026-05-01
-**Commit:** `39eb65e` (PR #52)
+**Completed:** 2026-04-30
+**Commit:** `39eb65e` + `937c9ea`
 **Tests:** 140 passed, 1 skipped
-**Artifact:** `Miktos-0.1.0.dmg` — 127 MB, arm64 + x64, Apple-signed
+**Artifact:** `Miktos-0.1.1.dmg` — 127 MB, arm64 + x64
 
-Miktos ships as a native macOS app. Double-click the DMG, drag to
-Applications, launch — no terminal, no Python, no `pip install`.
+Double-click install. Python runtime bundled via PyInstaller.
+No terminal, no Python installation, no config files required.
 
-- [x] `miktos_entry.py` — PyInstaller entry point; bootstraps `MIKTOS_DATA_DIR`,
-  creates user data dirs, loads `.env`, hands off to uvicorn
-- [x] `miktos.spec` — single-file PyInstaller spec; bundles `web`, `domains`,
-  `engine`, templates, static assets, and all third-party dependencies
-- [x] `electron/` — Electron 30 shell; spawns `miktos-server`, polls `/` up to 60 s,
-  shows loading window then cockpit `BrowserWindow`; tray icon with Quit
-- [x] `electron/main.js` — kills `miktos-server` on `before-quit` (no orphan processes)
-- [x] `electron/build/icon.icns` — macOS app icon (1024 × 1024 dark indigo + white M)
-- [x] `electron/build/tray-icon.png` — 16 × 16 RGBA white M on transparent background
-- [x] `electron/package.json` — `electron` in `devDependencies` (electron-builder enforces this)
-- [x] `engine/paths.py` — `get_data_dir()` returns `MIKTOS_DATA_DIR` when set (packaged)
-  or project-root `data/` (dev); all path calls migrated across `web/`, `domains/`, `engine/`
-- [x] `.gitignore` — `electron/node_modules/`, `electron/dist/`, `electron/package-lock.json`
+- [x] `engine/paths.py` — portable path resolver (`MIKTOS_DATA_DIR`)
+- [x] `miktos_entry.py` — PyInstaller entry point
+- [x] `electron/main.js` — spawns server, polls :8000, BrowserWindow + Tray
+- [x] Fresh install validated: all credentials written to Application Support
 
-**Gate 2 checklist (all PASS):**
-
-| Check | Result |
-| ----- | ------ |
-| DMG produced | ✅ `Miktos-0.1.0.dmg` 127 MB, arm64 + x64 |
-| Loading screen (HTTP 200 on `/`) | ✅ |
-| Server starts within 60 s | ✅ ~21 s |
-| `/api/onboarding/status` valid JSON | ✅ |
-| Quit leaves no orphan `miktos-server` process | ✅ `pgrep` exit 1 |
-| Electron process exits cleanly | ✅ |
-
-**Lesson learned — PyInstaller string-import trap:**
-`uvicorn.run("web.server:app", ...)` silently excludes `web.server` from the
-PYZ archive because PyInstaller's static analyser cannot follow string-based
-module paths. Fix: `from web.server import app as _web_app` + pass the object
-directly. The comment in `miktos_entry.py` documents the why.
+**Lesson:** `uvicorn.run("module:attr")` string form silently excludes the
+module from the PYZ archive. Fix: direct import with explanatory comment.
 
 ---
 
-## Phase 14 — Live Switching Surface 🔜 NEXT
+## Phase 14 — Live Production Panel ✅ COMPLETE
 
-First operator-visible control surface inside the packaged app.
-Lets the operator switch Pearl layouts and trigger OBS scene changes
-directly from the Miktos cockpit — no shell, no `pearl_control.py`.
+**Completed:** 2026-05-02
+**Commit:** `1208ecc` (PR #59)
+**Tests:** 152 passed, 1 skipped
 
-**Planned scope:**
+Four new cockpit panels covering the full live production workflow:
 
-- Live layout switcher panel in the web cockpit (hardware-aware)
-- OBS scene list + one-click switch via existing WebSocket client
-- Pearl channel status + layout grid, sourced from `layout_log.jsonl`
-- Keyboard shortcuts for common switches (configurable)
-- All actions surfaced through existing FastAPI routes — no new backend layer
+- [x] `web/api/switcher.py` — OBS scene list/switch + Pearl channel list
+- [x] `web/api/health.py` — hardware + network health snapshot (always 200)
+- [x] `web/api/audio_control.py` — OBS mute/volume control
+- [x] `domains/captioning/caption_worker.py` — async tail-reader for captions.jsonl
+- [x] `web/api/captions.py` — SSE caption stream + append endpoint
+- [x] 4 HTMX panel templates (`panel_switcher`, `panel_health`, `panel_audio`, `panel_captions`)
+
+**Caption worker architecture:** tail-reader pattern — any STT process writes
+JSON lines to `data/captions/captions.jsonl`; the worker streams them to the
+cockpit and pushes to YouTube caption ingestion URL. STT engine fully decoupled.
+
+---
+
+## Phase 15 — Visual Production Surface ✅ COMPLETE
+
+**Completed:** 2026-05-02
+**Commit:** `2ed7c4e` (PR #61)
+**Tests:** 162 passed, 1 skipped
+
+Visual confidence layer: operators see what is on air, not just names.
+
+- [x] `web/api/preview.py` — `GET /api/preview/thumbnail?source=pearl_en|pearl_fr|obs`
+  Returns base64 JPEG, always HTTP 200 (advisory, never blocking)
+- [x] `web/api/graphics.py` — lower thirds, transitions, intro/outro
+  - `POST /api/graphics/lower_third` — push text overlay to OBS Browser Source
+  - `DELETE /api/graphics/lower_third` — clear overlay
+  - `POST /api/graphics/transition` — trigger studio-mode transition
+  - `POST /api/graphics/intro` and `/outro` — switch to intro/outro scenes
+- [x] `web/templates/panel_preview.html` — 3-column thumbnail grid, polls every 2s
+- [x] `web/templates/panel_graphics.html` — lower-third form, transition selector, intro/outro
+
+**Thumbnails are advisory:** timestamped, fallback-safe. Device state and
+active layout remain authoritative for switching decisions.
+
+---
+
+## Phase 16 — Adapter Contract + Operational Hardening ✅ COMPLETE
+
+**Completed:** 2026-05-02
+**Commit:** `8999412` (PR #62)
+**Tests:** 175 passed, 1 skipped
+
+Formal adapter contract (ADR-009) implemented. Cockpit renders controls
+based on capabilities, not hardcoded hardware names.
+
+- [x] `engine/adapters/base.py` — `DeviceAdapter` Protocol + `AdapterCapabilities` dataclass
+- [x] `engine/adapters/pearl_adapter.py` — Pearl conforming to contract
+- [x] `engine/adapters/obs_adapter.py` — OBS conforming to contract
+- [x] `engine/adapters/registry.py` — `get_adapter()` via `HARDWARE_ADAPTER` env var
+- [x] `web/api/action_log.py` — `GET /api/action_log/recent`, `POST /api/action_log/entry`
+  Every operator action logged with timestamp, channel, result, error
+- [x] `web/templates/panel_action_log.html` — last 10 actions panel
+- [x] Caption reliability dashboard — LIVE/STALE badge, rate, lag, polls every 10s
+- [x] `web/api/safe_mode.py` — `GET/POST /api/safe_mode/{state,activate,deactivate}`
+  Best-effort OBS + Pearl stop on activate; state persisted to `data/state/safe_mode.json`
+- [x] `web/templates/panel_safe_mode.html` — large red Emergency Stop button
+
+**Adapter contract rule:** `capabilities()` must never require a live hardware
+connection. All cockpit `{% if hardware == 'epiphan' %}` replaced by capability flags.
+
+---
+
+## Phase 17 — Run-of-Show + Rehearsal Mode 🔜 NEXT
+
+Session intelligence: structured event sequence, safe practice mode,
+and session templates.
+
+- Run-of-show engine (pre-defined sequence; AI compares reality against it)
+- Rehearsal / simulation mode (practice without live systems)
+- Session templates (press conference, council announcement, training, etc.)
+- Improved post-event reports with run-of-show adherence
+
+**Target:** ~185 passed, 1 skip
+
+---
+
+## Stage 3 — Self-Hosted Web App 🔜 FUTURE
+
+Docker container, multi-operator, institutional IT deployment.
+Auth, roles, audit, backup/restore. Depends on Stage 2 validated.
+
+## Stage 4 — Hosted SaaS 🔜 FUTURE
+
+Cloud-hosted, multi-tenant. Depends on Stage 3 validated.
+
+---
+
+*Last updated: 2026-05-02*
+*Phases 0–16: complete and validated.*
+*See docs/VISION.md and docs/PRODUCT.md for full product direction.*
