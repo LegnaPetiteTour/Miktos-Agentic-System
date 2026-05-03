@@ -25,10 +25,13 @@ from fastapi.responses import HTMLResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
 
+from fastapi.responses import RedirectResponse  # noqa: E402
+
 from web.api import (  # noqa: E402
     action_log,
     adapters,
     audio_control,
+    auth as auth_api,
     captions,
     graphics,
     health,
@@ -54,6 +57,9 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 # Templates
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
+# Expose AUTH_ENABLED to every template as a global so base.html can render
+# the logout button without repeating the env-var lookup in every view.
+templates.env.globals["auth_enabled"] = auth_api.AUTH_ENABLED
 
 # API routers
 app.include_router(session.router, prefix="/api/session")
@@ -75,6 +81,30 @@ app.include_router(safe_mode.router, prefix="/api/safe_mode")
 app.include_router(runofshow.router, prefix="/api/runofshow")
 app.include_router(rehearsal.router, prefix="/api/rehearsal")
 app.include_router(templates_api.router, prefix="/api/templates")
+app.include_router(auth_api.router)  # /login, /logout at root
+
+
+# ---------------------------------------------------------------------------
+# Auth middleware — runs before every request when AUTH_ENABLED=true.
+# When AUTH_ENABLED=false this is a sub-millisecond no-op.
+# ---------------------------------------------------------------------------
+
+
+@app.middleware("http")
+async def require_auth(request: Request, call_next):  # type: ignore[no-untyped-def]
+    if not auth_api.auth_check(request):
+        return RedirectResponse("/login")
+    return await call_next(request)
+
+
+# ---------------------------------------------------------------------------
+# Docker health-check endpoint (always public)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/health-check")
+async def health_check() -> dict:
+    return {"status": "ok"}
 
 
 # ---------------------------------------------------------------------------

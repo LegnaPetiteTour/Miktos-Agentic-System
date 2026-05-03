@@ -364,18 +364,19 @@ and session templates.
 
 ---
 
-## Phase 18 — Docker + Cockpit Layout 🔜 NEXT
+## Phase 18 — Docker + Cockpit Layout ✅ COMPLETE
 
 Self-hosted deployment and cockpit multi-column grid restructure.
 
-- Docker container + `docker-compose.yml` for institutional IT deployment
-- Cockpit layout: multi-column grid (left: EN channel, right: FR channel,
-  centre: production actions, right sidebar: health + automation)
-- Single-password auth: shared password in `.env`, JWT tokens, no user database
-  (full role management is Pro tier / Stage 3)
-- Audit log persistence across container restarts
+- `Dockerfile` + `docker-compose.yml` + `.dockerignore` for institutional IT deployment
+- Cockpit layout: 4-column grid (EN channel | Production | FR channel | Health/Automation)
+  — responsive single-column below 900 px
+- JWT auth: `AUTH_ENABLED` env var gates everything; default `false` → identical to pre-18
+  behaviour; `true` → login page, shared password from `.env`, cookie-based JWT
+- Rehearsal mode always bypasses auth; `/health-check` always public (Docker health probe)
+- `PyJWT>=2.8` + `cryptography>=42` added to dependencies
 
-**Target:** ~200 passed, 1 skip
+**Result:** 211 passed, 1 skip
 
 ---
 

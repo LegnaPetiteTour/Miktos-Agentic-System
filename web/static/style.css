@@ -49,15 +49,79 @@ a:hover { text-decoration: underline; }
 }
 .nav-link { color: var(--muted); }
 .nav-link.active { color: var(--text); border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
+.nav-logout { color: var(--muted); font-size: inherit; font-family: inherit; }
 
 /* Main */
 .main {
-  max-width: 1100px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 1.5rem;
+  /* Default layout for non-cockpit pages (setup, sessions, onboarding) */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--gap);
+}
+
+/* ── Cockpit multi-column grid (Phase 18) ───────────────────────────────── */
+/*
+  Four columns:
+    left    — EN channel   (240px fixed)
+  centre  — Production   (1fr, expands)
+    right   — FR channel   (240px fixed)
+    sidebar — Health/Auto  (220px fixed)
+*/
+/* When placed inside .main (which is a grid), span all auto-fill columns */
+.main > .cockpit-grid {
+  grid-column: 1 / -1;
+}
+
+.cockpit-grid {
+  display: grid;
+  grid-template-columns:
+    [left-start]    240px  [left-end centre-start]
+    1fr             [centre-end right-start]
+    240px           [right-end sidebar-start]
+    220px           [sidebar-end];
+  grid-template-rows: auto;
+  gap: var(--gap);
+  align-items: start;
+}
+
+/* Each column is a flex column so panels stack vertically */
+.cockpit-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-width: 0;   /* prevent blowout in narrow grid cells */
+}
+
+.cockpit-col-left    { grid-column: left-start    / left-end; }
+.cockpit-col-centre  { grid-column: centre-start  / centre-end; }
+.cockpit-col-right   { grid-column: right-start   / right-end; }
+.cockpit-col-sidebar { grid-column: sidebar-start / sidebar-end; }
+
+/* Column header label */
+.col-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.1rem;
+}
+
+/* Responsive: collapse to single column on narrow screens */
+@media (max-width: 900px) {
+  .cockpit-grid {
+    grid-template-columns: 1fr;
+  }
+  .cockpit-col-left,
+  .cockpit-col-centre,
+  .cockpit-col-right,
+  .cockpit-col-sidebar {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Panels */

@@ -1,0 +1,38 @@
+# Miktos Web Cockpit — docker-compose.yml
+#
+# Usage:
+#   cp .env.example .env        # fill in AUTH_PASSWORD and other secrets
+#   docker-compose up -d
+#   open http://localhost:8000
+#
+# Volumes:
+#   ./data  →  /app/data        persistent: sessions, credentials, logs, state
+#   ./.env  →  env_file         injects secrets at runtime (never baked into image)
+#
+# Port:   8000  (change HOST_PORT below or in .env to avoid conflicts)
+
+services:
+  cockpit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: miktos-cockpit:latest
+    container_name: miktos-cockpit
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-8000}:8000"
+    volumes:
+      # Persistent data — credentials, sessions, action log, state
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      # Override individual vars here if needed
+      MIKTOS_DATA_DIR: /app/data
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health-check')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

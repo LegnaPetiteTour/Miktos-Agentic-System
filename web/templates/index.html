@@ -8,92 +8,126 @@
   <a href="/onboarding">Complete setup →</a>
 </div>
 {% endif %}
+
 <div id="cockpit"
      hx-ext="sse"
      sse-connect="/api/status/stream"
      sse-swap="message"
-     hx-swap="none">
+     hx-swap="none"
+     class="cockpit-grid">
 
-  <!-- Hardware badge -->
-  <section class="panel" id="panel-hardware">
-    <h2 class="panel-title">Hardware</h2>
-    <div class="badge" id="hardware-badge">—</div>
-  </section>
+  <!-- ═══════════════════════════════════════════════════════
+       LEFT COLUMN — EN Channel
+       Hardware status + EN-side controls
+  ═══════════════════════════════════════════════════════ -->
+  <div class="cockpit-col cockpit-col-left">
+    <div class="col-label">EN Channel</div>
 
-  <!-- Session control -->
-  <section class="panel" id="panel-control">
-    <h2 class="panel-title">Session</h2>
-    <div class="control-row">
-      <button class="btn-start" id="btn-start" onclick="startSession()">Start Session</button>
-      <button class="btn-stop hidden" id="btn-stop" onclick="stopSession()">Stop Session</button>
-      <span class="btn-finishing hidden" id="btn-finishing">Finishing…</span>
-    </div>
-    <div id="control-status" class="muted" style="font-size:0.8rem;margin-top:0.4rem;"></div>
-  </section>
+    <!-- Hardware badge -->
+    <section class="panel" id="panel-hardware">
+      <h2 class="panel-title">Hardware</h2>
+      <div class="badge" id="hardware-badge">—</div>
+    </section>
 
-  <!-- Stream state -->
-  <section class="panel" id="panel-stream">
-    <h2 class="panel-title">Stream</h2>
-    <div class="state-row">
-      <span class="state-badge" id="stream-state">—</span>
-      <span class="elapsed muted" id="session-elapsed"></span>
-    </div>
-  </section>
+    <!-- Pearl layouts -->
+    <section class="panel" id="panel-pearl">
+      <h2 class="panel-title">Pearl Layouts</h2>
+      <div id="pearl-layouts"><span class="muted">—</span></div>
+    </section>
 
-  <!-- Health -->
-  <section class="panel" id="panel-health">
-    <h2 class="panel-title">Health</h2>
-    <div class="health-row">
-      <span class="label">Ticks</span>
-      <span id="tick-count">0</span>
-    </div>
-    <div class="health-row" id="alerts-row">
-      <span class="label">Alerts</span>
-      <span id="alerts-list" class="muted">none</span>
-    </div>
-  </section>
+    <!-- Scene Switcher (Phase 14) -->
+    <div hx-get="/panels/switcher" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <!-- Pearl layouts -->
-  <section class="panel" id="panel-pearl">
-    <h2 class="panel-title">Pearl Layouts</h2>
-    <div id="pearl-layouts"><span class="muted">—</span></div>
-  </section>
+    <!-- Audio Control (Phase 14) -->
+    <div hx-get="/panels/audio" hx-trigger="load" hx-swap="outerHTML"></div>
+  </div>
 
-  <!-- Pipeline -->
-  <section class="panel" id="panel-pipeline">
-    <h2 class="panel-title">Pipeline</h2>
-    <ul id="pipeline-slots" class="slot-list"><li class="muted">—</li></ul>
-  </section>
+  <!-- ═══════════════════════════════════════════════════════
+       CENTRE COLUMN — Production Actions
+       Session control, stream state, pipeline, run-of-show
+  ═══════════════════════════════════════════════════════ -->
+  <div class="cockpit-col cockpit-col-centre">
+    <div class="col-label">Production</div>
 
-  <!-- Scene Switcher (Phase 14) -->
-  <div hx-get="/panels/switcher" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Session control -->
+    <section class="panel" id="panel-control">
+      <h2 class="panel-title">Session</h2>
+      <div class="control-row">
+        <button class="btn-start" id="btn-start" onclick="startSession()">Start Session</button>
+        <button class="btn-stop hidden" id="btn-stop" onclick="stopSession()">Stop Session</button>
+        <span class="btn-finishing hidden" id="btn-finishing">Finishing…</span>
+      </div>
+      <div id="control-status" class="muted" style="font-size:0.8rem;margin-top:0.4rem;"></div>
+    </section>
 
-  <!-- Health (Phase 14) -->
-  <div hx-get="/panels/health" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Stream state -->
+    <section class="panel" id="panel-stream">
+      <h2 class="panel-title">Stream</h2>
+      <div class="state-row">
+        <span class="state-badge" id="stream-state">—</span>
+        <span class="elapsed muted" id="session-elapsed"></span>
+      </div>
+    </section>
 
-  <!-- Audio Control (Phase 14) -->
-  <div hx-get="/panels/audio" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Run-of-show (Phase 17) -->
+    <div hx-get="/panels/runofshow" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <!-- Captions (Phase 14) -->
-  <div hx-get="/panels/captions" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Pipeline -->
+    <section class="panel" id="panel-pipeline">
+      <h2 class="panel-title">Pipeline</h2>
+      <ul id="pipeline-slots" class="slot-list"><li class="muted">—</li></ul>
+    </section>
 
-  <!-- Preview thumbnails (Phase 15) -->
-  <div hx-get="/panels/preview" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Graphics overlays (Phase 15) -->
+    <div hx-get="/panels/graphics" hx-trigger="load" hx-swap="outerHTML"></div>
+  </div>
 
-  <!-- Graphics overlays (Phase 15) -->
-  <div hx-get="/panels/graphics" hx-trigger="load" hx-swap="outerHTML"></div>
+  <!-- ═══════════════════════════════════════════════════════
+       RIGHT COLUMN — FR Channel
+       FR-side preview, captions
+  ═══════════════════════════════════════════════════════ -->
+  <div class="cockpit-col cockpit-col-right">
+    <div class="col-label">FR Channel</div>
 
-  <!-- Action log (Phase 16) -->
-  <div hx-get="/panels/action_log" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Preview thumbnails (Phase 15) -->
+    <div hx-get="/panels/preview" hx-trigger="load" hx-swap="outerHTML"></div>
 
-  <!-- Emergency safe mode (Phase 16) -->
-  <div hx-get="/panels/safe_mode" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Captions (Phase 14) -->
+    <div hx-get="/panels/captions" hx-trigger="load" hx-swap="outerHTML"></div>
+  </div>
 
-  <!-- Run-of-show (Phase 17) -->
-  <div hx-get="/panels/runofshow" hx-trigger="load" hx-swap="outerHTML"></div>
+  <!-- ═══════════════════════════════════════════════════════
+       SIDEBAR — Health & Automation
+       System health, action log, safe mode, rehearsal
+  ═══════════════════════════════════════════════════════ -->
+  <div class="cockpit-col cockpit-col-sidebar">
+    <div class="col-label">Health &amp; Automation</div>
 
-  <!-- Rehearsal mode (Phase 17) -->
-  <div hx-get="/panels/rehearsal" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Health (Phase 14) -->
+    <div id="panel-health" hx-get="/panels/health" hx-trigger="load" hx-swap="outerHTML"></div>
+
+    <!-- Ticks / alerts (SSE-driven summary) -->
+    <section class="panel" id="panel-ticks">
+      <h2 class="panel-title">Monitor</h2>
+      <div class="health-row">
+        <span class="label">Ticks</span>
+        <span id="tick-count">0</span>
+      </div>
+      <div class="health-row" id="alerts-row">
+        <span class="label">Alerts</span>
+        <span id="alerts-list" class="muted">none</span>
+      </div>
+    </section>
+
+    <!-- Emergency safe mode (Phase 16) -->
+    <div hx-get="/panels/safe_mode" hx-trigger="load" hx-swap="outerHTML"></div>
+
+    <!-- Rehearsal mode (Phase 17) -->
+    <div hx-get="/panels/rehearsal" hx-trigger="load" hx-swap="outerHTML"></div>
+
+    <!-- Action log (Phase 16) -->
+    <div hx-get="/panels/action_log" hx-trigger="load" hx-swap="outerHTML"></div>
+  </div>
 
 </div>
 
