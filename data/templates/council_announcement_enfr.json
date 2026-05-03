@@ -1,0 +1,71 @@
+{
+  "id": "council_announcement_enfr",
+  "name": "Council Announcement EN/FR",
+  "description": "Municipal or institutional bilingual council announcement with formal structure.",
+  "cues": [
+    {
+      "id": "pre_roll",
+      "label": "Pre-Roll / Holding Slate",
+      "notes": "Hold before official start. Display institution logo slate.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "chair_intro",
+      "label": "Chair Introduction",
+      "notes": "Council chair or clerk calls meeting to order.",
+      "scene": "Main",
+      "lower_third": "chair_name",
+      "transition": "fade"
+    },
+    {
+      "id": "announcement_en",
+      "label": "Announcement — English",
+      "notes": "Official announcement delivered in English.",
+      "scene": "Speaker",
+      "lower_third": "announcement_title",
+      "transition": "cut"
+    },
+    {
+      "id": "announcement_fr",
+      "label": "Annonce — Français",
+      "notes": "Official announcement delivered in French.",
+      "scene": "Speaker",
+      "lower_third": "announcement_title",
+      "transition": "cut"
+    },
+    {
+      "id": "supporting_remarks",
+      "label": "Supporting Remarks",
+      "notes": "Additional councillors or officials may add remarks.",
+      "scene": "Wide",
+      "lower_third": "speaker_name",
+      "transition": "cut"
+    },
+    {
+      "id": "media_questions",
+      "label": "Media Questions",
+      "notes": "Questions from accredited media. Clear lower third.",
+      "scene": "Wide",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "outro",
+      "label": "Closing Statement",
+      "notes": "Chair formally closes the announcement session.",
+      "scene": "Main",
+      "lower_third": "chair_name",
+      "transition": "fade"
+    },
+    {
+      "id": "post_roll",
+      "label": "Post-Roll",
+      "notes": "End slate until stream closed.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "fade"
+    }
+  ]
+}

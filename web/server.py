@@ -35,11 +35,14 @@ from web.api import (  # noqa: E402
     onboarding,
     pearl,
     preview,
+    rehearsal,
     runner,
+    runofshow,
     safe_mode,
     session,
     status,
     switcher,
+    templates as templates_api,
 )
 
 BASE_DIR = Path(__file__).parent
@@ -69,6 +72,9 @@ app.include_router(graphics.router, prefix="/api/graphics")
 app.include_router(adapters.router, prefix="/api/adapters")
 app.include_router(action_log.router, prefix="/api/action_log")
 app.include_router(safe_mode.router, prefix="/api/safe_mode")
+app.include_router(runofshow.router, prefix="/api/runofshow")
+app.include_router(rehearsal.router, prefix="/api/rehearsal")
+app.include_router(templates_api.router, prefix="/api/templates")
 
 
 # ---------------------------------------------------------------------------
@@ -154,6 +160,16 @@ async def panel_action_log(request: Request) -> HTMLResponse:
 @app.get("/panels/safe_mode", response_class=HTMLResponse)
 async def panel_safe_mode(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="panel_safe_mode.html")
+
+
+@app.get("/panels/runofshow", response_class=HTMLResponse)
+async def panel_runofshow(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_runofshow.html")
+
+
+@app.get("/panels/rehearsal", response_class=HTMLResponse)
+async def panel_rehearsal(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_rehearsal.html")
 
 
 # ---------------------------------------------------------------------------

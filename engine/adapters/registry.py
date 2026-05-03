@@ -23,9 +23,23 @@ def get_adapter():
     """
     Return an instantiated adapter for the configured hardware platform.
 
+    When rehearsal mode is active (``engine.rehearsal.is_rehearsal_active()``),
+    a ``RehearsalAdapter`` is returned regardless of the platform setting.
+
     The adapter is freshly instantiated on every call — callers that need
     a persistent connection should hold the returned object themselves.
     """
+    # Rehearsal mode takes priority over platform selection
+    try:
+        from engine.rehearsal import is_rehearsal_active  # noqa: PLC0415
+
+        if is_rehearsal_active():
+            from engine.adapters.rehearsal_adapter import RehearsalAdapter  # noqa: PLC0415
+
+            return RehearsalAdapter()
+    except Exception:  # noqa: BLE001
+        pass
+
     platform = (
         os.getenv("HARDWARE_ADAPTER", "")
         or os.getenv("HARDWARE_PLATFORM", "obs")
