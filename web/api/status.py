@@ -10,7 +10,7 @@ Payload shape:
     stream_state:   str,           # last event type from message.log
     tick:           int,           # count of TICK events seen in message.log
     alerts:         list[str],     # recent alert descriptions
-    pearl_layouts:  list[dict],    # latest entry per channel from layout_log.jsonl
+    pearl_layouts:  list[dict],    # per-channel: {channel, active_id, active_name, layouts:[{id,name}]}
     pipeline_slots: list[str],     # files present in latest named session dir
     elapsed:        str            # wall-clock age of last session dir (HH:MM)
   }
@@ -97,9 +97,24 @@ def _parse_message_log() -> tuple[str, int, list[str]]:
 
 
 def _read_pearl_layouts() -> list[dict]:
-    """Latest layout entry per channel from layout_log.jsonl."""
+    """
+    Per-channel layout data derived from layout_log.jsonl.
+
+    Scans the full log to collect every unique layout seen per channel
+    (ordered by first appearance), then identifies the latest active one.
+
+    Returns a list of::
+
+        {
+          "channel":     str,         # channel ID
+          "active_id":   str,         # layout_id of the most-recently-seen entry
+          "active_name": str,         # human name of the active layout
+          "layouts":     list[dict],  # [{"id": str, "name": str}, ...] all known
+        }
+    """
     if not _LAYOUT_LOG.exists():
         return []
+    # channel -> {"active": latest_entry, "seen": {layout_id: layout_name}}
     by_channel: dict[str, dict] = {}
     with _LAYOUT_LOG.open() as fh:
         for raw in fh:
@@ -109,11 +124,30 @@ def _read_pearl_layouts() -> list[dict]:
             try:
                 entry = json.loads(raw)
                 ch = str(entry.get("channel", ""))
-                if ch:
-                    by_channel[ch] = entry
+                lid = str(entry.get("layout_id", ""))
+                lname = entry.get("layout_name", lid)
+                if not ch or not lid:
+                    continue
+                if ch not in by_channel:
+                    by_channel[ch] = {"active": entry, "seen": {}}
+                else:
+                    by_channel[ch]["active"] = entry  # always update to latest
+                by_channel[ch]["seen"].setdefault(lid, lname)
             except json.JSONDecodeError:
                 continue
-    return list(by_channel.values())
+    result = []
+    for ch, data in by_channel.items():
+        active_id = str(data["active"].get("layout_id", ""))
+        result.append({
+            "channel": ch,
+            "active_id": active_id,
+            "active_name": data["active"].get("layout_name", active_id),
+            "layouts": [
+                {"id": lid, "name": lname}
+                for lid, lname in data["seen"].items()
+            ],
+        })
+    return result
 
 
 def _named_sessions() -> list[Path]:
