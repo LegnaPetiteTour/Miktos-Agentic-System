@@ -36,7 +36,7 @@ def _obs_probe() -> tuple[bool, str | None]:
             password=os.getenv("OBS_PASSWORD", ""),
             timeout=3,
         )
-        version: str = cl.get_version().obs_version
+        version: str = cl.get_version().obs_version  # type: ignore[union-attr]
         cl.disconnect()
         return True, version
     except Exception:
