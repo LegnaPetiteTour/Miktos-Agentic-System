@@ -44,14 +44,18 @@ def _obs_probe() -> tuple[bool, str | None]:
 
 
 def _pearl_probe() -> tuple[bool, str | None]:
-    """Return (reachable, firmware_version). Never raises."""
+    """Return (reachable, channel_summary). Never raises.
+
+    Uses /api/channels (always present on Pearl) rather than the firmware
+    endpoint which returns {"status": "notfound"} on some firmware versions.
+    """
     try:
         from domains.epiphan.tools.pearl_client import PearlClient
 
         client = PearlClient()
-        info = client.get_firmware_info()
-        firmware: str | None = info.get("version") or info.get("firmware_version")
-        return True, firmware
+        channels = client.get_channels()
+        count = len(channels) if isinstance(channels, list) else 0
+        return True, f"{count} channels"
     except Exception:
         return False, None
 

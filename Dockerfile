@@ -10,7 +10,9 @@
 FROM python:3.13-slim-bookworm AS base
 
 # System deps for Pillow + audio tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# apt-get upgrade patches CVEs present in the base image snapshot.
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libgl1-mesa-glx \
     ffmpeg \
