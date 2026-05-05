@@ -166,10 +166,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const pl = document.getElementById("pearl-layouts");
     if (pl) {
       if (d.pearl_layouts && d.pearl_layouts.length) {
-        pl.innerHTML = d.pearl_layouts.map(l =>
-          `<div class="layout-row"><span class="label">Ch&nbsp;${l.channel}</span>
-           <span class="layout-name">${l.layout_name || l.layout_id}</span></div>`
-        ).join("");
+        pl.innerHTML = d.pearl_layouts.map(l => {
+          const btns = (l.layouts || []).map(lay =>
+            `<button class="btn-layout${lay.id === l.active_id ? ' btn-layout--active' : ''}"
+                     onclick="switchPearlLayout('${l.channel}','${lay.id}')">${lay.name}</button>`
+          ).join("");
+          return `<div class="layout-row">
+            <span class="label">Ch&nbsp;${l.channel}</span>
+            <div class="layout-btns">${btns || `<span class="layout-name">${l.active_name}</span>`}</div>
+          </div>`;
+        }).join("");
       } else {
         pl.innerHTML = '<span class="muted">—</span>';
       }
@@ -213,6 +219,18 @@ async function startSession() {
     }
   } catch (err) {
     if (status) status.textContent = "Error: " + err.message;
+  }
+}
+
+async function switchPearlLayout(channelId, layoutId) {
+  try {
+    await fetch("/api/pearl/switch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channel_id: channelId, layout_id: layoutId }),
+    });
+  } catch (err) {
+    console.error("Layout switch failed:", err);
   }
 }
 

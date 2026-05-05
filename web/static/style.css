@@ -165,8 +165,20 @@ a:hover { text-decoration: underline; }
 .label { color: var(--muted); min-width: 4rem; }
 
 /* Pearl layouts */
-.layout-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.25rem; }
+.layout-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.5rem; }
+.layout-row .label { margin-bottom: 0.1rem; }
 .layout-name { color: var(--text); }
+.layout-btns { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.btn-layout {
+  font-size: 0.72rem; padding: 0.2rem 0.5rem; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); cursor: pointer; white-space: nowrap;
+}
+.btn-layout:hover { background: var(--accent-dim, #334); }
+.btn-layout--active {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+  font-weight: 600;
+}
 
 /* Pipeline slots */
 .slot-list { list-style: none; padding: 0; }
