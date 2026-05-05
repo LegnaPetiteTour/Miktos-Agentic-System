@@ -19,6 +19,9 @@ _PROJECT_ROOT = Path(__file__).parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
+from dotenv import load_dotenv  # noqa: E402
+load_dotenv(dotenv_path=_PROJECT_ROOT / ".env")  # must run before any PearlClient instantiation
+
 import uvicorn  # noqa: E402
 from fastapi import FastAPI, Request  # noqa: E402
 from fastapi.responses import HTMLResponse  # noqa: E402
