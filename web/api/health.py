@@ -55,7 +55,8 @@ def _pearl_probe() -> tuple[bool, str | None]:
         client = PearlClient()
         channels = client.get_channels()
         count = len(channels) if isinstance(channels, list) else 0
-        return True, f"{count} channels"
+        _ = count  # available for debugging; UI shows "Online" for brevity
+        return True, "Online"
     except Exception:
         return False, None
 

@@ -92,7 +92,7 @@ def test_pearl_health_probe_uses_get_channels():
         ok, summary = health_mod._pearl_probe()
 
     assert ok is True
-    assert summary == "2 channels"
+    assert summary == "Online"
     mock_client.get_channels.assert_called_once()
     # firmware endpoint must NOT have been called
     mock_client.get_firmware.assert_not_called()
@@ -118,7 +118,7 @@ def test_health_snapshot_pearl_online():
 
     with (
         patch.object(health_mod, "_obs_probe", return_value=(False, None)),
-        patch.object(health_mod, "_pearl_probe", return_value=(True, "2 channels")),
+        patch.object(health_mod, "_pearl_probe", return_value=(True, "Online")),
         patch.object(health_mod, "_network_quality", return_value=None),
     ):
         resp = client.get("/api/health/snapshot")
@@ -126,7 +126,7 @@ def test_health_snapshot_pearl_online():
     assert resp.status_code == 200
     data = resp.json()
     assert data["pearl_ok"] is True
-    assert data["pearl_firmware"] == "2 channels"
+    assert data["pearl_firmware"] == "Online"
 
 
 # ===========================================================================
@@ -595,7 +595,7 @@ class TestFullCapabilitySmoke:
 
         with (
             patch.object(health_mod, "_obs_probe", return_value=(False, None)),
-            patch.object(health_mod, "_pearl_probe", return_value=(True, "2 channels")),
+            patch.object(health_mod, "_pearl_probe", return_value=(True, "Online")),
             patch.object(health_mod, "_network_quality", return_value=None),
         ):
             resp = client.get("/api/health/snapshot")
