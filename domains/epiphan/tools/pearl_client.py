@@ -114,7 +114,13 @@ class PearlClient:
         return data.get("result", [])
 
     def get_active_layout(self, channel_id: str) -> dict:
-        """GET /api/channels/{cid}/layouts/active → currently active layout {id, name}."""
+        """GET /api/channels/{cid}/layouts/active → currently active layout {id, name}.
+
+        Pearl may return the layout ID as a plain string in 'result'
+        (e.g. {"result": "2"}) rather than a full dict.  We normalise
+        to {"id": ..., "name": ...} in both cases so callers can always
+        do active.get("id", "").
+        """
         resp = requests.get(
             f"{self._base}/api/channels/{channel_id}/layouts/active",
             auth=self._auth,
@@ -122,7 +128,13 @@ class PearlClient:
         )
         resp.raise_for_status()
         data = resp.json()
-        return data.get("result", {})
+        result = data.get("result", {})
+        if isinstance(result, str):
+            # Pearl returned just the layout ID — name unknown at this point
+            return {"id": result, "name": result}
+        if isinstance(result, dict):
+            return result
+        return {}
 
     def switch_layout(self, channel_id: str, layout_id: str) -> None:
         """PUT /api/channels/{cid}/layouts/active → activate a layout."""
