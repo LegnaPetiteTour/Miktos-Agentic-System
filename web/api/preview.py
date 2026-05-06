@@ -41,7 +41,7 @@ def _pearl_thumbnail(channel_id: str) -> bytes:
     password = os.getenv("PEARL_PASSWORD", "")
     auth = HTTPBasicAuth("admin", password)
     resp = requests.get(
-        f"http://{host}:{port}/api/channels/{channel_id}/thumbnail",
+        f"http://{host}:{port}/api/channels/{channel_id}/preview",
         auth=auth,
         timeout=5,
     )
@@ -62,8 +62,8 @@ async def get_thumbnail(source: str = "obs") -> JSONResponse:
     Query params
     ------------
     source : str
-        ``pearl_en`` — Pearl channel from ``PEARL_CHANNEL_EN`` env (default ``1``)
-        ``pearl_fr`` — Pearl channel from ``PEARL_CHANNEL_FR`` env (default ``2``)
+        ``pearl_en`` — Pearl channel from ``PEARL_CHANNEL_EN`` env (default ``2``)
+        ``pearl_fr`` — Pearl channel from ``PEARL_CHANNEL_FR`` env (default ``3``)
         ``obs``      — OBS program screenshot (default)
 
     Response
@@ -76,7 +76,7 @@ async def get_thumbnail(source: str = "obs") -> JSONResponse:
     try:
         if source in ("pearl_en", "pearl_fr"):
             env_key = "PEARL_CHANNEL_EN" if source == "pearl_en" else "PEARL_CHANNEL_FR"
-            default_ch = "1" if source == "pearl_en" else "2"
+            default_ch = "2" if source == "pearl_en" else "3"
             channel_id = os.getenv(env_key, default_ch)
             raw = _pearl_thumbnail(channel_id)
             data = base64.b64encode(raw).decode()
