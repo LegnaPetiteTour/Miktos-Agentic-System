@@ -41,7 +41,7 @@ def _pearl_thumbnail(channel_id: str) -> bytes:
     password = os.getenv("PEARL_PASSWORD", "")
     auth = HTTPBasicAuth("admin", password)
     resp = requests.get(
-        f"http://{host}:{port}/api/channels/{channel_id}/thumbnail",
+        f"http://{host}:{port}/api/channels/{channel_id}/preview",
         auth=auth,
         timeout=5,
     )
