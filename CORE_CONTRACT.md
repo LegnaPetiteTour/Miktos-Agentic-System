@@ -91,6 +91,7 @@ contract — it may be removed without warning. 252 tests must pass before any
 PR merges. CI enforces this.
 
 Test discipline:
+
 - Tests use `dry_run=True` for workers that touch external systems
 - SSE endpoints are tested by patching `_event_stream` with a finite generator
 - Module-level path constants are monkeypatched — never use real data paths
@@ -119,7 +120,7 @@ gitignored and never committed.
 ## Invariant Summary
 
 | # | Rule |
-|---|------|
+| --- | --- |
 | 1 | Engine has no domain imports |
 | 2 | One scanner seam per domain |
 | 3 | Workers are stateless, `dry_run` required |
