@@ -79,12 +79,14 @@ The web cockpit (`http://localhost:8000`) is designed around one principle:
 **the operator should not need to know Python, YAML, or channel IDs.**
 
 At the start of an event:
+
 - The cockpit queries Pearl live and shows all available channels by name
 - The operator clicks EN next to the English channel, FR next to the French
   channel — or reassigns them for a different Pearl configuration
 - OBS scenes populate from the hardware — no manual entry
 
 During the event:
+
 - Session start/stop from the browser
 - Live thumbnail previews of Pearl channels and OBS program feed
 - Health widget showing Pearl and OBS connectivity status
@@ -92,6 +94,7 @@ During the event:
 - Rehearsal mode for dry-run testing before the event
 
 After the event:
+
 - The pipeline runs automatically
 - The action log shows what happened and when
 - The session report flags any ❌ slots for human review
@@ -109,6 +112,7 @@ at startup and shows what is actually connected. The operator clicks to assign
 roles. Configuration writes itself.
 
 This distinction matters at live events where:
+
 - The Pearl may have different channel assignments than the last event
 - A backup Pearl may be substituted with a different channel layout
 - The OBS scene list may have changed since the last session
@@ -121,7 +125,7 @@ A configured system requires YAML edits under time pressure.
 ## Boundaries: What Belongs Where
 
 | Concern | Belongs in |
-|---|---|
+| --- | --- |
 | Orchestration logic | `engine/` |
 | Domain tools (OBS, Pearl, YouTube) | `domains/` |
 | Web UI and REST endpoints | `web/` |
@@ -137,7 +141,7 @@ A configured system requires YAML edits under time pressure.
 ## Phase History
 
 | Phase | What was built | Tests |
-|---|---|---|
+| --- | --- | --- |
 | 1 | File Analyzer — MIME classifier, first engine stress test | 18 |
 | 2 | Kosmos — media organizer, second domain through same engine | 22 |
 | 3 | StreamLab Monitor — OBS WebSocket adapter, health loop | 25 |
