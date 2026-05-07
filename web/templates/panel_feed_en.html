@@ -1,0 +1,180 @@
+{# panel_feed_en.html — EN channel feed: Pearl EN + OBS previews + audio meters #}
+
+<style>
+  .feed-thumb-label {
+    font-size: 0.7rem;
+    color: var(--text-muted, #777);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.25rem;
+    margin-top: 0.6rem;
+  }
+  .feed-thumb-label:first-child { margin-top: 0; }
+  .feed-thumb {
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid var(--border, #2a2a2a);
+    background: #0e0e0e;
+    display: block;
+    min-height: 72px;
+    object-fit: cover;
+  }
+  .feed-thumb.obs-thumb {
+    border-color: #1e3a5f;
+  }
+
+  /* Audio meters */
+  .meter-section-label {
+    font-size: 0.7rem;
+    color: var(--text-muted, #777);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0.65rem 0 0.35rem;
+  }
+  .meter-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 36px;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.3rem;
+  }
+  .meter-name {
+    font-size: 0.72rem;
+    color: #aaa;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .meter-track {
+    height: 8px;
+    background: #1a1a1a;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .meter-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.15s ease-out;
+    min-width: 2px;
+  }
+  .meter-fill.level-good  { background: linear-gradient(90deg, #15803d, #22c55e); }
+  .meter-fill.level-hot   { background: linear-gradient(90deg, #ca8a04, #facc15); }
+  .meter-fill.level-clip  { background: linear-gradient(90deg, #b91c1c, #ef4444); }
+  .meter-fill.level-muted { background: #333; opacity: 0.5; }
+  .meter-db {
+    font-size: 0.68rem;
+    color: #666;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .meter-mute-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #ef4444;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .no-audio { font-size: 0.78rem; color: #555; }
+</style>
+
+<section class="panel" id="panel-feed-en">
+  <h2 class="panel-title">Feed — EN</h2>
+
+  <!-- Pearl EN thumbnail -->
+  <div class="feed-thumb-label">Pearl EN</div>
+  <img id="thumb-en-pearl" class="feed-thumb" src="" alt="Pearl EN" />
+
+  <!-- OBS program thumbnail -->
+  <div class="feed-thumb-label">OBS Program</div>
+  <img id="thumb-en-obs" class="feed-thumb obs-thumb" src="" alt="OBS" />
+
+  <!-- Audio meters -->
+  <div class="meter-section-label">Audio — OBS Inputs</div>
+  <div id="en-audio-meters"><span class="no-audio">Loading…</span></div>
+</section>
+
+<script>
+(function () {
+  // ── Thumbnails ──────────────────────────────────────────────────────────
+  async function refreshThumb(source, imgId) {
+    try {
+      const r = await fetch("/api/preview/thumbnail?source=" + source);
+      const d = await r.json();
+      const img = document.getElementById(imgId);
+      if (img && d.data) {
+        img.src = "data:" + d.content_type + ";base64," + d.data;
+      }
+    } catch { /* offline */ }
+  }
+
+  function refreshThumbs() {
+    refreshThumb("pearl_en", "thumb-en-pearl");
+    refreshThumb("obs",      "thumb-en-obs");
+  }
+
+  refreshThumbs();
+  setInterval(refreshThumbs, 2500);
+
+  // ── Audio meters ────────────────────────────────────────────────────────
+  function dbToPercent(db) {
+    // Map -60 dB → 0%, 0 dB → 100%
+    if (db == null || db <= -60) return 0;
+    return Math.min(100, Math.max(0, (db + 60) / 60 * 100));
+  }
+
+  function levelClass(db, muted) {
+    if (muted) return "level-muted";
+    if (db >= -3)  return "level-clip";
+    if (db >= -9)  return "level-hot";
+    return "level-good";
+  }
+
+  function dbLabel(db) {
+    if (db == null) return "—";
+    return (db >= 0 ? "+" : "") + db.toFixed(1);
+  }
+
+  async function refreshMeters() {
+    try {
+      const r = await fetch("/api/audio/inputs");
+      const d = await r.json();
+      const el = document.getElementById("en-audio-meters");
+      if (!el) return;
+
+      if (d.error || !d.inputs || !d.inputs.length) {
+        el.innerHTML = '<span class="no-audio">OBS offline</span>';
+        return;
+      }
+
+      el.innerHTML = d.inputs.map(inp => {
+        const pct   = dbToPercent(inp.volume_db);
+        const cls   = levelClass(inp.volume_db, inp.muted);
+        const label = dbLabel(inp.volume_db);
+        const name  = (inp.name || "?").substring(0, 18);
+        const muteDot = inp.muted
+          ? '<span class="meter-mute-dot" title="Muted"></span>'
+          : "";
+        return `<div class="meter-row">
+          <span class="meter-name" title="${esc(inp.name)}">${esc(name)}${muteDot}</span>
+          <div class="meter-track">
+            <div class="meter-fill ${cls}" style="width:${pct}%"></div>
+          </div>
+          <span class="meter-db">${label}</span>
+        </div>`;
+      }).join("");
+    } catch {
+      const el = document.getElementById("en-audio-meters");
+      if (el) el.innerHTML = '<span class="no-audio">OBS offline</span>';
+    }
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  refreshMeters();
+  setInterval(refreshMeters, 3000);
+})();
+</script>
