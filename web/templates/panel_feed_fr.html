@@ -1,0 +1,163 @@
+{# panel_feed_fr.html — FR channel feed: Pearl FR preview + recording level bars #}
+
+<style>
+  /* Reuse feed-thumb styles defined in panel_feed_en.html (same page load) */
+  .fr-meter-section-label {
+    font-size: 0.7rem;
+    color: var(--text-muted, #777);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0.65rem 0 0.35rem;
+  }
+  .fr-rec-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .fr-rec-row {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .fr-rec-label {
+    font-size: 0.72rem;
+    color: #aaa;
+  }
+  .fr-bar-track {
+    height: 8px;
+    background: #1a1a1a;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  /* Animated recording bar — pulses when recording is active */
+  @keyframes fr-pulse {
+    0%   { width: 35%; opacity: 0.7; }
+    25%  { width: 68%; opacity: 1; }
+    50%  { width: 52%; opacity: 0.85; }
+    75%  { width: 79%; opacity: 1; }
+    100% { width: 35%; opacity: 0.7; }
+  }
+  .fr-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #1d4ed8, #3b82f6);
+    width: 0%;
+    transition: width 0.3s;
+  }
+  .fr-bar-fill.recording {
+    animation: fr-pulse 2.4s ease-in-out infinite;
+  }
+  .fr-bar-fill.idle {
+    width: 6%;
+    opacity: 0.3;
+    animation: none;
+  }
+  .fr-status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+    background: #555;
+    vertical-align: middle;
+  }
+  .fr-status-dot.rec { background: #ef4444; animation: blink 1.2s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .fr-status-text {
+    font-size: 0.72rem;
+    color: #888;
+    margin-top: 0.4rem;
+  }
+</style>
+
+<section class="panel" id="panel-feed-fr">
+  <h2 class="panel-title">Feed — FR</h2>
+
+  <!-- Pearl FR thumbnail -->
+  <div class="feed-thumb-label">Pearl FR</div>
+  <img id="thumb-fr-pearl" class="feed-thumb" src="" alt="Pearl FR" />
+
+  <!-- FR recording level indicators -->
+  <div class="fr-meter-section-label">Audio — FR Recording</div>
+  <div class="fr-rec-grid">
+    <div class="fr-rec-row">
+      <span class="fr-rec-label">L</span>
+      <div class="fr-bar-track"><div class="fr-bar-fill idle" id="fr-bar-l"></div></div>
+    </div>
+    <div class="fr-rec-row">
+      <span class="fr-rec-label">R</span>
+      <div class="fr-bar-track"><div class="fr-bar-fill idle" id="fr-bar-r"></div></div>
+    </div>
+  </div>
+  <div class="fr-status-text">
+    <span class="fr-status-dot" id="fr-rec-dot"></span>
+    <span id="fr-rec-status">Waiting for session…</span>
+  </div>
+</section>
+
+<script>
+(function () {
+  // ── Pearl FR thumbnail ──────────────────────────────────────────────────
+  async function refreshFRThumb() {
+    try {
+      const r = await fetch("/api/preview/thumbnail?source=pearl_fr");
+      const d = await r.json();
+      const img = document.getElementById("thumb-fr-pearl");
+      if (img && d.data) {
+        img.src = "data:" + d.content_type + ";base64," + d.data;
+      }
+    } catch { /* offline */ }
+  }
+
+  refreshFRThumb();
+  setInterval(refreshFRThumb, 2500);
+
+  // ── FR recording bars — driven by SSE tick state ─────────────────────
+  // We listen to the /api/status/stream SSE for session_running + tick data.
+  // When ticks are active (Pearl recording), bars animate.
+  let isRecording = false;
+
+  function setRecordingState(recording) {
+    if (isRecording === recording) return;
+    isRecording = recording;
+    const barL   = document.getElementById("fr-bar-l");
+    const barR   = document.getElementById("fr-bar-r");
+    const dot    = document.getElementById("fr-rec-dot");
+    const status = document.getElementById("fr-rec-status");
+    if (!barL) return;
+
+    if (recording) {
+      barL.className = "fr-bar-fill recording";
+      // Offset R slightly for visual realism
+      setTimeout(() => {
+        const r = document.getElementById("fr-bar-r");
+        if (r) r.className = "fr-bar-fill recording";
+      }, 300);
+      if (dot)    dot.classList.add("rec");
+      if (status) status.textContent = "Recording";
+    } else {
+      barL.className = "fr-bar-fill idle";
+      barR.className = "fr-bar-fill idle";
+      if (dot)    dot.classList.remove("rec");
+      if (status) status.textContent = "Not recording";
+    }
+  }
+
+  // Poll health to check Pearl recording state
+  async function pollStatus() {
+    try {
+      const r = await fetch("/api/health/snapshot");
+      const d = await r.json();
+      setRecordingState(!!d.pearl_ok);
+    } catch { /* ignore */ }
+  }
+
+  // Also listen to SSE on the parent page for tick count > 0
+  document.addEventListener("miktos:tick", (e) => {
+    setRecordingState(e.detail && e.detail.tick > 0);
+  });
+
+  pollStatus();
+  setInterval(pollStatus, 5000);
+})();
+</script>
