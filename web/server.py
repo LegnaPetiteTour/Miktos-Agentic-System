@@ -205,9 +205,11 @@ async def panel_rehearsal(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="panel_rehearsal.html")
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
+@app.get("/panels/channels", response_class=HTMLResponse)
+async def panel_channels(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_channels.html")
+
+
 
 if __name__ == "__main__":
     uvicorn.run("web.server:app", host="127.0.0.1", port=8000, reload=True)

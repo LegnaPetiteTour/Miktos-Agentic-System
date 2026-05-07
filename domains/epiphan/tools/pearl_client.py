@@ -209,6 +209,32 @@ class PearlClient:
         return str(dest_path)
 
     # ------------------------------------------------------------------
+    # Inputs
+    # ------------------------------------------------------------------
+
+    def get_inputs(self) -> list[dict]:
+        """GET /api/inputs → list of {id, name, type} for all Pearl inputs."""
+        resp = requests.get(
+            f"{self._base}/api/inputs",
+            auth=self._auth,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("result", [])
+
+    def get_channel_info(self, channel_id: str) -> dict:
+        """GET /api/channels/{cid} → full channel metadata."""
+        resp = requests.get(
+            f"{self._base}/api/channels/{channel_id}",
+            auth=self._auth,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("result", {})
+
+    # ------------------------------------------------------------------
     # Legacy HTTP admin API
     # ------------------------------------------------------------------
 

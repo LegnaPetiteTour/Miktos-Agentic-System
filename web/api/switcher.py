@@ -1,9 +1,10 @@
 """
 web/api/switcher.py — /api/switcher/* endpoints.
 
-GET  /api/switcher/obs/scenes      → list OBS scenes + current program scene
-POST /api/switcher/obs/switch      → set current OBS program scene
-GET  /api/switcher/pearl/channels  → list Pearl channels via PearlClient
+GET  /api/switcher/obs/scenes              → list OBS scenes + current program scene
+GET  /api/switcher/obs/sources/{scene}     → list sources for a specific OBS scene
+POST /api/switcher/obs/switch              → set current OBS program scene
+GET  /api/switcher/pearl/channels          → list all Pearl channels (auto-discovery)
 """
 
 from __future__ import annotations
@@ -35,7 +36,7 @@ def _obs_client():  # type: ignore[return]
 
 
 # ---------------------------------------------------------------------------
-# Endpoints — OBS scenes
+# OBS — scenes
 # ---------------------------------------------------------------------------
 
 
@@ -51,6 +52,43 @@ async def list_obs_scenes() -> JSONResponse:
         return JSONResponse({"scenes": scenes, "current": current})
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, status_code=503)
+
+
+# ---------------------------------------------------------------------------
+# OBS — sources per scene (auto-discovery)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/obs/sources/{scene_name:path}")
+async def list_obs_sources(scene_name: str) -> JSONResponse:
+    """
+    Return all sources (inputs) for a specific OBS scene.
+
+    Each source includes: id, name, type, enabled.
+    This allows the cockpit to display what inputs are in each scene
+    without requiring manual configuration.
+    """
+    try:
+        cl = _obs_client()
+        resp = cl.get_scene_item_list(scene_name)
+        sources = [
+            {
+                "id": item.get("sceneItemId"),
+                "name": item.get("sourceName"),
+                "type": item.get("inputKind", item.get("sourceType", "unknown")),
+                "enabled": item.get("sceneItemEnabled", True),
+            }
+            for item in (resp.scene_items or [])
+        ]
+        cl.disconnect()
+        return JSONResponse({"scene": scene_name, "sources": sources})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=503)
+
+
+# ---------------------------------------------------------------------------
+# OBS — switch scene
+# ---------------------------------------------------------------------------
 
 
 class SwitchSceneBody(BaseModel):
@@ -70,13 +108,17 @@ async def switch_obs_scene(body: SwitchSceneBody) -> JSONResponse:
 
 
 # ---------------------------------------------------------------------------
-# Endpoints — Pearl channels
+# Pearl — channel discovery
 # ---------------------------------------------------------------------------
 
 
 @router.get("/pearl/channels")
 async def list_pearl_channels() -> JSONResponse:
-    """Return Pearl channel list from PearlClient."""
+    """
+    Return all Pearl channels discovered live from the device.
+    Redirects to /api/pearl/channels which includes role assignments.
+    This endpoint exists for compatibility — prefer /api/pearl/channels.
+    """
     try:
         from domains.epiphan.tools.pearl_client import PearlClient
 
