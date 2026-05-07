@@ -11,7 +11,6 @@ POST /api/pearl/assign                → assign channel to EN or FR role in ses
 
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 import requests as _requests
