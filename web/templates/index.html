@@ -35,6 +35,9 @@
       <div id="pearl-layouts"><span class="muted">—</span></div>
     </section>
 
+    <!-- Pearl channel assignment (auto-discovery) -->
+    <div hx-get="/panels/channels" hx-trigger="load" hx-swap="outerHTML"></div>
+
     <!-- Scene Switcher (Phase 14) -->
     <div hx-get="/panels/switcher" hx-trigger="load" hx-swap="outerHTML"></div>
 

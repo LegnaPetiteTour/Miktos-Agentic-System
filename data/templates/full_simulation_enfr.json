@@ -1,0 +1,119 @@
+{
+  "id": "full_simulation_enfr",
+  "name": "Full Integration Simulation EN/FR",
+  "description": "End-to-end simulation: Pearl monitoring, OBS scene switching, layout control, safe mode, rehearsal, full post-production pipeline. Designed to stress-test every integration point before a live event.",
+  "cues": [
+    {
+      "id": "pre_check",
+      "label": "Pre-Flight / System Check",
+      "notes": "Verify: Pearl channels 2 (EN) + 3 (FR) recording. OBS WebSocket Online in health panel. All thumbnails live. Run pre-flight from cockpit. Check Pearl Channels panel shows correct EN/FR assignments.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "none"
+    },
+    {
+      "id": "holding_slate",
+      "label": "Holding Slate",
+      "notes": "Switch OBS to 'Slate Scene'. Switch Pearl layout to 01 MA-Pre-Show-Loop. Verify OBS thumbnail updates in cockpit. Verify Scene Switcher highlights Slate Scene.",
+      "scene": "Slate Scene",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "obs_stream_start",
+      "label": "Start YouTube Stream (OBS)",
+      "notes": "START STREAMING in OBS manually (Controls panel → Start Streaming). Verify stream goes live on YouTube unlisted. OBS health should now show streaming active.",
+      "scene": "Slate Scene",
+      "lower_third": "",
+      "transition": "none"
+    },
+    {
+      "id": "intro",
+      "label": "Intro",
+      "notes": "Switch OBS to 'Intro Scene'. Announce bilingual simulation start. Confirm OBS scene switch from cockpit works.",
+      "scene": "Intro Scene",
+      "lower_third": "title_card",
+      "transition": "fade"
+    },
+    {
+      "id": "main_camera",
+      "label": "Main Camera",
+      "notes": "Switch OBS to 'Main Camera'. Switch Pearl to layout 9 (02 Fullscreen Zoom EN w/ cover). Confirm both cockpit panels update.",
+      "scene": "Main Camera",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "rehearsal_test",
+      "label": "Rehearsal Mode Test",
+      "notes": "Enter Rehearsal Mode from cockpit. Switch Pearl layout. Exit Rehearsal. Verify action log entry created with timestamp.",
+      "scene": "Main Camera",
+      "lower_third": "",
+      "transition": "none"
+    },
+    {
+      "id": "sony_main",
+      "label": "Sony Main Camera",
+      "notes": "Switch OBS to 'Sony_Main'. Test OBS scene switch from cockpit Scene Switcher. Verify Sony_Main highlighted as active.",
+      "scene": "Sony_Main",
+      "lower_third": "",
+      "transition": "cut"
+    },
+    {
+      "id": "sony_pip",
+      "label": "Sony PIP",
+      "notes": "Switch OBS to 'Sony_PIP'. Test picture-in-picture layout. Confirm cockpit updates.",
+      "scene": "Sony_PIP",
+      "lower_third": "",
+      "transition": "cut"
+    },
+    {
+      "id": "safe_mode_test",
+      "label": "Emergency Stop Test",
+      "notes": "Trigger Emergency Stop from cockpit. Confirm SAFE MODE ACTIVE with timestamp. Verify action log entry. Resume within 10 seconds.",
+      "scene": "Sony_PIP",
+      "lower_third": "",
+      "transition": "none"
+    },
+    {
+      "id": "technical_difficulties",
+      "label": "Technical Difficulties Scene",
+      "notes": "Switch OBS to 'Technical Difficulties' scene. Test this fallback scene from cockpit. Switch Pearl back to layout 1.",
+      "scene": "Technical Difficulties",
+      "lower_third": "",
+      "transition": "cut"
+    },
+    {
+      "id": "closing",
+      "label": "Closing — Camera Scene",
+      "notes": "Switch OBS to 'Camera Scene'. Switch Pearl back to 01 MA-Pre-Show-Loop. Final remarks for simulation.",
+      "scene": "Camera Scene",
+      "lower_third": "",
+      "transition": "fade"
+    },
+    {
+      "id": "obs_stream_stop",
+      "label": "Stop YouTube Stream (OBS)",
+      "notes": "STOP STREAMING in OBS manually. Confirm stream ends on YouTube. OBS thumbnail will go offline.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "none"
+    },
+    {
+      "id": "stop_pearl",
+      "label": "Stop Pearl Recording",
+      "notes": "STOP RECORDING on Pearl channels 2 and 3. This triggers the post-production pipeline automatically. Watch terminal for pipeline stages starting.",
+      "scene": "",
+      "lower_third": "",
+      "transition": "none"
+    },
+    {
+      "id": "pipeline_monitor",
+      "label": "Monitor Post-Production Pipeline",
+      "notes": "Watch terminal: backup_verify → youtube_en → audio_extract → translate → transcript → youtube_fr → file_rename → report. Verify all 7 output files in data/sessions/FullSim-001_001/",
+      "scene": "",
+      "lower_third": "",
+      "transition": "none"
+    }
+  ]
+}
