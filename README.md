@@ -17,9 +17,108 @@ success criteria change per domain. Three independent domains have been plugged 
 engine with zero engine modification between them.
 
 The first production use case is **StreamLab**: a live production operations layer that eliminates
-~30 minutes of manual post-stream work after every bilingual EN/FR institutional stream. One
-stream-end event triggers full session closure — backup verification, YouTube metadata, audio
-extraction, translation, transcript, file organization, and notification — with no human involvement.
+~30 minutes of manual post-stream work after every bilingual EN/FR institutional stream. A web
+cockpit (Phase 10+) gives operators a browser-based control surface for sessions, hardware, and
+health — no terminal required.
+
+---
+
+## What Works Today (Phase 19 — Production-Ready)
+
+| Capability | Status |
+|---|---|
+| Post-stream closure pipeline (7 workers, 4 stages) | ✅ Live |
+| OBS WebSocket monitoring | ✅ Live |
+| Pearl (Epiphan) hardware integration | ✅ Live |
+| Web cockpit — session start/stop from browser | ✅ Live |
+| Web cockpit — Pearl layout control | ✅ Live |
+| Web cockpit — health monitoring widget | ✅ Live |
+| Web cockpit — rehearsal mode | ✅ Live |
+| Web cockpit — live thumbnail preview | ✅ Live |
+| Web cockpit — Pearl + OBS auto-discovery | ✅ Live |
+| Pre-flight checks | ✅ Live |
+| Action log | ✅ Live |
+| JWT auth + single-password protection | ✅ Live |
+| Docker deployment | ✅ Live |
+| Test suite | ✅ 252 passing |
+
+---
+
+## Installation
+
+### Requirements
+
+- Python 3.12+
+- OBS Studio with WebSocket server enabled (Tools → WebSocket Server Settings)
+- Pearl (Epiphan) hardware (optional — OBS-only mode is fully supported)
+- ffmpeg on PATH
+
+### Setup
+
+```bash
+git clone https://github.com/LegnaPetiteTour/Miktos-Agentic-System.git
+cd Miktos-Agentic-System
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env   # then edit .env with your credentials
+```
+
+### Configure `.env`
+
+```env
+# OBS WebSocket (Tools → WebSocket Server Settings in OBS)
+OBS_HOST=localhost
+OBS_PORT=4455
+OBS_PASSWORD=your_obs_password
+
+# Pearl hardware (optional)
+PEARL_HOST=192.168.x.x
+PEARL_PASSWORD=your_pearl_password
+PEARL_CHANNEL_EN=2
+PEARL_CHANNEL_FR=3
+
+# YouTube OAuth2 (run scripts/youtube_auth.py to generate tokens)
+YOUTUBE_CLIENT_ID=
+YOUTUBE_CLIENT_SECRET=
+YOUTUBE_REFRESH_TOKEN_EN=
+YOUTUBE_REFRESH_TOKEN_FR=
+
+# Auth (set AUTH_ENABLED=true to require login)
+AUTH_ENABLED=false
+AUTH_PASSWORD=change-me
+JWT_SECRET=
+```
+
+### Run the web cockpit
+
+```bash
+python main.py
+# open http://localhost:8000
+```
+
+### Run a stream session (terminal mode)
+
+```bash
+# Terminal A — OBS monitor + trigger
+python main_streamlab.py --handoff --poll-interval 5
+
+# Terminal B — post-stream pipeline
+python main_post_stream.py --poll-interval 5
+```
+
+Or click **Start Session** in the web cockpit.
+
+### Run tests
+
+```bash
+pytest
+```
+
+---
+
+## Screenshots
+
+<!-- TODO: add cockpit screenshots after first live event -->
 
 ---
 
@@ -49,44 +148,7 @@ shape. The engine processes identically regardless of domain.
 
 ---
 
-## What Has Been Built
-
-**Phase 1 — File Analyzer** ✅  
-Rule-based four-tier MIME classifier. First engine stress test. 18/18 tests.
-
-**Phase 2 — Kosmos (Media Organizer)** ✅  
-Nine-rule media classifier with EXIF probe. Second domain through the same
-engine, zero engine changes. 22/22 tests.
-
-**Phase 3 — StreamLab Monitor** ✅  
-OBS WebSocket adapter. Continuous health monitoring loop. Outer-loop pattern
-— the engine remains single-invocation inside. Live run confirmed. 25/25 tests.
-
-**Phase 4a — Parallel Execution** ✅  
-`parallel_execution_node` alongside `execution_node`. 4× speedup on 200-file
-benchmark (0.21s → 0.05s). Additive only, backward compatible. 29/29 tests.
-
-**Phase 4b — Agent-to-Agent Messaging** ✅  
-JSON-backed `MessageBus` with atomic writes. `AgentMessage`, `post()`,
-`acknowledge()`, append-only `message.log`. Live round-trip: StreamLab →
-Kosmos → reply. 34/34 tests.
-
-**Phase 4c — Task Delegation** ✅  
-`SessionCoordinator` with parallel worker dispatch and retry.
-`KosmosWorker`, `ThumbnailWorker`, `MetadataWorker`. 39/39 tests.
-
-**Phase 4d — Event Bus (Pub/Sub)** ✅  
-`bus.subscribe()` / `bus.publish()` fan-out. One event, N independent
-reactions. Publisher names zero recipients. 44/44 tests.
-
-**Phase 5 — Post-Stream Closure Engine** ✅  
-Full production operations layer. Seven workers, four-stage pipeline,
-inter-stage payload enrichment. Live validated across four real stream
-sessions. 52/52 tests.
-
----
-
-## StreamLab: The Post-Stream Pipeline
+## The Post-Stream Pipeline
 
 ```text
 Stream ends (OBS recording stopped)
@@ -107,7 +169,7 @@ Stage 4 (optional):                notify
 | `audio_extract` | ffmpeg MP3 extraction from raw recording |
 | `translate` | Google Translate API v2 — EN→FR title and description |
 | `transcript` | ElevenLabs Scribe — bilingual, speaker-labeled |
-| `youtube_fr` | Same as youtube_en for the FR channel, using translated metadata |
+| `youtube_fr` | Same as `youtube_en` for the FR channel, using translated metadata |
 | `file_rename` | `YYYY-MM-DD_EventName_NNN` convention, organized session folder |
 | `notify` | Teams webhook + Graph API email with transcript attached |
 
@@ -116,61 +178,25 @@ Stage 4 (optional):                notify
 
 ---
 
-## Running a Stream Session
-
-Two processes, both started before OBS:
-
-```bash
-# Terminal A — monitors OBS and fires the trigger
-python main_streamlab.py --handoff --poll-interval 5
-
-# Terminal B — processes the trigger through the full pipeline
-python main_post_stream.py --poll-interval 5
-```
-
-Then in OBS: **Start Streaming + Start Recording** → stream → **Stop Recording + Stop Streaming**.
-
-The monitor detects the recording→stopped transition (edge-triggered, exactly once per session)
-and publishes a `recording_stopped` event to the bus. The post-stream processor picks it up and
-runs the four-stage pipeline.
-
-**Per-stream config** (`domains/streamlab_post/config/session_config.yaml`):
-
-```yaml
-event_name: "Miktos-Demo"
-recording:
-  local_path: "/Users/yourname/Movies"
-youtube:
-  en:
-    video_id: "ABC123"      # from YouTube Studio after scheduling
-    channel_id: "UCxxx"
-    playlist_id: "PLxxx"
-    visibility: "unlisted"
-  fr:
-    video_id: ""            # leave blank — auto-discovery finds the FR live event
-    channel_id: "UCyyy"
-    playlist_id: "PLyyy"
-    visibility: "unlisted"
-```
-
----
-
 ## Tech Stack
 
 | Layer | Choice |
 | --- | --- |
-| Language | Python 3.11+ |
+| Language | Python 3.12+ |
+| Web framework | FastAPI + Jinja2 + HTMX |
 | Orchestration | LangGraph |
 | Validation | Pydantic |
-| Testing | pytest (52 passing) |
-| State Storage | JSON (v1) |
+| Testing | pytest (252 passing) |
+| State storage | JSON (file-backed) |
 | Messaging | JSON-backed MessageBus with atomic writes |
+| Stream control | OBS WebSocket (`obsws-python`) |
+| Hardware control | Pearl (Epiphan) REST API |
 | YouTube | Data API v3, OAuth2 |
 | Translation | Google Translate API v2 |
 | Transcript | ElevenLabs Scribe |
 | Audio | ffmpeg |
-| Stream Control | OBS WebSocket (obs-websocket-py) |
-| LLM Usage | Narrow — ambiguous classifier cases only |
+| Auth | JWT (PyJWT), single-password |
+| Deployment | Docker + docker-compose |
 
 ---
 
@@ -188,14 +214,16 @@ Miktos-Agentic-System/
 ├── domains/
 │   ├── file_analyzer/            # Domain 1 — MIME classifier
 │   ├── kosmos/                   # Domain 2 — media organizer
-│   └── streamlab/                # Domain 3 — live production
-│       ├── tools/                # OBS monitor, client, alert classifier
-│       └── streamlab_post/       # Phase 5 — post-stream closure engine
-│           ├── workers/          # Seven closure workers
-│           └── config/           # session_config.yaml, thresholds
+│   ├── streamlab/                # Domain 3 — live production monitor
+│   ├── streamlab_post/           # Post-stream closure engine (7 workers)
+│   └── epiphan/                  # Pearl hardware integration
+├── web/                          # Web cockpit (FastAPI)
+│   ├── api/                      # REST endpoints
+│   ├── templates/                # Jinja2 + HTMX panels
+│   └── static/                   # CSS, JS
 ├── scripts/                      # youtube_auth.py, dev utilities
-├── tests/                        # 52 passing, 1 skipped (live OBS)
-├── docs/                         # Architecture, decisions, roadmap, glossary
+├── tests/                        # 252 passing
+├── docs/                         # Architecture, decisions, phase specs
 └── data/                         # Runtime: sessions, messages, state, logs
 ```
 
@@ -209,20 +237,24 @@ Three domains. Zero engine changes between them.
 Domain 1 — File Analyzer:   FileScannerTool      → MIME alert items
 Domain 2 — Kosmos:          FileScannerTool      → media alert items
 Domain 3 — StreamLab:       OBSMonitorTool       → stream alert items
+Domain 4 — Epiphan:         EpiphanMonitorTool   → Pearl alert items
 ```
 
 The engine processes identically. The only difference per domain is the
-scanner tool and classifier function injected at runtime. This is the
-core architectural invariant of Miktos.
+scanner tool and classifier function injected at runtime.
+
+See [CORE_CONTRACT.md](CORE_CONTRACT.md) for the invariants this architecture depends on.  
+See [PRODUCT_POSITIONING.md](PRODUCT_POSITIONING.md) for what Miktos is and is not.
 
 ---
 
 ## Status
 
-🟢 **Phase 5 — Complete** — Post-stream closure engine live validated. 52/52 tests passing.
+🟢 **Phase 19 — Production-Ready** — 252 tests passing. Cockpit validated. Live event ready.
 
 ---
 
 ## License
 
 MIT — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
