@@ -144,12 +144,12 @@ def test_index_html_control_panel_in_centre() -> None:
 
 
 def test_index_html_health_in_sidebar() -> None:
-    """Health-related panels (panel-ticks) are inside the right rail."""
+    """Compact health chip (panel-health-chip) is inside the right rail."""
     html = _INDEX.read_text()
     rail_start = html.find("cockpit-col-right-rail")
     assert rail_start != -1
-    ticks_pos = html.find('id="panel-ticks"')
-    assert ticks_pos > rail_start, "panel-ticks must be inside cockpit-col-right-rail"
+    chip_pos = html.find('id="panel-health-chip"')
+    assert chip_pos > rail_start, "panel-health-chip must be inside cockpit-col-right-rail"
 
 
 # ---------------------------------------------------------------------------

@@ -213,9 +213,8 @@ def test_index_renders():
     resp = client.get("/produce")
     assert resp.status_code == 200
     html = resp.text
-    # All five cockpit panels should be present
-    assert "panel-hardware" in html
+    # Core cockpit panels should be present
+    assert "panel-health-chip" in html
     assert "panel-stream" in html
-    assert "panel-health" in html
     assert "panel-pearl" in html
     assert "panel-pipeline" in html

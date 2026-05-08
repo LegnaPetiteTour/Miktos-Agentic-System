@@ -67,12 +67,6 @@
   <div class="cockpit-col cockpit-col-left">
     <div class="col-label">Left Rail</div>
 
-    <!-- Hardware badge -->
-    <section class="panel" id="panel-hardware">
-      <h2 class="panel-title">Hardware</h2>
-      <div class="badge" id="hardware-badge">—</div>
-    </section>
-
     <!-- Pearl layouts -->
     <section class="panel pearl-zone" id="panel-pearl">
       <h2 class="panel-title">Pearl Layouts</h2>
@@ -141,19 +135,31 @@
     <!-- Captions (Phase 14) -->
     <div hx-get="/panels/captions" hx-trigger="load" hx-swap="outerHTML"></div>
 
-    <!-- Health (Phase 14) -->
-    <div id="panel-health" hx-get="/panels/health" hx-trigger="load" hx-swap="outerHTML"></div>
-
-    <!-- Ticks / alerts (SSE-driven summary) -->
-    <section class="panel" id="panel-ticks">
-      <h2 class="panel-title">Monitor</h2>
-      <div class="health-row">
-        <span class="label">Ticks</span>
-        <span id="tick-count">0</span>
+    <!-- Compact health chip — full detail at /diagnostics -->
+    <section class="panel" id="panel-health-chip">
+      <h2 class="panel-title">Health
+        <a href="/diagnostics" class="panel-diag-link">Details →</a>
+      </h2>
+      <div class="hchip-row">
+        <span class="hchip-dot" id="chip-obs-dot">●</span>
+        <span class="hchip-label">OBS</span>
+        <span class="hchip-status" id="chip-obs-txt">—</span>
       </div>
-      <div class="health-row" id="alerts-row">
-        <span class="label">Alerts</span>
-        <span id="alerts-list" class="muted">none</span>
+      <div class="hchip-row">
+        <span class="hchip-dot" id="chip-pearl-dot">●</span>
+        <span class="hchip-label">Pearl</span>
+        <span class="hchip-status" id="chip-pearl-txt">—</span>
+      </div>
+      <div class="hchip-row">
+        <span class="hchip-dot" id="chip-captions-dot">●</span>
+        <span class="hchip-label">Captions</span>
+        <span class="hchip-status" id="chip-captions-txt">—</span>
+      </div>
+      <div class="hchip-ticks">
+        <span class="hchip-label muted">Ticks</span>
+        <span id="tick-count" class="hchip-status">0</span>
+        <span class="hchip-label muted">Alerts</span>
+        <span id="alerts-list" class="hchip-status muted">none</span>
       </div>
     </section>
 
@@ -162,9 +168,6 @@
 
     <!-- Rehearsal mode (Phase 17) -->
     <div hx-get="/panels/rehearsal" hx-trigger="load" hx-swap="outerHTML"></div>
-
-    <!-- Action log (Phase 16) -->
-    <div hx-get="/panels/action_log" hx-trigger="load" hx-swap="outerHTML"></div>
   </div>
 
 </div>
@@ -260,6 +263,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // Alerts
     const al = document.getElementById("alerts-list");
     if (al) al.textContent = d.alerts && d.alerts.length ? d.alerts.join(", ") : "none";
+
+    // Compact health chip
+    const chipObs = document.getElementById("chip-obs-dot");
+    if (chipObs) chipObs.className = "hchip-dot " + (d.obs_ok ? "hchip-ok" : "hchip-err");
+    const chipObsTxt = document.getElementById("chip-obs-txt");
+    if (chipObsTxt) chipObsTxt.textContent = d.obs_ok ? "Online" : "Offline";
+    const chipPearl = document.getElementById("chip-pearl-dot");
+    if (chipPearl) chipPearl.className = "hchip-dot " + (d.pearl_ok ? "hchip-ok" : "hchip-err");
+    const chipPearlTxt = document.getElementById("chip-pearl-txt");
+    if (chipPearlTxt) chipPearlTxt.textContent = d.pearl_ok ? "Online" : "Offline";
+    const chipCap = document.getElementById("chip-captions-dot");
+    if (chipCap) chipCap.className = "hchip-dot " + (d.captions_ok ? "hchip-ok" : "hchip-neutral");
+    const chipCapTxt = document.getElementById("chip-captions-txt");
+    if (chipCapTxt) chipCapTxt.textContent = d.captions_ok ? "Active" : "Inactive";
 
     // Pearl layouts
     const pl = document.getElementById("pearl-layouts");
