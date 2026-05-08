@@ -26,38 +26,39 @@
   </div>
 </div>
 
-<!-- ── Main diagnostics grid ─────────────────────────────────────────────── -->
-<div class="diag-grid">
+<!-- ── Main diagnostics grid — 3 columns ─────────────────────────────────── -->
+<div class="diag-3col">
 
-  <!-- LEFT — Health + Pearl Inputs -->
-  <div class="diag-col">
-
-    <!-- System health (full HTMX panel) -->
+  <!-- COL 1 — System Health -->
+  <div class="diag-3col-item">
+    <div class="diag-3col-label">Health</div>
     <div hx-get="/panels/health" hx-trigger="load" hx-swap="outerHTML"></div>
+  </div>
 
-    <!-- Pearl Inputs — EN feed -->
+  <!-- COL 2 — Action Log -->
+  <div class="diag-3col-item">
+    <div class="diag-3col-label">Logs</div>
+    <div hx-get="/panels/action_log" hx-trigger="load" hx-swap="outerHTML"></div>
+  </div>
+
+  <!-- COL 3 — Raw Inputs (Pearl feeds + pipeline) -->
+  <div class="diag-3col-item">
+    <div class="diag-3col-label">Raw Inputs</div>
+
     <section class="panel">
       <h2 class="panel-title">Pearl Inputs — EN</h2>
       <div hx-get="/panels/feed_en" hx-trigger="load" hx-swap="innerHTML"></div>
     </section>
 
-    <!-- Pearl Inputs — FR feed -->
     <section class="panel">
       <h2 class="panel-title">Pearl Inputs — FR</h2>
       <div hx-get="/panels/feed_fr" hx-trigger="load" hx-swap="innerHTML"></div>
     </section>
 
-    <!-- Pipeline slots (SSE-driven) -->
     <section class="panel">
       <h2 class="panel-title">Pipeline Slots</h2>
       <ul id="diag-pipeline" class="slot-list"><li class="muted">—</li></ul>
     </section>
-
-  </div>
-
-  <!-- RIGHT — Full action log -->
-  <div class="diag-col">
-    <div hx-get="/panels/action_log" hx-trigger="load" hx-swap="outerHTML"></div>
   </div>
 
 </div>
