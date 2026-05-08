@@ -14,6 +14,9 @@
   --nav-height:  3rem;
   --radius:      6px;
   --gap:         1rem;
+  /* Typography (Phase 19c-3) */
+  --font-ui:   'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Menlo', ui-monospace, monospace;
 }
 
 /* Reset */
@@ -22,8 +25,8 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   line-height: 1.5;
 }
 
@@ -49,7 +52,7 @@ a:hover { text-decoration: underline; }
 }
 .nav-link { color: var(--muted); }
 .nav-link.active { color: var(--text); border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
-.nav-logout { color: var(--muted); font-size: inherit; font-family: inherit; }
+.nav-logout { color: var(--muted); font-size: inherit; font-family: var(--font-ui); }
 
 /* Main */
 .main {
@@ -73,7 +76,7 @@ a:hover { text-decoration: underline; }
   padding: 0 1.5rem;
   height: 2.25rem;
   font-size: 0.72rem;
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-ui);
   overflow-x: auto;
   white-space: nowrap;
   /* Span full viewport width regardless of .main max-width */
@@ -114,6 +117,7 @@ a:hover { text-decoration: underline; }
   color: var(--text);
   font-weight: 600;
   letter-spacing: 0.04em;
+  font-family: var(--font-mono);
 }
 
 .msb-session .msb-value {
@@ -817,6 +821,7 @@ body[data-mode="rehearsal"] .rehearsal-banner { display: block; }
 .diag-chip-value {
   font-size: 0.82rem;
   color: var(--text-primary, #e0e0e0);
+  font-family: var(--font-mono);
 }
 .diag-grid {
   display: grid;
@@ -840,6 +845,7 @@ body[data-mode="rehearsal"] .rehearsal-banner { display: block; }
 .slot-list .slot {
   font-size: 0.78rem;
   color: var(--text-primary, #e0e0e0);
+  font-family: var(--font-mono);
   padding: 0.15rem 0;
   border-bottom: 1px solid var(--border, #1e1e1e);
 }
