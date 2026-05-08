@@ -58,12 +58,14 @@
      hx-swap="none"
      class="cockpit-grid">
 
+  <!-- Rehearsal banner — visible only when body[data-mode="rehearsal"] -->
+  <div class="rehearsal-banner">⚠ REHEARSAL — No live output will be sent</div>
+
   <!-- ═══════════════════════════════════════════════════════
-       LEFT COLUMN — EN Channel
-       Hardware status + EN-side controls
+       LEFT RAIL — Active channels, sources, layouts
   ═══════════════════════════════════════════════════════ -->
   <div class="cockpit-col cockpit-col-left">
-    <div class="col-label">EN Channel</div>
+    <div class="col-label">Left Rail</div>
 
     <!-- Hardware badge -->
     <section class="panel" id="panel-hardware">
@@ -72,19 +74,19 @@
     </section>
 
     <!-- Pearl layouts -->
-    <section class="panel" id="panel-pearl">
+    <section class="panel pearl-zone" id="panel-pearl">
       <h2 class="panel-title">Pearl Layouts</h2>
       <div id="pearl-layouts"><span class="muted">—</span></div>
     </section>
 
     <!-- Pearl channel assignment (auto-discovery) -->
-    <div hx-get="/panels/channels" hx-trigger="load" hx-swap="outerHTML"></div>
+    <div class="pearl-zone" hx-get="/panels/channels" hx-trigger="load" hx-swap="outerHTML"></div>
 
     <!-- Scene Switcher (Phase 14) -->
-    <div hx-get="/panels/switcher" hx-trigger="load" hx-swap="outerHTML"></div>
+    <div class="obs-zone" hx-get="/panels/switcher" hx-trigger="load" hx-swap="outerHTML"></div>
 
     <!-- Audio Control (Phase 14) -->
-    <div hx-get="/panels/audio" hx-trigger="load" hx-swap="outerHTML"></div>
+    <div class="obs-zone" hx-get="/panels/audio" hx-trigger="load" hx-swap="outerHTML"></div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════
@@ -92,7 +94,7 @@
        Session control, stream state, pipeline, run-of-show
   ═══════════════════════════════════════════════════════ -->
   <div class="cockpit-col cockpit-col-centre">
-    <div class="col-label">Production</div>
+    <div class="col-label">Centre Stage</div>
 
     <!-- Session control -->
     <section class="panel" id="panel-control">
@@ -128,25 +130,16 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════
-       RIGHT COLUMN — FR Channel
-       FR-side preview, captions
+       RIGHT RAIL — Preview, Captions, Health & Automation
   ═══════════════════════════════════════════════════════ -->
-  <div class="cockpit-col cockpit-col-right">
-    <div class="col-label">FR Channel</div>
+  <div class="cockpit-col cockpit-col-right-rail">
+    <div class="col-label">Right Rail</div>
 
     <!-- Preview thumbnails (Phase 15) -->
     <div hx-get="/panels/preview" hx-trigger="load" hx-swap="outerHTML"></div>
 
     <!-- Captions (Phase 14) -->
     <div hx-get="/panels/captions" hx-trigger="load" hx-swap="outerHTML"></div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════
-       SIDEBAR — Health & Automation
-       System health, action log, safe mode, rehearsal
-  ═══════════════════════════════════════════════════════ -->
-  <div class="cockpit-col cockpit-col-sidebar">
-    <div class="col-label">Health &amp; Automation</div>
 
     <!-- Health (Phase 14) -->
     <div id="panel-health" hx-get="/panels/health" hx-trigger="load" hx-swap="outerHTML"></div>
@@ -179,6 +172,9 @@
 <script>
 // Listen for SSE messages and update DOM directly
 document.addEventListener("DOMContentLoaded", () => {
+  // ── Mode-awareness: stamp data-mode on body from localStorage ────────────
+  document.body.dataset.mode = localStorage.getItem('miktos_mode') || 'pearl-only';
+
   const evtSource = new EventSource("/api/status/stream");
 
   evtSource.onmessage = (e) => {

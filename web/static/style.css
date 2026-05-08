@@ -168,10 +168,9 @@ a:hover { text-decoration: underline; }
 .cockpit-grid {
   display: grid;
   grid-template-columns:
-    [left-start]    240px  [left-end centre-start]
+    [left-start]    260px  [left-end centre-start]
     1fr             [centre-end right-start]
-    240px           [right-end sidebar-start]
-    220px           [sidebar-end];
+    280px           [right-end];
   grid-template-rows: auto;
   gap: var(--gap);
   align-items: start;
@@ -185,10 +184,9 @@ a:hover { text-decoration: underline; }
   min-width: 0;   /* prevent blowout in narrow grid cells */
 }
 
-.cockpit-col-left    { grid-column: left-start    / left-end; }
-.cockpit-col-centre  { grid-column: centre-start  / centre-end; }
-.cockpit-col-right   { grid-column: right-start   / right-end; }
-.cockpit-col-sidebar { grid-column: sidebar-start / sidebar-end; }
+.cockpit-col-left       { grid-column: left-start   / left-end; }
+.cockpit-col-centre     { grid-column: centre-start / centre-end; }
+.cockpit-col-right-rail { grid-column: right-start  / right-end; }
 
 /* Column header label */
 .col-label {
@@ -208,8 +206,7 @@ a:hover { text-decoration: underline; }
   }
   .cockpit-col-left,
   .cockpit-col-centre,
-  .cockpit-col-right,
-  .cockpit-col-sidebar {
+  .cockpit-col-right-rail {
     grid-column: 1 / -1;
   }
 }
@@ -608,3 +605,23 @@ a:hover { text-decoration: underline; }
   white-space: nowrap;
 }
 .btn-enter:hover { opacity: 0.85; text-decoration: none; }
+
+/* ── Mode-aware panel visibility (Phase 19b-3) ──────────────────────────── */
+body[data-mode="pearl-only"] .obs-zone   { display: none; }
+body[data-mode="obs-only"]   .pearl-zone { display: none; }
+
+/* Rehearsal banner */
+.rehearsal-banner {
+  display: none;
+  grid-column: 1 / -1;
+  background: rgba(210, 153, 34, 0.12);
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  color: var(--yellow);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  padding: 0.55rem 1rem;
+}
+body[data-mode="rehearsal"] .rehearsal-banner { display: block; }

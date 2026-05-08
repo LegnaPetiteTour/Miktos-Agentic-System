@@ -96,9 +96,9 @@ def test_style_css_has_cockpit_grid() -> None:
 
 
 def test_style_css_has_column_classes() -> None:
-    """style.css defines all four cockpit column classes."""
+    """style.css defines all three cockpit zone classes."""
     css = _STYLE.read_text()
-    for cls in (".cockpit-col-left", ".cockpit-col-centre", ".cockpit-col-right", ".cockpit-col-sidebar"):
+    for cls in (".cockpit-col-left", ".cockpit-col-centre", ".cockpit-col-right-rail"):
         assert cls in css, f"Missing CSS class: {cls}"
 
 
@@ -126,10 +126,10 @@ def test_index_html_uses_cockpit_grid() -> None:
 
 
 def test_index_html_has_four_columns() -> None:
-    """index.html has all four cockpit column divs."""
+    """index.html has all three cockpit zone divs."""
     html = _INDEX.read_text()
-    for cls in ("cockpit-col-left", "cockpit-col-centre", "cockpit-col-right", "cockpit-col-sidebar"):
-        assert cls in html, f"index.html missing column: {cls}"
+    for cls in ("cockpit-col-left", "cockpit-col-centre", "cockpit-col-right-rail"):
+        assert cls in html, f"index.html missing zone: {cls}"
 
 
 def test_index_html_control_panel_in_centre() -> None:
@@ -144,12 +144,12 @@ def test_index_html_control_panel_in_centre() -> None:
 
 
 def test_index_html_health_in_sidebar() -> None:
-    """Health-related panels (panel-ticks) are inside the sidebar column."""
+    """Health-related panels (panel-ticks) are inside the right rail."""
     html = _INDEX.read_text()
-    sidebar_start = html.find("cockpit-col-sidebar")
-    assert sidebar_start != -1
+    rail_start = html.find("cockpit-col-right-rail")
+    assert rail_start != -1
     ticks_pos = html.find('id="panel-ticks"')
-    assert ticks_pos > sidebar_start, "panel-ticks must be inside cockpit-col-sidebar"
+    assert ticks_pos > rail_start, "panel-ticks must be inside cockpit-col-right-rail"
 
 
 # ---------------------------------------------------------------------------
