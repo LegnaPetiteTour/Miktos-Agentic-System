@@ -1,170 +1,192 @@
-# Product Positioning
+# Miktos — Product Positioning
 
-What Miktos is. What it is not. Who it is for.
+**Last updated:** 2026-05-08
+
+---
+
+## The One-Line Description
+
+Miktos orchestrates the broadcast so professional tools can do what they do best.
 
 ---
 
 ## What Miktos Is
 
-Miktos is a **live production operations system** for institutional bilingual
-EN/FR streams. It connects OBS Studio, Pearl (Epiphan) encoding hardware, and
-a suite of post-production services into a single closed-loop pipeline
-operated from a web cockpit.
+Miktos is an **orchestration layer**.
 
-When a stream ends, Miktos closes the session automatically: it verifies the
-backup, uploads metadata to YouTube in both languages, extracts audio,
-generates bilingual transcripts, renames and organizes the session folder, and
-sends a completion notification — with no human involvement.
-
-Before Miktos, this was ~30 minutes of manual work after every stream.
-After Miktos, it is zero.
+- Miktos coordinates tools.
+- Miktos manages session state.
+- Miktos automates fragile post-stream workflows.
+- Miktos gives operators one cockpit for the full production lifecycle.
+- Miktos produces reliable, auditable post-stream outputs.
+- Miktos makes bilingual institutional live production operable by a single person.
 
 ---
 
 ## What Miktos Is Not
 
-**Not a chatbot.** There is no conversational interface. The system receives
-events, not prompts. LLM usage is narrow and isolated — ambiguous classifier
-cases only.
-
-**Not a general-purpose workflow tool.** Miktos is opinionated about its
-production context: bilingual institutional streams, Pearl hardware, OBS,
-YouTube. It is not a generic automation platform.
-
-**Not a SaaS product.** It runs on-premises, self-hosted, with credentials
-you own. There is no cloud dependency beyond third-party APIs (YouTube,
-Google Translate, ElevenLabs).
-
-**Not a replacement for the operator.** The operator sets up the session,
-monitors the event, and reviews flagged ❌ slots in the post-stream report.
-Miktos removes the mechanical work, not the editorial judgment.
+- Miktos is **not** an encoder.
+- Miktos is **not** a compositor.
+- Miktos is **not** a replacement for OBS. It coordinates OBS.
+- Miktos is **not** a replacement for Epiphan Pearl. It coordinates Pearl.
+- Miktos is **not** a video editor.
+- Miktos is **not** a graphics engine.
+- Miktos is **not** a caption renderer.
+- Miktos is **not** a streaming CDN.
+- Miktos is **not** a multi-tenant SaaS platform (yet).
 
 ---
 
-## Who It Is For
+## Two Products, One Engine
 
-The primary user is a **broadcast technician or producer** running bilingual
-institutional live events — conferences, committee hearings, public sessions —
-who has to manage OBS, Pearl hardware, multilingual metadata, and post-stream
-file organization simultaneously.
+### Miktos Core
 
-Secondary users: developers extending the system with new domains or workers.
+The reusable orchestration engine.
 
----
+```text
+engine/
+  graph/        LangGraph closed-loop: plan → execute → review → decide
+  messaging/    MessageBus, pub/sub, agent-to-agent events
+  coordinator/  SessionCoordinator, parallel worker dispatch
+  adapters/     DeviceAdapter protocol, capability flags, registry
+  services/     State store, run ID
+  models/       Shared schemas
+```
 
-## The Two Layers
+The engine is domain-agnostic. It does not know about OBS, Pearl, YouTube,
+or any specific device. Three independent domains have run through the same
+engine with zero engine modification between them.
 
-### Layer 1 — The Engine (domain-agnostic)
+### Miktos StreamLab
 
-`engine/` is a closed-loop orchestration engine. It receives a goal,
-decomposes it into tasks, executes through tools, reviews results, and loops
-until the goal is reached. It knows nothing about streams, files, or Pearl.
+The flagship production domain built on the Core engine.
 
-This layer does not change between use cases. It has been validated across
-four independent domains without modification.
+```text
+domains/streamlab/         Live production monitor
+domains/streamlab_post/    Post-stream closure pipeline (7 workers, 4 stages)
+domains/epiphan/           Pearl hardware integration
+domains/captioning/        Bilingual caption worker
+web/                       Browser cockpit (FastAPI + HTMX)
+engine/adapters/pearl_adapter.py    Epiphan Pearl REST adapter
+engine/adapters/obs_adapter.py      OBS WebSocket adapter
+```
 
-### Layer 2 — The Production Operations Layer (domain-specific)
-
-Everything in `domains/` and `web/` is the StreamLab production use case:
-stream monitoring, Pearl hardware control, the post-stream pipeline, and the
-web cockpit. This layer knows about bilingual streams, YouTube, and Epiphan.
-
-The engine is reusable infrastructure. The production layer is the product.
-
----
-
-## The Cockpit Model
-
-The web cockpit (`http://localhost:8000`) is designed around one principle:
-**the operator should not need to know Python, YAML, or channel IDs.**
-
-At the start of an event:
-
-- The cockpit queries Pearl live and shows all available channels by name
-- The operator clicks EN next to the English channel, FR next to the French
-  channel — or reassigns them for a different Pearl configuration
-- OBS scenes populate from the hardware — no manual entry
-
-During the event:
-
-- Session start/stop from the browser
-- Live thumbnail previews of Pearl channels and OBS program feed
-- Health widget showing Pearl and OBS connectivity status
-- Layout control for Pearl encoder switching
-- Rehearsal mode for dry-run testing before the event
-
-After the event:
-
-- The pipeline runs automatically
-- The action log shows what happened and when
-- The session report flags any ❌ slots for human review
+StreamLab is a bilingual institutional broadcast cockpit that:
+- Controls Pearl and OBS from a single browser UI
+- Automates post-stream archival (transcription, translation, YouTube metadata)
+- Reduces live-event operation to a governed session workflow
+- Produces a complete 7-file session archive after every stream
 
 ---
 
-## The Discovering vs. Configured Distinction
+## Target User
 
-Before Phase 19, Miktos was a **configured** system: you told it which channel
-was EN, which was FR, what the OBS scene names were. This worked but required
-the operator to know the hardware configuration and edit YAML by hand.
+**Primary:** Communications operators at bilingual institutions —
+government agencies, NGOs, universities, media organizations —
+who manage live streams and need post-stream processing to be
+automatic and auditable.
 
-After Phase 19, Miktos is a **discovering** system: it queries Pearl and OBS
-at startup and shows what is actually connected. The operator clicks to assign
-roles. Configuration writes itself.
+**Secondary:** Single-operator content creators streaming to multiple
+YouTube channels who want automated post-stream workflows.
 
-This distinction matters at live events where:
-
-- The Pearl may have different channel assignments than the last event
-- A backup Pearl may be substituted with a different channel layout
-- The OBS scene list may have changed since the last session
-
-A discovering system handles these cases without operator intervention.
-A configured system requires YAML edits under time pressure.
+**Not (yet):** Large broadcast organizations with dedicated engineering
+teams and custom infrastructure.
 
 ---
 
-## Boundaries: What Belongs Where
+## The Problem StreamLab Solves
 
-| Concern | Belongs in |
-| --- | --- |
-| Orchestration logic | `engine/` |
-| Domain tools (OBS, Pearl, YouTube) | `domains/` |
-| Web UI and REST endpoints | `web/` |
-| Credentials and environment config | `.env` (gitignored) |
-| Session configuration (event-specific) | `session_config.yaml` |
-| Defaults and documentation | `.env.example`, `CORE_CONTRACT.md` |
-| Architecture decisions | `docs/ADR-*.md`, `docs/DECISIONS.md` |
-| Production scripts | `scripts/` |
-| Runtime data | `data/` (gitignored where sensitive) |
+Bilingual institutional live streaming currently requires:
 
----
+- Manual recording management across multiple hardware devices
+- Manual audio extraction and transcription in two languages
+- Manual YouTube metadata updates for two channels
+- No automatic session archive
+- No transcript for media accountability
+- ~30 minutes of manual work after every stream
 
-## Phase History
-
-| Phase | What was built | Tests |
-| --- | --- | --- |
-| 1 | File Analyzer — MIME classifier, first engine stress test | 18 |
-| 2 | Kosmos — media organizer, second domain through same engine | 22 |
-| 3 | StreamLab Monitor — OBS WebSocket adapter, health loop | 25 |
-| 4a | Parallel execution — 4× speedup on batch workloads | 29 |
-| 4b | Agent messaging — JSON MessageBus, atomic writes | 34 |
-| 4c | Task delegation — SessionCoordinator, parallel workers | 39 |
-| 4d | Event pub/sub — fan-out bus, N independent reactions | 44 |
-| 5 | Post-stream closure — 7 workers, 4 stages, live validated | 52 |
-| 6 | Pre-flight checks | 78 |
-| 7a | Run-of-show report | 88 |
-| 7b | Session status | 95 |
-| 8a | Pearl (Epiphan) client and monitor | 103 |
-| 8b | Pearl layout control | 108 |
-| 9 | Production cockpit v1 | — |
-| 10a | Web cockpit — health, status, SSE | — |
-| 10b | Session start/stop from browser | — |
-| 11 | Dual-channel bilingual pipeline | — |
-| 18 | Docker, JWT auth, cockpit grid | — |
-| 19 | Pearl + OBS auto-discovery, full validation | **252** |
+**After Miktos:** Stream ends → session closes automatically.
+One operator. One cockpit. Zero post-stream manual steps.
 
 ---
 
-## Current Status
+## What "Done" Looks Like
 
-🟢 **Production-ready.** Phase 19 complete. All cockpit acceptance tests
-passed. 252 automated tests passing. Live event ready.
+A communications operator at a bilingual institution can:
+
+1. Install Miktos (`.dmg` or Docker)
+2. Complete the guided setup wizard (YouTube OAuth, ElevenLabs, hardware)
+3. Before a stream: open the cockpit, confirm session name, click Start
+4. During the stream: control layouts, switch scenes, monitor health from one browser tab
+5. After the stream: stop the hardware recording, click Stop in Miktos
+6. Receive a complete session archive within 2 minutes
+7. Never touch a terminal. Never edit a config file.
+
+---
+
+## Current Status (Phase 19 — Production-Ready)
+
+| Capability | Status |
+|---|---|
+| Post-stream closure pipeline | ✅ Production-validated |
+| Web cockpit (browser-based) | ✅ Production-validated |
+| Pearl hardware control | ✅ Production-validated |
+| OBS scene control | ✅ Production-validated |
+| Auto-discovery (channels, inputs, scenes) | ✅ Production-validated |
+| Live thumbnail preview | ✅ Production-validated |
+| Rehearsal / demo mode | ✅ Implemented |
+| Electron .dmg packaging | ✅ Implemented |
+| Docker deployment | ✅ Implemented |
+| 252 tests passing | ✅ |
+| Live captions during session | ⏸ Post-session only (roadmap) |
+| Multi-operator / roles | ⏸ Stage 3 (roadmap) |
+
+---
+
+## Commercial Boundary (Planned)
+
+**Open Source (free, always):**
+- Local cockpit
+- Core orchestration engine
+- OBS adapter
+- Pearl adapter
+- Basic YouTube integration
+- Basic post-stream pipeline
+- Rehearsal mode
+- Adapter SDK
+
+**Pro Self-Hosted (paid, future):**
+- Docker deployment with auth and user roles
+- Advanced audit logs and encrypted secrets
+- Institution branding
+- Advanced caption monitoring
+- Storage connectors
+- Priority adapters
+
+**Managed / VIP (paid, future):**
+- Installation, configuration, staff training
+- Custom adapter development
+- Event readiness testing
+- Priority support
+
+---
+
+## What Will Never Be Built Into Miktos Core
+
+- A video encoder or compositor
+- A video editor
+- Fancy animated transitions
+- An AI director that switches live without operator confirmation
+- A generic "build anything" agent
+- A marketplace
+
+These may exist as third-party adapters or integrations.
+They are not the product.
+
+---
+
+## Related Documents
+
+- `CORE_CONTRACT.md` — engine boundary rules
+- `ROADMAP.md` — full phase history
+- `CONTRIBUTING.md` — how to contribute
