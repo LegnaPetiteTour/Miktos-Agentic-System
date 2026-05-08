@@ -1,37 +1,123 @@
 {# panel_preview.html — Live thumbnail preview panel (HTMX partial) #}
+<style>
+  .thumb-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 4px;
+    border: 1px solid var(--border, #333);
+    background: #0d1117;
+    overflow: hidden;
+  }
+  .thumb-wrap img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+  .thumb-wrap img.thumb-visible {
+    display: block;
+  }
+  .thumb-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    color: #484f58;
+  }
+  .thumb-placeholder svg {
+    width: 28px;
+    height: 28px;
+    opacity: 0.5;
+  }
+  .thumb-placeholder span {
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .thumb-placeholder.thumb-hidden {
+    display: none;
+  }
+</style>
+
 <section class="panel" id="panel-preview">
   <h2 class="panel-title">Preview</h2>
   <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+
     <div style="flex:1;min-width:120px;text-align:center;">
       <div class="muted" style="font-size:0.75rem;margin-bottom:0.25rem;">Pearl EN</div>
-      <img id="thumb-pearl-en" src="" alt="Pearl EN"
-           style="width:100%;border-radius:4px;border:1px solid var(--border, #333);background:#111;min-height:68px;" />
+      <div class="thumb-wrap">
+        <img id="thumb-pearl-en" alt="Pearl EN" />
+        <div class="thumb-placeholder" id="ph-pearl-en">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M15.75 10.5l4.72-4.72M15.75 10.5H11.25M15.75 10.5V6M4.5 19.5l15-15"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6H4.5A2.25 2.25 0 002.25 8.25v9A2.25 2.25 0 004.5 19.5h15a2.25 2.25 0 002.25-2.25V8.25A2.25 2.25 0 0019.5 6h-2.25"/>
+          </svg>
+          <span>No signal</span>
+        </div>
+      </div>
     </div>
+
     <div style="flex:1;min-width:120px;text-align:center;">
       <div class="muted" style="font-size:0.75rem;margin-bottom:0.25rem;">Pearl FR</div>
-      <img id="thumb-pearl-fr" src="" alt="Pearl FR"
-           style="width:100%;border-radius:4px;border:1px solid var(--border, #333);background:#111;min-height:68px;" />
+      <div class="thumb-wrap">
+        <img id="thumb-pearl-fr" alt="Pearl FR" />
+        <div class="thumb-placeholder" id="ph-pearl-fr">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M15.75 10.5l4.72-4.72M15.75 10.5H11.25M15.75 10.5V6M4.5 19.5l15-15"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6H4.5A2.25 2.25 0 002.25 8.25v9A2.25 2.25 0 004.5 19.5h15a2.25 2.25 0 002.25-2.25V8.25A2.25 2.25 0 0019.5 6h-2.25"/>
+          </svg>
+          <span>No signal</span>
+        </div>
+      </div>
     </div>
+
     <div style="flex:1;min-width:120px;text-align:center;">
       <div class="muted" style="font-size:0.75rem;margin-bottom:0.25rem;">OBS</div>
-      <img id="thumb-obs" src="" alt="OBS"
-           style="width:100%;border-radius:4px;border:1px solid var(--border, #333);background:#111;min-height:68px;" />
+      <div class="thumb-wrap">
+        <img id="thumb-obs" alt="OBS" />
+        <div class="thumb-placeholder" id="ph-obs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M15.75 10.5l4.72-4.72M15.75 10.5H11.25M15.75 10.5V6M4.5 19.5l15-15"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6H4.5A2.25 2.25 0 002.25 8.25v9A2.25 2.25 0 004.5 19.5h15a2.25 2.25 0 002.25-2.25V8.25A2.25 2.25 0 0019.5 6h-2.25"/>
+          </svg>
+          <span>No signal</span>
+        </div>
+      </div>
     </div>
+
   </div>
 </section>
 
 <script>
 (function () {
   async function refreshThumb(source) {
+    const imgId  = "thumb-" + source.replace("_", "-");
+    const phId   = "ph-"    + source.replace("_", "-");
+    const img    = document.getElementById(imgId);
+    const ph     = document.getElementById(phId);
+    if (!img || !ph) return;
     try {
       const r = await fetch("/api/preview/thumbnail?source=" + source);
       const d = await r.json();
-      const imgId = "thumb-" + source.replace("_", "-");
-      const img = document.getElementById(imgId);
-      if (img && d.data) {
+      if (d.data) {
         img.src = "data:" + d.content_type + ";base64," + d.data;
+        img.classList.add("thumb-visible");
+        ph.classList.add("thumb-hidden");
+      } else {
+        img.classList.remove("thumb-visible");
+        ph.classList.remove("thumb-hidden");
       }
-    } catch { /* ignore */ }
+    } catch {
+      img.classList.remove("thumb-visible");
+      ph.classList.remove("thumb-hidden");
+    }
   }
 
   function refreshAll() {
