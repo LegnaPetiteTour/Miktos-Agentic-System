@@ -1,160 +1,204 @@
 {% extends "base.html" %}
 {% block title %}Miktos — Home{% endblock %}
 {% block content %}
-<div class="home-dashboard">
+<section class="home-shell">
 
-  <!-- ── Header ────────────────────────────────────────────────────────── -->
-  <div class="home-dashboard-header">
-    <span class="home-title">Pre-flight</span>
-    <span class="home-subtitle">Select a production mode, verify devices, then enter.</span>
-  </div>
+  <header class="home-header">
+    <h1 class="home-title">Pre-flight</h1>
+    <p class="home-subtitle">Select a production mode, verify devices, then enter production.</p>
+  </header>
 
-  <!-- ── Three-column body ─────────────────────────────────────────────── -->
-  <div class="home-body">
+  <div class="preflight-card">
+    <div class="preflight-grid">
 
-    <!-- LEFT — Session -->
-    <div class="home-col">
-      <div class="home-col-label">Session</div>
-      <div class="home-kv-block">
-        <div class="home-kv-row">
-          <span class="home-kv-key">Current</span>
-          <span class="home-kv-val" id="home-session-name">—</span>
+      <!-- ── SESSION ────────────────────────────────────────────── -->
+      <section class="preflight-section">
+        <h2 class="pf-heading">Session</h2>
+        <div class="info-row">
+          <span class="info-label">Current</span>
+          <strong class="info-value" id="home-session-name">—</strong>
         </div>
-        <div class="home-kv-row">
-          <span class="home-kv-key">State</span>
-          <span class="home-kv-val" id="home-stream-badge">—</span>
+        <div class="info-row">
+          <span class="info-label">State</span>
+          <strong class="info-value" id="home-stream-badge">—</strong>
         </div>
-        <div class="home-kv-row">
-          <span class="home-kv-key">Hardware</span>
-          <span class="home-kv-val" id="home-hw-val">—</span>
+        <div class="info-row">
+          <span class="info-label">Hardware</span>
+          <strong class="info-value" id="home-hw-val">—</strong>
         </div>
-        <div class="home-kv-sep"></div>
-        <div class="home-kv-row">
-          <span class="home-kv-key">YouTube EN</span>
-          <span class="home-kv-val muted">configured in Setup</span>
+        <div class="info-row">
+          <span class="info-label">YouTube EN</span>
+          <strong class="info-value info-muted">configured in Setup</strong>
         </div>
-        <div class="home-kv-row">
-          <span class="home-kv-key">YouTube FR</span>
-          <span class="home-kv-val muted">configured in Setup</span>
+        <div class="info-row info-row--last">
+          <span class="info-label">YouTube FR</span>
+          <strong class="info-value info-muted">configured in Setup</strong>
         </div>
-      </div>
+      </section>
+
+      <!-- ── PRODUCTION MODE ────────────────────────────────────── -->
+      <section class="preflight-section">
+        <h2 class="pf-heading">Production Mode</h2>
+        <div class="mode-grid">
+          <button class="mode-card" data-mode="pearl-only">
+            <strong>Pearl Only</strong>
+            <span>EN/FR channel encoding via Pearl hardware encoder</span>
+          </button>
+          <button class="mode-card" data-mode="obs-only">
+            <strong>OBS Only</strong>
+            <span>Software compositor — stream and record via OBS</span>
+          </button>
+          <button class="mode-card" data-mode="pearl-obs">
+            <strong>Pearl + OBS</strong>
+            <span>Hybrid — Pearl encodes, OBS composites graphics</span>
+          </button>
+          <button class="mode-card" data-mode="rehearsal">
+            <strong>Rehearsal</strong>
+            <span>Full cockpit visible, no live output sent</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ── DEVICE READINESS ───────────────────────────────────── -->
+      <section class="preflight-section">
+        <h2 class="pf-heading">Device Readiness</h2>
+        <div class="ready-row" id="rdy-obs-row">
+          <span class="info-label">OBS</span>
+          <strong id="rdy-obs-text">—</strong>
+        </div>
+        <div class="ready-row" id="rdy-pearl-row">
+          <span class="info-label">Pearl</span>
+          <strong id="rdy-pearl-text">—</strong>
+        </div>
+        <div class="ready-row" id="rdy-captions-row">
+          <span class="info-label">Captions</span>
+          <strong id="rdy-captions-text">—</strong>
+        </div>
+        <div class="ready-row ready-row--last" id="rdy-hw-row">
+          <span class="info-label">Hardware</span>
+          <strong id="rdy-hw-text">—</strong>
+        </div>
+      </section>
+
     </div>
 
-    <!-- CENTRE — Production Mode -->
-    <div class="home-col home-col--centre">
-      <div class="home-col-label">Production Mode</div>
-      <div class="mode-grid mode-grid--stack">
-        <button class="mode-btn" data-mode="pearl-only">
-          <span class="mode-name">Pearl Only</span>
-          <span class="mode-desc">EN/FR channel encoding via Pearl hardware encoder</span>
-        </button>
-        <button class="mode-btn" data-mode="obs-only">
-          <span class="mode-name">OBS Only</span>
-          <span class="mode-desc">Software compositor — stream and record via OBS</span>
-        </button>
-        <button class="mode-btn" data-mode="pearl-obs">
-          <span class="mode-name">Pearl + OBS</span>
-          <span class="mode-desc">Hybrid — Pearl encodes, OBS composites graphics</span>
-        </button>
-        <button class="mode-btn" data-mode="rehearsal">
-          <span class="mode-name">Rehearsal</span>
-          <span class="mode-desc">Full cockpit visible, no live output sent</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- RIGHT — Device Readiness -->
-    <div class="home-col">
-      <div class="home-col-label">Device Readiness</div>
-      <div class="ready-list">
-        <div class="ready-row">
-          <span class="ready-dot" id="rdy-obs-dot">●</span>
-          <span class="ready-device">OBS</span>
-          <span class="ready-status" id="rdy-obs-text">checking…</span>
-        </div>
-        <div class="ready-row">
-          <span class="ready-dot" id="rdy-pearl-dot">●</span>
-          <span class="ready-device">Pearl</span>
-          <span class="ready-status" id="rdy-pearl-text">checking…</span>
-        </div>
-        <div class="ready-row">
-          <span class="ready-dot" id="rdy-captions-dot">●</span>
-          <span class="ready-device">Captions</span>
-          <span class="ready-status" id="rdy-captions-text">checking…</span>
-        </div>
-        <div class="ready-row">
-          <span class="ready-dot ready-dot--neutral" id="rdy-hw-dot">●</span>
-          <span class="ready-device">Hardware</span>
-          <span class="ready-status" id="rdy-hw-text">—</span>
-        </div>
-      </div>
-    </div>
-
+    <footer class="preflight-footer">
+      <div class="pf-warning" id="home-warnings"></div>
+      <a class="btn-enter" id="btn-enter" href="/produce">Enter Production →</a>
+    </footer>
   </div>
 
-  <!-- ── Footer bar — warnings + CTA ──────────────────────────────────── -->
-  <div class="home-footer-bar">
-    <div class="home-warnings" id="home-warnings"></div>
-    <a class="btn-enter" href="/produce">Enter Production →</a>
-  </div>
-
-</div>
+</section>
 
 <script>
 (function () {
   'use strict';
 
-  // ── Mode selector ──────────────────────────────────────────────────────
   var STORAGE_KEY = 'miktos_mode';
   var DEFAULT_MODE = 'pearl-only';
+  var _obsOk   = false;
+  var _pearlOk = false;
 
-  function applyMode(mode) {
-    document.querySelectorAll('.mode-btn').forEach(function (btn) {
-      btn.classList.toggle('mode-btn--active', btn.dataset.mode === mode);
-    });
-    localStorage.setItem(STORAGE_KEY, mode);
+  function currentMode() {
+    return localStorage.getItem(STORAGE_KEY) || DEFAULT_MODE;
   }
 
-  var savedMode = localStorage.getItem(STORAGE_KEY) || DEFAULT_MODE;
-  applyMode(savedMode);
+  // ── Mode selector ──────────────────────────────────────────────────────
+  function applyMode(mode) {
+    document.querySelectorAll('.mode-card').forEach(function (btn) {
+      btn.classList.toggle('mode-card--selected', btn.dataset.mode === mode);
+    });
+    localStorage.setItem(STORAGE_KEY, mode);
+    updateEnter(mode);
+  }
 
-  document.querySelectorAll('.mode-btn').forEach(function (btn) {
+  // ── Enter Production gate ──────────────────────────────────────────────
+  function updateEnter(mode) {
+    mode = mode || currentMode();
+    var btn    = document.getElementById('btn-enter');
+    var warnEl = document.getElementById('home-warnings');
+    var msg    = '';
+    var state  = 'ok';    // 'ok' | 'warn' | 'err'
+    var blocked = false;
+
+    if (mode === 'rehearsal') {
+      msg = '✓ Rehearsal mode — no live output will be sent.';
+    } else if (mode === 'pearl-only') {
+      if (!_pearlOk) {
+        msg = '⚠ Pearl is unreachable — Pearl-only mode cannot enter production.';
+        state = 'err'; blocked = true;
+      } else {
+        msg = '✓ Pearl connected.';
+      }
+    } else if (mode === 'obs-only') {
+      if (!_obsOk) {
+        msg = '⚠ OBS is unreachable — OBS-only mode cannot enter production.';
+        state = 'err'; blocked = true;
+      } else {
+        msg = '✓ OBS connected.';
+      }
+    } else if (mode === 'pearl-obs') {
+      if (!_obsOk && !_pearlOk) {
+        msg = '⚠ Both OBS and Pearl are unreachable.';
+        state = 'err'; blocked = true;
+      } else if (!_obsOk) {
+        msg = '⚠ OBS unreachable — hybrid mode will use Pearl only.'; state = 'warn';
+      } else if (!_pearlOk) {
+        msg = '⚠ Pearl unreachable — hybrid mode will use OBS only.'; state = 'warn';
+      } else {
+        msg = '✓ OBS and Pearl connected.';
+      }
+    }
+
+    if (warnEl) {
+      warnEl.textContent = msg;
+      warnEl.className = 'pf-warning pf-warning--' + state;
+    }
+    if (btn) {
+      if (blocked) {
+        btn.classList.add('btn-enter--disabled');
+        btn.removeAttribute('href');
+      } else {
+        btn.classList.remove('btn-enter--disabled');
+        btn.setAttribute('href', '/produce');
+      }
+    }
+  }
+
+  // Init
+  applyMode(localStorage.getItem(STORAGE_KEY) || DEFAULT_MODE);
+  document.querySelectorAll('.mode-card').forEach(function (btn) {
     btn.addEventListener('click', function () { applyMode(btn.dataset.mode); });
   });
 
   // ── Device readiness via SSE ───────────────────────────────────────────
-  function setDot(dotId, state) {
-    var dot = document.getElementById(dotId);
-    if (!dot) return;
-    dot.classList.remove('ready-dot--ok', 'ready-dot--err', 'ready-dot--neutral');
-    dot.classList.add('ready-dot--' + state);
+  function setReady(rowId, txtId, stateClass, label) {
+    var row = document.getElementById(rowId);
+    if (row) {
+      var isLast = row.classList.contains('ready-row--last');
+      row.className = 'ready-row ready-row--' + stateClass + (isLast ? ' ready-row--last' : '');
+    }
+    var txt = document.getElementById(txtId);
+    if (txt) txt.textContent = label;
   }
 
   var es = new EventSource('/api/status/stream');
   es.onmessage = function (e) {
     try {
       var d = JSON.parse(e.data);
-      var warnings = [];
+      _obsOk   = !!d.obs_ok;
+      _pearlOk = !!d.pearl_ok;
 
-      setDot('rdy-obs-dot', d.obs_ok ? 'ok' : 'err');
-      document.getElementById('rdy-obs-text').textContent =
-        d.obs_ok ? 'Connected' : 'Unreachable';
-      if (!d.obs_ok) warnings.push('OBS is unreachable');
-
-      setDot('rdy-pearl-dot', d.pearl_ok ? 'ok' : 'err');
-      document.getElementById('rdy-pearl-text').textContent =
-        d.pearl_ok ? 'Connected' : 'Unreachable';
-      if (!d.pearl_ok) warnings.push('Pearl is unreachable');
-
-      setDot('rdy-captions-dot', d.captions_ok ? 'ok' : 'neutral');
-      document.getElementById('rdy-captions-text').textContent =
-        d.captions_ok ? 'Active' : 'Inactive';
-
+      setReady('rdy-obs-row',      'rdy-obs-text',
+        _obsOk   ? 'ok' : 'err',     _obsOk   ? 'Connected' : 'Unreachable');
+      setReady('rdy-pearl-row',    'rdy-pearl-text',
+        _pearlOk ? 'ok' : 'err',     _pearlOk ? 'Connected' : 'Unreachable');
+      setReady('rdy-captions-row', 'rdy-captions-text',
+        d.captions_ok ? 'ok' : 'neutral', d.captions_ok ? 'Active' : 'Inactive');
       var hw = d.hardware || '—';
-      setDot('rdy-hw-dot', hw !== 'unknown' && hw !== '—' ? 'ok' : 'neutral');
-      document.getElementById('rdy-hw-text').textContent = hw;
+      setReady('rdy-hw-row', 'rdy-hw-text',
+        hw !== 'unknown' && hw !== '—' ? 'ok' : 'neutral', hw);
 
-      // Session column
       var snEl = document.getElementById('home-session-name');
       if (snEl) snEl.textContent = d.session_name || '—';
 
@@ -163,29 +207,12 @@
 
       var badge = document.getElementById('home-stream-badge');
       if (badge) {
-        if (d.stream_state === 'streaming') {
-          badge.textContent = 'LIVE';
-          badge.style.color = 'var(--green, #22c55e)';
-        } else if (d.stream_state === 'stopped') {
-          badge.textContent = 'STOPPED';
-          badge.style.color = 'var(--yellow, #eab308)';
-        } else {
-          badge.textContent = d.stream_state || '—';
-          badge.style.color = '';
-        }
+        var s = d.stream_state || 'idle';
+        badge.textContent = s.toUpperCase();
+        badge.className = 'info-value status-stream--' + s;
       }
 
-      // Warnings / readiness bar
-      var warnEl = document.getElementById('home-warnings');
-      if (warnEl) {
-        if (warnings.length) {
-          warnEl.innerHTML = warnings.map(function (w) {
-            return '<span class="home-warning-item">\u26a0 ' + w + '</span>';
-          }).join('');
-        } else {
-          warnEl.innerHTML = '<span class="home-ready-all">\u2713 All devices ready</span>';
-        }
-      }
+      updateEnter(currentMode());
     } catch (_) {}
   };
 }());
