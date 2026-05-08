@@ -41,7 +41,7 @@ not around the physical device tree.
 The design borrows mental models from established professional tools:
 
 | Tool | Mental model borrowed |
-|---|---|
+| --- | --- |
 | **OBS** | Scene/source/audio as core production units |
 | **Epiphan Pearl** | Confidence monitoring + channel state + layout carousel |
 | **vMix** | Preview → Program workflow; inputs below |
@@ -73,17 +73,19 @@ that hides device complexity behind production-mode intent.
 ## 4. Navigation structure
 
 ### Before (Phase 18)
-```
+
+```text
 Cockpit | Setup | Sessions | Onboarding
 ```
 
 ### After (Phase 19b)
-```
+
+```text
 Home | Produce | Setup | Sessions | Diagnostics
 ```
 
 | Tab | Purpose | Notes |
-|---|---|---|
+| --- | --- | --- |
 | **Home** | Pre-flight, mode selection, readiness | Default landing page |
 | **Produce** | Live cockpit, mode-adaptive | Only meaningful after Home |
 | **Setup** | Credentials, devices, templates, onboarding | Absorbs Onboarding |
@@ -100,7 +102,7 @@ routes and all existing onboarding templates are preserved.
 The operator selects context before entering production. Device readiness
 is read from the existing SSE stream — no new backend calls.
 
-```
+```text
 ┌──────────────────────────────────────────────┐
 │  Miktos — Pre-flight                         │
 ├──────────────────────────────────────────────┤
@@ -130,23 +132,30 @@ cockpit can read them without any server round-trip.
 ## 6. Production mode logic
 
 ### Mode: Pearl Only
+
 **Show:** Pearl Channels, Pearl Layouts, Pearl Preview, Pearl Stream/Record,
 Captions, Run-of-Show, Pipeline  
 **Hide:** OBS Scenes, OBS Source controls, OBS Audio mixer
 
 ### Mode: OBS Only
+
 **Show:** OBS Preview/Program, OBS Scenes, OBS Audio, Graphics, Captions,
 Run-of-Show, Pipeline  
 **Hide:** Pearl Channels, Pearl Inputs, Pearl Layouts, Pearl Stream controls
 
 ### Mode: Pearl + OBS
+
 **Show:** Both, grouped by topology. Active channel mapping is primary.
+
 **Topology sub-choice** (stored in `localStorage`):
+
 - Pearl primary / OBS secondary compositor
 - OBS primary / Pearl as encoder/backup
 
 ### Mode: Rehearsal
+
 **Show:** Full cockpit, all panels visible, prominent REHEARSAL banner.
+
 **Behavioral:** Rehearsal flag already exists in backend (`data/state/rehearsal.json`);
 UI simply reflects it.
 
@@ -154,7 +163,7 @@ UI simply reflects it.
 
 ## 7. Produce cockpit layout — three zones
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │  Mission Status Bar (persistent, always visible)            │
 │  Session | Mode | EN/FR | OBS | Pearl | Captions | Elapsed  │
@@ -185,6 +194,7 @@ It is designed for government, municipalities, and bilingual events — not for
 technically advanced broadcast engineers.
 
 Priorities (top to bottom):
+
 1. Session name + mode + live/rehearsal state
 2. Current and next cue (run-of-show)
 3. Active channel confidence (EN/FR status)
@@ -202,7 +212,7 @@ visually subordinate — collapsed or in the right rail.
 Panels moved out of the live cockpit and into Diagnostics:
 
 | Panel | Current location | New location |
-|---|---|---|
+| --- | --- | --- |
 | Pearl Inputs | Left rail | Diagnostics |
 | Raw tick counter | Sidebar | Diagnostics |
 | Full action log | Sidebar | Diagnostics (compact log stays in right rail) |
@@ -233,7 +243,9 @@ not the full diagnostic dump.
 Each subphase is a separate commit. Each must leave tests green.
 
 ### Subphase 19b-1 — Navigation + Routing
-Files: `web/templates/base.html`, `web/server.py`  
+
+Files: `web/templates/base.html`, `web/server.py`
+
 - Rename "Cockpit" → "Produce", "Onboarding" removed from nav
 - Add nav links: Home, Produce, Setup, Sessions, Diagnostics
 - Add server routes: `GET /home`, `GET /produce`, `GET /diagnostics`
@@ -241,7 +253,9 @@ Files: `web/templates/base.html`, `web/server.py`
 - **Backend touch:** 3 additive routes in `server.py` only
 
 ### Subphase 19b-2 — Home / Preflight page
-Files: `web/templates/home.html`, `web/static/style.css`  
+
+Files: `web/templates/home.html`, `web/static/style.css`
+
 - Mode selector (4 buttons, `localStorage`)
 - Destination selector
 - Device readiness (reads existing SSE data)
@@ -249,14 +263,18 @@ Files: `web/templates/home.html`, `web/static/style.css`
 - No new API calls
 
 ### Subphase 19b-3 — Mode-aware Produce page
-Files: `web/templates/produce.html` (or refactored `index.html`), `web/static/style.css`  
+
+Files: `web/templates/produce.html` (or refactored `index.html`), `web/static/style.css`
+
 - Three-zone layout (left rail / centre stage / right rail)
 - JS reads `localStorage` mode on load, applies CSS class to root element
 - CSS rules: `.mode-obs-only .pearl-zone { display:none }` etc.
 - Mission Status Bar preserved; all SSE wiring preserved
 
 ### Subphase 19b-4 — Diagnostics page
-Files: `web/templates/diagnostics.html`, panel template moves  
+
+Files: `web/templates/diagnostics.html`, panel template moves
+
 - Move Pearl Inputs panel, raw ticks, full action log, hardware badge
 - Right rail in Produce gets compact health chip replacing removed panels
 
