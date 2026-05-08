@@ -1,10 +1,11 @@
 # Phase 19b — Production Mode Cockpit Redesign
 
-**Status:** IN PROGRESS  
-**Started:** 2026-05-07  
-**Branch:** `feat/phase-19b-cockpit-redesign`  
-**Author:** Miktos Engineering  
-**Depends on:** Phase 19 (complete)  
+**Status:** COMPLETE
+**Completed:** 2026-05-08
+**Started:** 2026-05-07
+**Branch:** `feat/mission-status-bar-and-ui-fixes`
+**Final commit:** `6e0dc7a`
+**Tests:** 251 passed, 1 skipped
 **Affects:** `web/templates/`, `web/static/style.css`, `web/server.py` (additive routes only)  
 **Does NOT affect:** Any API endpoint, backend logic, Python domain code, or tests
 
@@ -291,16 +292,18 @@ and is the safe restore point before this phase began.
 
 ## 13. Completion gate
 
-- [ ] All 251+ tests green (no regressions)
-- [ ] Navigation shows: Home | Produce | Setup | Sessions | Diagnostics
-- [ ] Selecting "OBS Only" on Home hides Pearl panels in Produce
-- [ ] Selecting "Pearl Only" on Home hides OBS panels in Produce
-- [ ] Pearl Inputs and raw ticks are NOT visible in Produce (Diagnostics only)
-- [ ] Emergency Stop remains reachable in all modes
-- [ ] Mission Status Bar is visible in all Produce views
-- [ ] No backend API changes
+- [x] All 251+ tests green (no regressions)
+- [x] Navigation shows: Home | Produce | Setup | Sessions | Diagnostics
+- [x] Selecting “OBS Only” on Home hides Pearl panels in Produce
+- [x] Selecting “Pearl Only” on Home hides OBS panels in Produce
+- [x] Pearl Inputs and raw ticks are NOT visible in Produce (Diagnostics only)
+- [x] Emergency Stop remains reachable in all modes
+- [x] Mission Status Bar is visible in all Produce views
+- [x] No backend API changes
 
 ---
 
-*Document created: 2026-05-07*  
+*Document created: 2026-05-07*
+*Completed: 2026-05-08*
 *Author: Miktos Engineering*
+*Continued in: `docs/PHASE19c.md`*
