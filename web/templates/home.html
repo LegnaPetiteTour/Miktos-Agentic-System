@@ -1,18 +1,49 @@
 {% extends "base.html" %}
 {% block title %}Miktos — Home{% endblock %}
 {% block content %}
-<div class="home-wrap">
-  <div class="home-card">
+<div class="home-dashboard">
 
-    <div class="home-header">
-      <span class="home-title">Pre-flight</span>
-      <span class="home-subtitle muted">Select a production mode, verify devices, then enter.</span>
+  <!-- ── Header ────────────────────────────────────────────────────────── -->
+  <div class="home-dashboard-header">
+    <span class="home-title">Pre-flight</span>
+    <span class="home-subtitle">Select a production mode, verify devices, then enter.</span>
+  </div>
+
+  <!-- ── Three-column body ─────────────────────────────────────────────── -->
+  <div class="home-body">
+
+    <!-- LEFT — Session -->
+    <div class="home-col">
+      <div class="home-col-label">Session</div>
+      <div class="home-kv-block">
+        <div class="home-kv-row">
+          <span class="home-kv-key">Current</span>
+          <span class="home-kv-val" id="home-session-name">—</span>
+        </div>
+        <div class="home-kv-row">
+          <span class="home-kv-key">State</span>
+          <span class="home-kv-val" id="home-stream-badge">—</span>
+        </div>
+        <div class="home-kv-row">
+          <span class="home-kv-key">Hardware</span>
+          <span class="home-kv-val" id="home-hw-val">—</span>
+        </div>
+        <div class="home-kv-sep"></div>
+        <div class="home-kv-row">
+          <span class="home-kv-key">YouTube EN</span>
+          <span class="home-kv-val muted">configured in Setup</span>
+        </div>
+        <div class="home-kv-row">
+          <span class="home-kv-key">YouTube FR</span>
+          <span class="home-kv-val muted">configured in Setup</span>
+        </div>
+      </div>
     </div>
 
-    <!-- ── Mode selector ─────────────────────────────────────────── -->
-    <section class="home-section">
-      <div class="home-section-label">Production Mode</div>
-      <div class="mode-grid">
+    <!-- CENTRE — Production Mode -->
+    <div class="home-col home-col--centre">
+      <div class="home-col-label">Production Mode</div>
+      <div class="mode-grid mode-grid--stack">
         <button class="mode-btn" data-mode="pearl-only">
           <span class="mode-name">Pearl Only</span>
           <span class="mode-desc">EN/FR channel encoding via Pearl hardware encoder</span>
@@ -30,11 +61,11 @@
           <span class="mode-desc">Full cockpit visible, no live output sent</span>
         </button>
       </div>
-    </section>
+    </div>
 
-    <!-- ── Device readiness ──────────────────────────────────────── -->
-    <section class="home-section">
-      <div class="home-section-label">Device Readiness</div>
+    <!-- RIGHT — Device Readiness -->
+    <div class="home-col">
+      <div class="home-col-label">Device Readiness</div>
       <div class="ready-list">
         <div class="ready-row">
           <span class="ready-dot" id="rdy-obs-dot">●</span>
@@ -57,19 +88,16 @@
           <span class="ready-status" id="rdy-hw-text">—</span>
         </div>
       </div>
-    </section>
-
-    <!-- ── Footer: session info + CTA ───────────────────────────── -->
-    <div class="home-footer">
-      <div class="home-session-row">
-        <span class="muted">Session:</span>
-        <span class="home-session-name" id="home-session-name">—</span>
-        <span class="muted" id="home-stream-badge"></span>
-      </div>
-      <a class="btn-enter" href="/produce">Enter Production →</a>
     </div>
 
   </div>
+
+  <!-- ── Footer bar — warnings + CTA ──────────────────────────────────── -->
+  <div class="home-footer-bar">
+    <div class="home-warnings" id="home-warnings"></div>
+    <a class="btn-enter" href="/produce">Enter Production →</a>
+  </div>
+
 </div>
 
 <script>
@@ -96,7 +124,6 @@
 
   // ── Device readiness via SSE ───────────────────────────────────────────
   function setDot(dotId, state) {
-    // state: 'ok' | 'err' | 'neutral'
     var dot = document.getElementById(dotId);
     if (!dot) return;
     dot.classList.remove('ready-dot--ok', 'ready-dot--err', 'ready-dot--neutral');
@@ -107,14 +134,17 @@
   es.onmessage = function (e) {
     try {
       var d = JSON.parse(e.data);
+      var warnings = [];
 
       setDot('rdy-obs-dot', d.obs_ok ? 'ok' : 'err');
       document.getElementById('rdy-obs-text').textContent =
         d.obs_ok ? 'Connected' : 'Unreachable';
+      if (!d.obs_ok) warnings.push('OBS is unreachable');
 
       setDot('rdy-pearl-dot', d.pearl_ok ? 'ok' : 'err');
       document.getElementById('rdy-pearl-text').textContent =
         d.pearl_ok ? 'Connected' : 'Unreachable';
+      if (!d.pearl_ok) warnings.push('Pearl is unreachable');
 
       setDot('rdy-captions-dot', d.captions_ok ? 'ok' : 'neutral');
       document.getElementById('rdy-captions-text').textContent =
@@ -124,18 +154,37 @@
       setDot('rdy-hw-dot', hw !== 'unknown' && hw !== '—' ? 'ok' : 'neutral');
       document.getElementById('rdy-hw-text').textContent = hw;
 
-      document.getElementById('home-session-name').textContent =
-        d.session_name || '—';
+      // Session column
+      var snEl = document.getElementById('home-session-name');
+      if (snEl) snEl.textContent = d.session_name || '—';
+
+      var hwEl = document.getElementById('home-hw-val');
+      if (hwEl) hwEl.textContent = hw;
 
       var badge = document.getElementById('home-stream-badge');
-      if (d.stream_state === 'streaming') {
-        badge.textContent = '● LIVE';
-        badge.style.color = 'var(--green)';
-      } else if (d.stream_state === 'stopped') {
-        badge.textContent = '■ STOPPED';
-        badge.style.color = 'var(--yellow)';
-      } else {
-        badge.textContent = '';
+      if (badge) {
+        if (d.stream_state === 'streaming') {
+          badge.textContent = 'LIVE';
+          badge.style.color = 'var(--green, #22c55e)';
+        } else if (d.stream_state === 'stopped') {
+          badge.textContent = 'STOPPED';
+          badge.style.color = 'var(--yellow, #eab308)';
+        } else {
+          badge.textContent = d.stream_state || '—';
+          badge.style.color = '';
+        }
+      }
+
+      // Warnings / readiness bar
+      var warnEl = document.getElementById('home-warnings');
+      if (warnEl) {
+        if (warnings.length) {
+          warnEl.innerHTML = warnings.map(function (w) {
+            return '<span class="home-warning-item">\u26a0 ' + w + '</span>';
+          }).join('');
+        } else {
+          warnEl.innerHTML = '<span class="home-ready-all">\u2713 All devices ready</span>';
+        }
       }
     } catch (_) {}
   };
