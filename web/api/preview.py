@@ -105,13 +105,15 @@ async def get_thumbnail(source: str = "obs") -> JSONResponse:
             cl.disconnect()
         except Exception:  # noqa: BLE001
             pass
-        # obsws-python returns image_data as a full data URL:
-        #   "data:image/jpeg;base64,/9j/4AA..."
-        # Strip the prefix so the template can assemble it uniformly.
+        # obsws-python returns image_data as a full data URL, e.g.:
+        #   "data:image/jpg;base64,/9j/..." or "data:image/jpeg;base64,..."
+        # Strip the prefix so the template assembles it exactly once.
         raw_data: str = resp.image_data or ""
-        prefix = "data:image/jpeg;base64,"
-        if raw_data.startswith(prefix):
-            raw_data = raw_data[len(prefix):]
+        if raw_data.startswith("data:"):
+            # Everything up to and including the first comma is the prefix
+            comma = raw_data.find(",")
+            if comma != -1:
+                raw_data = raw_data[comma + 1:]
         return JSONResponse(
             {"source": source, "data": raw_data or None, "content_type": "image/jpeg"}
         )
