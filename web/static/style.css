@@ -62,6 +62,96 @@ a:hover { text-decoration: underline; }
   gap: var(--gap);
 }
 
+/* ── Mission Status Bar ─────────────────────────────────────────────────── */
+.mission-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  height: 2.25rem;
+  font-size: 0.72rem;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  overflow-x: auto;
+  white-space: nowrap;
+  /* Span full viewport width regardless of .main max-width */
+  position: sticky;
+  top: var(--nav-height);
+  z-index: 50;
+  flex-shrink: 0;
+}
+
+/* When the bar is inside the .main grid it must break out */
+.main > .mission-bar {
+  grid-column: 1 / -1;
+  /* Negative margins cancel .main's padding so the bar is truly full-width */
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  margin-top: -1.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  width: calc(100% + 3rem);
+}
+
+.msb-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.75rem;
+}
+
+.msb-label {
+  color: var(--muted);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.msb-value {
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.msb-session .msb-value {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dividers */
+.msb-divider {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 0.25rem;
+}
+
+/* Push the ELAPSED chip to the far right */
+.msb-divider--push {
+  flex: 1;
+  width: auto;
+  background: transparent;
+  margin: 0;
+}
+
+/* Mode chip — LIVE vs REHEARSAL */
+.msb-live .msb-value      { color: var(--green); }
+.msb-rehearsal .msb-value { color: var(--yellow); }
+
+/* Status dots */
+.msb-dot { font-size: 0.85rem; line-height: 1; cursor: default; }
+
+.msb-streaming { color: var(--green); }
+.msb-stopped   { color: var(--yellow); }
+.msb-idle      { color: var(--muted); }
+.msb-done      { color: var(--accent); }
+
 /* ── Cockpit multi-column grid (Phase 18) ───────────────────────────────── */
 /*
   Four columns:
@@ -275,3 +365,89 @@ a:hover { text-decoration: underline; }
   font-size: 0.85rem;
 }
 .hidden { display: none !important; }
+
+/* ── Pearl Channel assignment panel ────────────────────────────────────── */
+/*
+  Three-column grid: [channel name 1fr] [EN 34px] [FR 34px]
+  Buttons are always right-aligned in fixed columns.
+*/
+
+/* Small pill button used in the channel list */
+.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 22px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.btn-sm:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.channel-row {
+  display: grid;
+  grid-template-columns: 1fr 34px 34px;
+  align-items: center;
+  column-gap: 0.35rem;
+  padding: 0.22rem 0.4rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+}
+
+/* Highlight the whole row when it is assigned */
+.channel-row.ch-row--en {
+  background: rgba(63, 185, 80, 0.07);
+  border-color: rgba(63, 185, 80, 0.25);
+}
+.channel-row.ch-row--fr {
+  background: rgba(88, 166, 255, 0.07);
+  border-color: rgba(88, 166, 255, 0.25);
+}
+
+.ch-name {
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.ch-assigned-en { color: var(--green); }
+.ch-assigned-fr { color: var(--accent); }
+
+.ch-role-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+  margin-left: 0.2rem;
+}
+.ch-tag-en { color: var(--green); }
+.ch-tag-fr { color: var(--accent); }
+
+/* Active EN button — green fill */
+.ch-btn--active-en {
+  background: var(--green) !important;
+  color: #000 !important;
+  border-color: var(--green) !important;
+}
+
+/* Active FR button — blue fill */
+.ch-btn--active-fr {
+  background: var(--accent) !important;
+  color: #000 !important;
+  border-color: var(--accent) !important;
+}

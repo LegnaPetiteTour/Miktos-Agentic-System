@@ -9,6 +9,48 @@
 </div>
 {% endif %}
 
+<!-- ═══════════════════════════════════════════════════════
+     MISSION STATUS BAR — cockpit truth strip
+     All chips are updated via the same SSE stream below.
+═══════════════════════════════════════════════════════ -->
+<div class="mission-bar" id="mission-bar">
+  <div class="msb-chip msb-session">
+    <span class="msb-label">SESSION</span>
+    <span class="msb-value" id="msb-session-name">—</span>
+  </div>
+  <div class="msb-divider"></div>
+  <div class="msb-chip" id="msb-mode-chip">
+    <span class="msb-value" id="msb-mode">—</span>
+  </div>
+  <div class="msb-divider"></div>
+  <div class="msb-chip">
+    <span class="msb-label">EN</span>
+    <span class="msb-value msb-dot" id="msb-en">—</span>
+  </div>
+  <div class="msb-chip">
+    <span class="msb-label">FR</span>
+    <span class="msb-value msb-dot" id="msb-fr">—</span>
+  </div>
+  <div class="msb-divider"></div>
+  <div class="msb-chip">
+    <span class="msb-label">OBS</span>
+    <span class="msb-value msb-dot" id="msb-obs">—</span>
+  </div>
+  <div class="msb-chip">
+    <span class="msb-label">PEARL</span>
+    <span class="msb-value msb-dot" id="msb-pearl">—</span>
+  </div>
+  <div class="msb-chip">
+    <span class="msb-label">CAPTIONS</span>
+    <span class="msb-value msb-dot" id="msb-captions">—</span>
+  </div>
+  <div class="msb-divider msb-divider--push"></div>
+  <div class="msb-chip">
+    <span class="msb-label">ELAPSED</span>
+    <span class="msb-value" id="msb-elapsed">—</span>
+  </div>
+</div>
+
 <div id="cockpit"
      hx-ext="sse"
      sse-connect="/api/status/stream"
@@ -141,6 +183,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
   evtSource.onmessage = (e) => {
     const d = JSON.parse(e.data);
+
+    // ── Mission Status Bar ───────────────────────────────────────────────
+    const msbSession = document.getElementById("msb-session-name");
+    if (msbSession) msbSession.textContent = d.session_name || "—";
+
+    const msbMode = document.getElementById("msb-mode");
+    const msbModeChip = document.getElementById("msb-mode-chip");
+    if (msbMode && msbModeChip) {
+      const rehearsal = !!d.rehearsal_active;
+      msbMode.textContent = rehearsal ? "REHEARSAL" : "LIVE";
+      msbModeChip.classList.toggle("msb-rehearsal", rehearsal);
+      msbModeChip.classList.toggle("msb-live",      !rehearsal);
+    }
+
+    const msbEn = document.getElementById("msb-en");
+    if (msbEn) {
+      const s = (d.en_status || "idle").toLowerCase();
+      msbEn.textContent = s === "streaming" ? "●" : s === "stopped" ? "◼" : "○";
+      msbEn.className = "msb-value msb-dot msb-" + s;
+      msbEn.title = (d.en_status || "idle").toUpperCase();
+    }
+
+    const msbFr = document.getElementById("msb-fr");
+    if (msbFr) {
+      const s = (d.fr_status || "—").toLowerCase();
+      const active = s === "active";
+      msbFr.textContent = active ? "●" : "○";
+      msbFr.className   = "msb-value msb-dot " + (active ? "msb-streaming" : "msb-idle");
+      msbFr.title       = active ? "CAPTIONS FLOWING" : "IDLE";
+    }
+
+    const msbObs = document.getElementById("msb-obs");
+    if (msbObs) {
+      const ok = !!d.obs_ok;
+      msbObs.textContent = ok ? "●" : "○";
+      msbObs.className   = "msb-value msb-dot " + (ok ? "msb-streaming" : "msb-idle");
+      msbObs.title       = ok ? "ONLINE" : "OFFLINE";
+    }
+
+    const msbPearl = document.getElementById("msb-pearl");
+    if (msbPearl) {
+      const ok = !!d.pearl_ok;
+      msbPearl.textContent = ok ? "●" : "○";
+      msbPearl.className   = "msb-value msb-dot " + (ok ? "msb-streaming" : "msb-idle");
+      msbPearl.title       = ok ? "ONLINE" : "OFFLINE";
+    }
+
+    const msbCaptions = document.getElementById("msb-captions");
+    if (msbCaptions) {
+      const ok = !!d.captions_ok;
+      msbCaptions.textContent = ok ? "●" : "○";
+      msbCaptions.className   = "msb-value msb-dot " + (ok ? "msb-streaming" : "msb-idle");
+      msbCaptions.title       = ok ? "ACTIVE" : "IDLE";
+    }
+
+    const msbElapsed = document.getElementById("msb-elapsed");
+    if (msbElapsed) msbElapsed.textContent = d.elapsed || "—";
+    // ── End Mission Status Bar ───────────────────────────────────────────
 
     // Hardware
     const hw = document.getElementById("hardware-badge");

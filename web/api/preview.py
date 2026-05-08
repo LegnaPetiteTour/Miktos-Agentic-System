@@ -84,16 +84,36 @@ async def get_thumbnail(source: str = "obs") -> JSONResponse:
                 {"source": source, "data": data, "content_type": "image/jpeg"}
             )
 
-        # OBS
+        # OBS — get current scene name dynamically, then screenshot it
         cl = _obs_client()
-        src_name = os.getenv("OBS_PREVIEW_SOURCE", "Program")
-        resp = cl.get_source_screenshot(src_name, "jpg", 320, 180, 85)
+        try:
+            scene_resp = cl.get_current_program_scene()
+            scene_name = scene_resp.current_program_scene_name
+        except Exception:  # noqa: BLE001
+            scene_name = os.getenv("OBS_PREVIEW_SOURCE", "")
+        if not scene_name:
+            try:
+                cl.disconnect()
+            except Exception:  # noqa: BLE001
+                pass
+            return JSONResponse(
+                {"source": source, "data": None, "error": "Could not determine current OBS scene"},
+                status_code=200,
+            )
+        resp = cl.get_source_screenshot(scene_name, "jpg", 320, 180, 85)
         try:
             cl.disconnect()
         except Exception:  # noqa: BLE001
             pass
+        # obsws-python returns image_data as a full data URL:
+        #   "data:image/jpeg;base64,/9j/4AA..."
+        # Strip the prefix so the template can assemble it uniformly.
+        raw_data: str = resp.image_data or ""
+        prefix = "data:image/jpeg;base64,"
+        if raw_data.startswith(prefix):
+            raw_data = raw_data[len(prefix):]
         return JSONResponse(
-            {"source": source, "data": resp.image_data, "content_type": "image/jpeg"}
+            {"source": source, "data": raw_data or None, "content_type": "image/jpeg"}
         )
 
     except Exception as exc:  # noqa: BLE001
