@@ -24,7 +24,7 @@ load_dotenv(dotenv_path=_PROJECT_ROOT / ".env")  # must run before any PearlClie
 
 import uvicorn  # noqa: E402
 from fastapi import FastAPI, Request  # noqa: E402
-from fastapi.responses import HTMLResponse  # noqa: E402
+from fastapi.responses import HTMLResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
 
@@ -123,9 +123,8 @@ async def health_check() -> dict:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/", response_class=HTMLResponse)
-async def root_redirect(request: Request) -> HTMLResponse:
-    from fastapi.responses import RedirectResponse
+@app.get("/", response_class=RedirectResponse)
+async def root_redirect(request: Request) -> RedirectResponse:
     return RedirectResponse(url="/home", status_code=302)
 
 
@@ -157,10 +156,9 @@ async def diagnostics(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="diagnostics.html")
 
 
-@app.get("/index", response_class=HTMLResponse)
-async def index_legacy(request: Request) -> HTMLResponse:
+@app.get("/index", response_class=RedirectResponse)
+async def index_legacy(request: Request) -> RedirectResponse:
     """Legacy /index alias — redirects to /produce."""
-    from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/produce", status_code=302)
 
 
