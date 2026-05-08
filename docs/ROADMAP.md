@@ -380,6 +380,81 @@ Self-hosted deployment and cockpit multi-column grid restructure.
 
 ---
 
+---
+
+## Phase 19 — Capability Audit + Mission Status Bar ✅ COMPLETE
+
+**Completed:** 2026-05-07
+**Branch:** `feat/mission-status-bar-and-ui-fixes`
+**Tests:** 251 passed, 1 skipped
+
+Operational hardening pass: end-to-end capability smoke tests, persistent
+status truth strip, and three targeted UI fixes raised from real operator use.
+
+### 19a — Capability Smoke Tests
+
+- [x] `tests/test_phase_19_smoke.py` — A–E capability probes
+  - A. Pearl FR thumbnail (`/api/preview/thumbnail?source=pearl_fr`)
+  - B. Pearl health probe via `PearlClient.get_channels()` (not firmware)
+  - C. Elapsed session time in `_latest_session_info()`
+  - D. Status SSE stream shape (elapsed, pipeline_slots, pearl_layouts)
+  - E. `reset_layout_log.py` script — all CLI flags
+- [x] All 251 tests green; 1 permanent skip (live OBS hardware)
+
+### 19b — Mission Status Bar
+
+- [x] `web/api/status.py` — 7 new SSE payload fields:
+  `session_name`, `rehearsal_active`, `en_status`, `fr_status`,
+  `obs_ok`, `pearl_ok`, `captions_ok`
+- [x] `web/templates/index.html` — sticky `mission-bar` strip under nav;
+  all chips driven by the existing SSE stream (zero extra network calls)
+- [x] `web/static/style.css` — `.mission-bar`, `.msb-chip`, `.msb-dot`,
+  `.msb-live` / `.msb-rehearsal`, `.msb-streaming` / `.msb-idle`
+- [x] `web/server.py` — MD5 content-hash cache-busting for `style.css`
+  (`?v={8-char hash}` computed at startup, never stale)
+- [x] `web/templates/base.html` — `?v={{ css_version }}` on stylesheet link
+
+### 19c — UI Stability Fixes
+
+- [x] OBS thumbnail — `obsws-python` returns `data:image/jpg;base64,…`;
+  fixed strip by comma-index (not hardcoded MIME prefix); JPEG magic `ffd8ff` confirmed
+- [x] Pearl Channels panel — rewritten with embedded `<style>` (bypasses CSS
+  cache), `display:table` layout, green EN / blue FR color feedback;
+  duplicate template body removed (two competing `setInterval` timers eliminated)
+- [x] Preview panel — fixed-aspect-ratio `16:9` placeholder ("NO SIGNAL" +
+  icon) shown when source is offline; no broken-image icons ever displayed
+
+---
+
+## Phase 19b — Production Mode Cockpit Redesign 🔄 IN PROGRESS
+
+**Started:** 2026-05-07
+**Branch:** `feat/phase-19b-cockpit-redesign`
+**Spec:** `docs/PHASE19b.md`
+
+Full architectural redesign of the cockpit UI around **production modes**,
+not raw device lists. No backend behavior changes.
+
+See `docs/PHASE19b.md` for the complete rationale, design decisions,
+layout specifications, and execution plan.
+
+### Subphases
+
+- [ ] **19b-1 — Navigation + Routing** — rename tabs; add `/produce`,
+  `/diagnostics`, `/home` routes; retire Onboarding from top nav
+- [ ] **19b-2 — Home / Preflight page** — mode selector, destination,
+  device readiness, Enter Production button
+- [ ] **19b-3 — Mode-aware Produce page** — 3-zone layout (Left rail /
+  Centre stage / Right rail); JS visibility driven by production mode
+  stored in `localStorage`
+- [ ] **19b-4 — Diagnostics page** — Pearl Inputs, raw ticks, adapter
+  health, action log moved out of live cockpit
+
+**Completion gate:** All 251+ tests still green; no backend API changes;
+operator can select a mode on Home and see a fully adapted Produce cockpit.
+
+---
+
 ## Stage 3 — Self-Hosted Web App 🔜 FUTURE
 
 Docker container, multi-operator, institutional IT deployment.
@@ -391,6 +466,7 @@ Cloud-hosted, multi-tenant. Depends on Stage 3 validated.
 
 ---
 
-*Last updated: 2026-05-03*
-*Phases 0–17: complete and validated.*
+*Last updated: 2026-05-07*
+*Phases 0–19: complete and validated. Phase 19b in progress.*
+*See docs/PHASE19b.md for the cockpit redesign spec.*
 *See docs/VISION.md and docs/PRODUCT.md for full product direction.*
