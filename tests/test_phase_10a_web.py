@@ -210,7 +210,7 @@ def test_pearl_switch_mock(tmp_path, monkeypatch):
 
 
 def test_index_renders():
-    resp = client.get("/")
+    resp = client.get("/produce")
     assert resp.status_code == 200
     html = resp.text
     # All five cockpit panels should be present

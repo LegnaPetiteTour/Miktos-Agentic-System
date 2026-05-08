@@ -158,7 +158,7 @@ def test_index_html_health_in_sidebar() -> None:
 
 
 def test_auth_disabled_root_accessible() -> None:
-    """GET / returns 200 when AUTH_ENABLED is not set (default)."""
+    """GET /home returns 200 when AUTH_ENABLED is not set (default)."""
     # Ensure AUTH_ENABLED is off for this test module
     os.environ.pop("AUTH_ENABLED", None)
     # Re-import to pick up env state (server module imported at module level)
@@ -166,7 +166,7 @@ def test_auth_disabled_root_accessible() -> None:
     from web.server import app
 
     client = TestClient(app, follow_redirects=False)
-    r = client.get("/")
+    r = client.get("/home")
     assert r.status_code == 200
 
 

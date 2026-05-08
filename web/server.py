@@ -124,7 +124,18 @@ async def health_check() -> dict:
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request) -> HTMLResponse:
+async def root_redirect(request: Request) -> HTMLResponse:
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/home", status_code=302)
+
+
+@app.get("/home", response_class=HTMLResponse)
+async def home(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="home.html")
+
+
+@app.get("/produce", response_class=HTMLResponse)
+async def produce(request: Request) -> HTMLResponse:
     creds = onboarding.check_credentials()
     missing_credentials = not all([
         creds["youtube_client"],
@@ -139,6 +150,18 @@ async def index(request: Request) -> HTMLResponse:
         name="index.html",
         context={"missing_credentials": missing_credentials},
     )
+
+
+@app.get("/diagnostics", response_class=HTMLResponse)
+async def diagnostics(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="diagnostics.html")
+
+
+@app.get("/index", response_class=HTMLResponse)
+async def index_legacy(request: Request) -> HTMLResponse:
+    """Legacy /index alias — redirects to /produce."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/produce", status_code=302)
 
 
 @app.get("/setup", response_class=HTMLResponse)
