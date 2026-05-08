@@ -58,11 +58,19 @@ app = FastAPI(title="Miktos Web Cockpit", version="0.1.0")
 # Static files
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
+import hashlib as _hashlib
+
 # Templates
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 # Expose AUTH_ENABLED to every template as a global so base.html can render
 # the logout button without repeating the env-var lookup in every view.
 templates.env.globals["auth_enabled"] = auth_api.AUTH_ENABLED
+
+# Cache-busting version string for style.css — derived from the file's
+# content hash so the browser fetches a fresh copy whenever CSS changes.
+_css_path = BASE_DIR / "static" / "style.css"
+_css_hash = _hashlib.md5(_css_path.read_bytes()).hexdigest()[:8]
+templates.env.globals["css_version"] = _css_hash
 
 # API routers
 app.include_router(session.router, prefix="/api/session")
