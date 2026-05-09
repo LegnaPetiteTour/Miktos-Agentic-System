@@ -39,8 +39,9 @@ _LAYOUT_LOG = get_data_dir() / "logs" / "layout_log.jsonl"
 _SESSIONS_DIR = get_data_dir() / "sessions"
 _CAPTIONS_FILE = get_data_dir() / "captions" / "captions.jsonl"
 
-# Cache for the OBS network probe (expensive — gate to every 30 s)
+# Cache for expensive network probes — gate to every 30 s
 _obs_cache: dict = {"ok": False, "ts": 0.0}
+_pearl_cache: dict = {"ok": False, "ts": 0.0}
 
 _UUID_RE = re.compile(r"^[0-9a-f]{12}$")
 _LOG_LINE_RE = re.compile(
@@ -222,6 +223,17 @@ def _read_captions_channel_status() -> tuple[str, str]:
     return ("active" if en_fresh else "idle"), ("active" if fr_fresh else "idle")
 
 
+def _probe_pearl_sync() -> bool:
+    """Synchronous Pearl reachability probe; returns True on success."""
+    try:
+        from domains.epiphan.tools.pearl_client import PearlClient
+        client = PearlClient()
+        channels = client.get_channels()
+        return isinstance(channels, list) and len(channels) > 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _probe_obs_sync() -> bool:
     """Synchronous OBS reachability probe; returns True on success."""
     try:
@@ -274,15 +286,22 @@ async def _event_stream() -> AsyncGenerator[str, None]:
         pearl_layouts = _read_pearl_layouts()
         pipeline_slots, elapsed = _latest_session_info()
         runner = get_runner_state()
+        now_mono = time.monotonic()
 
         # Mission Status Bar fields
         session_name = _read_session_name()
         rehearsal_active = _read_rehearsal_active()
         en_cap_status, fr_cap_status = _read_captions_channel_status()
-        pearl_ok = bool(pearl_layouts)
+
+        # Pearl probe — run in thread executor; gate to every 30 s
+        if now_mono - _pearl_cache["ts"] > 30.0:
+            pearl_ok = await loop.run_in_executor(None, _probe_pearl_sync)
+            _pearl_cache["ok"] = pearl_ok
+            _pearl_cache["ts"] = now_mono
+        else:
+            pearl_ok = _pearl_cache["ok"]
 
         # OBS probe — run in thread executor; gate to every 30 s
-        now_mono = time.monotonic()
         if now_mono - _obs_cache["ts"] > 30.0:
             obs_ok = await loop.run_in_executor(None, _probe_obs_sync)
             _obs_cache["ok"] = obs_ok
