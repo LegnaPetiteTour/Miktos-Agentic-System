@@ -10,8 +10,7 @@
 {% endif %}
 
 <!-- ═══════════════════════════════════════════════════════
-     MISSION STATUS BAR — cockpit truth strip
-     All chips are updated via the same SSE stream below.
+     MISSION STATUS BAR
 ═══════════════════════════════════════════════════════ -->
 <div class="mission-bar" id="mission-bar">
   <div class="msb-chip msb-session">
@@ -21,6 +20,9 @@
   <div class="msb-divider"></div>
   <div class="msb-chip" id="msb-mode-chip">
     <span class="msb-value" id="msb-mode">—</span>
+  </div>
+  <div class="msb-chip msb-device-mode" id="msb-device-mode-chip">
+    <span class="msb-value msb-label--device" id="msb-device-mode">—</span>
   </div>
   <div class="msb-divider"></div>
   <div class="msb-chip">
@@ -51,52 +53,52 @@
   </div>
 </div>
 
-<div id="cockpit"
-     hx-ext="sse"
-     sse-connect="/api/status/stream"
-     sse-swap="message"
-     hx-swap="none"
-     class="cockpit-grid">
+<!-- ═══════════════════════════════════════════════════════
+     COCKPIT GRID — mode-aware layout
+     data-mode is stamped from localStorage on load.
+     CSS handles column structure per mode.
+     Zone visibility is controlled by CSS per mode.
+═══════════════════════════════════════════════════════ -->
+<div id="cockpit" class="cockpit-grid" data-mode="pearl-obs">
 
-  <!-- Rehearsal banner — visible only when body[data-mode="rehearsal"] -->
-  <div class="rehearsal-banner">⚠ REHEARSAL — No live output will be sent</div>
+  <div class="rehearsal-banner" id="rehearsal-banner">
+    ⚠ REHEARSAL MODE — No live output will be sent
+  </div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       LEFT RAIL — Active channels, sources, layouts
-  ═══════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════
+       LEFT RAIL
+       Zones are shown/hidden by CSS based on data-mode.
+  ════════════════════════════════ -->
   <div class="cockpit-col cockpit-col-left">
-    <div class="col-label">Left Rail</div>
 
-    <!-- Pearl layouts -->
+    <!-- MODE LABEL — visible inside cockpit, replaces col-label -->
+    <div class="cockpit-mode-label" id="cockpit-mode-label">—</div>
+
+    <!-- ── PEARL ZONE — shown in: pearl-only, pearl-obs, rehearsal ── -->
     <section class="panel pearl-zone" id="panel-pearl">
       <h2 class="panel-title">Pearl Layouts</h2>
       <div id="pearl-layouts"><span class="muted">—</span></div>
     </section>
 
-    <!-- Pearl channel assignment (auto-discovery) -->
     <div class="pearl-zone" hx-get="/panels/channels" hx-trigger="load" hx-swap="outerHTML"></div>
 
-    <!-- Pearl inputs summary chip — full detail at /diagnostics -->
     <div class="pearl-zone inputs-chip" id="panel-inputs-chip">
       <span class="inputs-chip-label">Pearl Inputs</span>
       <a href="/diagnostics" class="inputs-chip-link">View Diagnostics →</a>
     </div>
 
-    <!-- Scene Switcher (Phase 14) -->
+    <!-- ── OBS ZONE — shown in: obs-only, pearl-obs, rehearsal ── -->
     <div class="obs-zone" hx-get="/panels/switcher" hx-trigger="load" hx-swap="outerHTML"></div>
-
-    <!-- Audio Control (Phase 14) -->
     <div class="obs-zone" hx-get="/panels/audio" hx-trigger="load" hx-swap="outerHTML"></div>
+
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       CENTRE COLUMN — Production Actions
-       Session control, stream state, pipeline, run-of-show
-  ═══════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════
+       CENTRE STAGE
+  ════════════════════════════════ -->
   <div class="cockpit-col cockpit-col-centre">
-    <div class="col-label">Centre Stage</div>
 
-    <!-- Compact control strip — Session + Stream collapsed into one bar -->
+    <!-- Control strip — always present -->
     <div class="cockpit-control-strip" id="panel-control">
       <div class="ccs-actions">
         <button class="btn-start" id="btn-start" onclick="startSession()">▶ Start</button>
@@ -111,32 +113,32 @@
       <div class="ccs-status muted" id="control-status"></div>
     </div>
 
-    <!-- Preview thumbnails (moved from right rail — primary visual anchor) -->
-    <div hx-get="/panels/preview" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Mode-aware preview — rendered by JS below -->
+    <section class="panel" id="panel-preview-centre">
+      <div id="preview-thumbs" class="preview-thumbs-wrap"></div>
+    </section>
 
-    <!-- Run-of-show (Phase 17) -->
+    <!-- Run-of-show — always present -->
     <div hx-get="/panels/runofshow" hx-trigger="load" hx-swap="outerHTML"></div>
 
-    <!-- Graphics overlays (Phase 15) -->
+    <!-- Graphics — always present -->
     <div hx-get="/panels/graphics" hx-trigger="load" hx-swap="outerHTML"></div>
+
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       RIGHT RAIL — Preview, Captions, Health & Automation
-  ═══════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════
+       RIGHT RAIL — always present
+       Safety + monitoring panels belong in every mode.
+  ════════════════════════════════ -->
   <div class="cockpit-col cockpit-col-right-rail">
-    <div class="col-label">Right Rail</div>
 
-    <!-- Pipeline (moved from centre — monitoring, not primary action) -->
     <section class="panel" id="panel-pipeline">
       <h2 class="panel-title">Pipeline</h2>
       <ul id="pipeline-slots" class="slot-list"><li class="muted">—</li></ul>
     </section>
 
-    <!-- Captions (Phase 14) -->
     <div hx-get="/panels/captions" hx-trigger="load" hx-swap="outerHTML"></div>
 
-    <!-- Compact health chip — full detail at /diagnostics -->
     <section class="panel" id="panel-health-chip">
       <h2 class="panel-title">Health
         <a href="/diagnostics" class="panel-diag-link">Details →</a>
@@ -164,213 +166,441 @@
       </div>
     </section>
 
-    <!-- Emergency safe mode (Phase 16) -->
     <div hx-get="/panels/safe_mode" hx-trigger="load" hx-swap="outerHTML"></div>
-
-    <!-- Rehearsal mode (Phase 17) -->
     <div hx-get="/panels/rehearsal" hx-trigger="load" hx-swap="outerHTML"></div>
-  </div>
 
+  </div>
 </div>
 
+<style>
+/* ── Mode-aware grid columns ──────────────────────────────────────── */
+/* pearl-obs and rehearsal: balanced 3-column */
+#cockpit[data-mode="pearl-obs"],
+#cockpit[data-mode="rehearsal"] {
+  grid-template-columns: 230px 1fr 210px;
+}
+
+/* pearl-only: narrower left (no OBS scene grid), wider centre */
+#cockpit[data-mode="pearl-only"] {
+  grid-template-columns: 210px 1fr 210px;
+}
+
+/* obs-only: narrower left (no Pearl channel list), wider centre */
+#cockpit[data-mode="obs-only"] {
+  grid-template-columns: 210px 1fr 210px;
+}
+
+/* ── Zone visibility ──────────────────────────────────────────────── */
+/* pearl-obs + rehearsal: show both zones */
+#cockpit[data-mode="pearl-obs"]  .pearl-zone,
+#cockpit[data-mode="pearl-obs"]  .obs-zone,
+#cockpit[data-mode="rehearsal"]  .pearl-zone,
+#cockpit[data-mode="rehearsal"]  .obs-zone { display: block; }
+
+/* pearl-only: Pearl zones only */
+#cockpit[data-mode="pearl-only"] .pearl-zone { display: block; }
+#cockpit[data-mode="pearl-only"] .obs-zone   { display: none;  }
+
+/* obs-only: OBS zones only */
+#cockpit[data-mode="obs-only"]   .obs-zone   { display: block; }
+#cockpit[data-mode="obs-only"]   .pearl-zone { display: none;  }
+
+/* ── Rehearsal banner ─────────────────────────────────────────────── */
+#cockpit[data-mode="rehearsal"] .rehearsal-banner { display: block; }
+
+/* ── Mode label chip in mission bar ──────────────────────────────── */
+.msb-device-mode { font-size: 0.65rem; letter-spacing: 0.08em; }
+.msb-label--device { text-transform: uppercase; color: var(--muted); }
+
+/* ── Mode label inside cockpit left rail ─────────────────────────── */
+.cockpit-mode-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  padding: 0 0 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.75rem;
+}
+
+/* ── Preview thumbs — mode-aware layout ──────────────────────────── */
+.preview-thumbs-wrap {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: nowrap;
+}
+.preview-thumb-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+/* pearl-obs / rehearsal: 3 equal thumbs */
+.preview-thumbs-wrap.thumbs--three .preview-thumb-item { flex: 1; }
+/* pearl-only: 2 wider thumbs */
+.preview-thumbs-wrap.thumbs--two   .preview-thumb-item { flex: 1; }
+/* obs-only: 1 full-width thumb */
+.preview-thumbs-wrap.thumbs--one   .preview-thumb-item { flex: 1; }
+
+.preview-thumb-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-align: center;
+}
+.preview-thumb-label .thumb-badge {
+  display: inline-block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+  letter-spacing: 0.06em;
+}
+.thumb-badge--en { background: rgba(63,185,80,0.15); color: var(--green); }
+.thumb-badge--fr { background: rgba(88,166,255,0.12); color: var(--accent); }
+.thumb-badge--obs { background: rgba(100,100,100,0.15); color: var(--muted); }
+
+.preview-thumb-frame {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #0a0a0a;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.preview-thumb-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+.preview-thumb-frame img.thumb-visible { display: block; }
+.preview-thumb-frame .thumb-ph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: #333;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+</style>
+
 <script>
-// Listen for SSE messages and update DOM directly
-document.addEventListener("DOMContentLoaded", () => {
-  // ── Mode-awareness: stamp data-mode on body from localStorage ────────────
-  document.body.dataset.mode = localStorage.getItem('miktos_mode') || 'pearl-only';
+(function () {
+  'use strict';
 
-  const evtSource = new EventSource("/api/status/stream");
+  // ── Mode config ──────────────────────────────────────────────────────
+  var MODE_LABELS = {
+    'pearl-obs':  'Pearl + OBS',
+    'pearl-only': 'Pearl Only',
+    'obs-only':   'OBS Only',
+    'rehearsal':  'Rehearsal',
+  };
 
-  evtSource.onmessage = (e) => {
-    const d = JSON.parse(e.data);
+  var mode = localStorage.getItem('miktos_mode') || 'pearl-obs';
 
-    // ── Mission Status Bar ───────────────────────────────────────────────
-    const msbSession = document.getElementById("msb-session-name");
-    if (msbSession) msbSession.textContent = d.session_name || "—";
+  // Stamp data-mode on cockpit grid
+  var cockpit = document.getElementById('cockpit');
+  if (cockpit) cockpit.dataset.mode = mode;
 
-    const msbMode = document.getElementById("msb-mode");
-    const msbModeChip = document.getElementById("msb-mode-chip");
+  // Also stamp on body for any external CSS
+  document.body.dataset.mode = mode;
+
+  // Update mission bar device mode chip
+  var modeLabel = document.getElementById('msb-device-mode');
+  if (modeLabel) modeLabel.textContent = MODE_LABELS[mode] || mode;
+
+  // Update cockpit mode label (left rail header)
+  var cockpitModeLabel = document.getElementById('cockpit-mode-label');
+  if (cockpitModeLabel) cockpitModeLabel.textContent = MODE_LABELS[mode] || mode;
+
+  // ── Mode-aware preview ───────────────────────────────────────────────
+  function buildPreview() {
+    var wrap = document.getElementById('preview-thumbs');
+    if (!wrap) return;
+
+    // Determine which sources to show based on mode
+    var sources = [];
+    if (mode === 'pearl-only') {
+      sources = [
+        { id: 'pearl_en', label: 'Pearl', badge: 'EN', badgeClass: 'thumb-badge--en' },
+        { id: 'pearl_fr', label: 'Pearl', badge: 'FR', badgeClass: 'thumb-badge--fr' },
+      ];
+      wrap.className = 'preview-thumbs-wrap thumbs--two';
+    } else if (mode === 'obs-only') {
+      sources = [
+        { id: 'obs', label: 'OBS Program', badge: '', badgeClass: 'thumb-badge--obs' },
+      ];
+      wrap.className = 'preview-thumbs-wrap thumbs--one';
+    } else {
+      // pearl-obs + rehearsal: all three
+      sources = [
+        { id: 'pearl_en', label: 'Pearl', badge: 'EN', badgeClass: 'thumb-badge--en' },
+        { id: 'pearl_fr', label: 'Pearl', badge: 'FR', badgeClass: 'thumb-badge--fr' },
+        { id: 'obs',      label: 'OBS',   badge: '',   badgeClass: 'thumb-badge--obs' },
+      ];
+      wrap.className = 'preview-thumbs-wrap thumbs--three';
+    }
+
+    wrap.innerHTML = sources.map(function (s) {
+      var badge = s.badge
+        ? '<span class="thumb-badge ' + s.badgeClass + '">' + s.badge + '</span>'
+        : '';
+      return '<div class="preview-thumb-item">' +
+        '<div class="preview-thumb-label">' + s.label + badge + '</div>' +
+        '<div class="preview-thumb-frame">' +
+          '<img id="pthumb-' + s.id + '" alt="' + s.label + ' ' + s.badge + '" />' +
+          '<div class="thumb-ph">No signal</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  buildPreview();
+
+  // ── Thumbnail polling ────────────────────────────────────────────────
+  function refreshThumb(sourceId) {
+    var img = document.getElementById('pthumb-' + sourceId);
+    if (!img) return;
+    fetch('/api/preview/thumbnail?source=' + sourceId)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.data) {
+          img.src = 'data:' + d.content_type + ';base64,' + d.data;
+          img.classList.add('thumb-visible');
+          var ph = img.nextElementSibling;
+          if (ph) ph.style.display = 'none';
+        }
+      })
+      .catch(function () {});
+  }
+
+  function refreshAllThumbs() {
+    if (mode === 'pearl-only') {
+      refreshThumb('pearl_en');
+      refreshThumb('pearl_fr');
+    } else if (mode === 'obs-only') {
+      refreshThumb('obs');
+    } else {
+      refreshThumb('pearl_en');
+      refreshThumb('pearl_fr');
+      refreshThumb('obs');
+    }
+  }
+
+  refreshAllThumbs();
+  setInterval(refreshAllThumbs, 2500);
+
+  // ── SSE — all status updates ─────────────────────────────────────────
+  var evtSource = new EventSource('/api/status/stream');
+
+  evtSource.onmessage = function (e) {
+    var d;
+    try { d = JSON.parse(e.data); } catch (_) { return; }
+
+    // Mission bar
+    var msbSession = document.getElementById('msb-session-name');
+    if (msbSession) msbSession.textContent = d.session_name || '—';
+
+    var msbMode    = document.getElementById('msb-mode');
+    var msbModeChip= document.getElementById('msb-mode-chip');
     if (msbMode && msbModeChip) {
-      const rehearsal = !!d.rehearsal_active;
-      msbMode.textContent = rehearsal ? "REHEARSAL" : "LIVE";
-      msbModeChip.classList.toggle("msb-rehearsal", rehearsal);
-      msbModeChip.classList.toggle("msb-live",      !rehearsal);
+      var rehearsal = !!d.rehearsal_active;
+      msbMode.textContent = rehearsal ? 'REHEARSAL' : 'LIVE';
+      msbModeChip.classList.toggle('msb-rehearsal', rehearsal);
+      msbModeChip.classList.toggle('msb-live',      !rehearsal);
     }
 
-    const msbEn = document.getElementById("msb-en");
+    // EN dot
+    var msbEn = document.getElementById('msb-en');
     if (msbEn) {
-      const s = (d.en_status || "idle").toLowerCase();
-      msbEn.textContent = s === "streaming" ? "●" : s === "stopped" ? "◼" : "○";
-      msbEn.className = "msb-value msb-dot msb-" + s;
-      msbEn.title = (d.en_status || "idle").toUpperCase();
+      var es = (d.en_status || 'idle').toLowerCase();
+      msbEn.textContent = es === 'streaming' ? '●' : es === 'stopped' ? '◼' : '○';
+      msbEn.className   = 'msb-value msb-dot msb-' + es;
+      msbEn.title       = (d.en_status || 'idle').toUpperCase();
     }
 
-    const msbFr = document.getElementById("msb-fr");
+    // FR dot
+    var msbFr = document.getElementById('msb-fr');
     if (msbFr) {
-      const s = (d.fr_status || "—").toLowerCase();
-      const active = s === "active";
-      msbFr.textContent = active ? "●" : "○";
-      msbFr.className   = "msb-value msb-dot " + (active ? "msb-streaming" : "msb-idle");
-      msbFr.title       = active ? "CAPTIONS FLOWING" : "IDLE";
+      var fs = (d.fr_status || '—').toLowerCase();
+      msbFr.textContent = fs === 'active' ? '●' : '○';
+      msbFr.className   = 'msb-value msb-dot ' + (fs === 'active' ? 'msb-streaming' : 'msb-idle');
     }
 
-    const msbObs = document.getElementById("msb-obs");
+    // OBS dot
+    var msbObs = document.getElementById('msb-obs');
     if (msbObs) {
-      const ok = !!d.obs_ok;
-      msbObs.textContent = ok ? "●" : "○";
-      msbObs.className   = "msb-value msb-dot " + (ok ? "msb-streaming" : "msb-idle");
-      msbObs.title       = ok ? "ONLINE" : "OFFLINE";
+      msbObs.textContent = d.obs_ok ? '●' : '○';
+      msbObs.className   = 'msb-value msb-dot ' + (d.obs_ok ? 'msb-streaming' : 'msb-idle');
+      msbObs.title       = d.obs_ok ? 'ONLINE' : 'OFFLINE';
     }
 
-    const msbPearl = document.getElementById("msb-pearl");
+    // Pearl dot
+    var msbPearl = document.getElementById('msb-pearl');
     if (msbPearl) {
-      const ok = !!d.pearl_ok;
-      msbPearl.textContent = ok ? "●" : "○";
-      msbPearl.className   = "msb-value msb-dot " + (ok ? "msb-streaming" : "msb-idle");
-      msbPearl.title       = ok ? "ONLINE" : "OFFLINE";
+      msbPearl.textContent = d.pearl_ok ? '●' : '○';
+      msbPearl.className   = 'msb-value msb-dot ' + (d.pearl_ok ? 'msb-streaming' : 'msb-idle');
+      msbPearl.title       = d.pearl_ok ? 'ONLINE' : 'OFFLINE';
     }
 
-    const msbCaptions = document.getElementById("msb-captions");
-    if (msbCaptions) {
-      const ok = !!d.captions_ok;
-      msbCaptions.textContent = ok ? "●" : "○";
-      msbCaptions.className   = "msb-value msb-dot " + (ok ? "msb-streaming" : "msb-idle");
-      msbCaptions.title       = ok ? "ACTIVE" : "IDLE";
-    }
-
-    const msbElapsed = document.getElementById("msb-elapsed");
-    if (msbElapsed) msbElapsed.textContent = d.elapsed || "—";
-    // ── End Mission Status Bar ───────────────────────────────────────────
-
-    // Hardware
-    const hw = document.getElementById("hardware-badge");
-    if (hw) hw.textContent = d.hardware || "—";
-
-    // Stream state
-    const ss = document.getElementById("stream-state");
-    if (ss) {
-      ss.textContent = (d.stream_state || "idle").toUpperCase();
-      ss.className = "state-badge state-" + (d.stream_state || "idle");
+    // Captions dot
+    var msbCap = document.getElementById('msb-captions');
+    if (msbCap) {
+      msbCap.textContent = d.captions_ok ? '●' : '○';
+      msbCap.className   = 'msb-value msb-dot ' + (d.captions_ok ? 'msb-streaming' : 'msb-idle');
     }
 
     // Elapsed
-    const el = document.getElementById("session-elapsed");
-    if (el) el.textContent = d.elapsed || "—";
+    var msbEl = document.getElementById('msb-elapsed');
+    if (msbEl) msbEl.textContent = d.elapsed || '—';
 
-    // Ticks
-    const tc = document.getElementById("tick-count");
-    if (tc) tc.textContent = d.tick ?? 0;
+    // Stream state badge
+    var ss = document.getElementById('stream-state');
+    if (ss) {
+      ss.textContent = (d.stream_state || 'idle').toUpperCase();
+      ss.className   = 'state-badge state-' + (d.stream_state || 'idle');
+    }
 
-    // Alerts
-    const al = document.getElementById("alerts-list");
-    if (al) al.textContent = d.alerts && d.alerts.length ? d.alerts.join(", ") : "none";
+    // Session elapsed
+    var sel = document.getElementById('session-elapsed');
+    if (sel) sel.textContent = d.elapsed || '—';
+
+    // Ticks + alerts
+    var tc = document.getElementById('tick-count');
+    if (tc) tc.textContent = d.tick != null ? d.tick : 0;
+    document.dispatchEvent(new CustomEvent('miktos:tick', { detail: { tick: d.tick || 0 } }));
+
+    var al = document.getElementById('alerts-list');
+    if (al) al.textContent = (d.alerts && d.alerts.length) ? d.alerts.join(', ') : 'none';
 
     // Compact health chip
-    const chipObs = document.getElementById("chip-obs-dot");
-    if (chipObs) chipObs.className = "hchip-dot " + (d.obs_ok ? "hchip-ok" : "hchip-err");
-    const chipObsTxt = document.getElementById("chip-obs-txt");
-    if (chipObsTxt) chipObsTxt.textContent = d.obs_ok ? "Online" : "Offline";
-    const chipPearl = document.getElementById("chip-pearl-dot");
-    if (chipPearl) chipPearl.className = "hchip-dot " + (d.pearl_ok ? "hchip-ok" : "hchip-err");
-    const chipPearlTxt = document.getElementById("chip-pearl-txt");
-    if (chipPearlTxt) chipPearlTxt.textContent = d.pearl_ok ? "Online" : "Offline";
-    const chipCap = document.getElementById("chip-captions-dot");
-    if (chipCap) chipCap.className = "hchip-dot " + (d.captions_ok ? "hchip-ok" : "hchip-neutral");
-    const chipCapTxt = document.getElementById("chip-captions-txt");
-    if (chipCapTxt) chipCapTxt.textContent = d.captions_ok ? "Active" : "Inactive";
+    function setChip(dotId, txtId, ok, onText, offText) {
+      var dot = document.getElementById(dotId);
+      var txt = document.getElementById(txtId);
+      if (dot) dot.className = 'hchip-dot ' + (ok ? 'hchip-ok' : 'hchip-err');
+      if (txt) txt.textContent = ok ? onText : offText;
+    }
+    setChip('chip-obs-dot',      'chip-obs-txt',      d.obs_ok,      'Online',   'Offline');
+    setChip('chip-pearl-dot',    'chip-pearl-txt',    d.pearl_ok,    'Online',   'Offline');
+    setChip('chip-captions-dot', 'chip-captions-txt', d.captions_ok, 'Active',   'Inactive');
 
-    // Pearl layouts
-    const pl = document.getElementById("pearl-layouts");
+    // Pearl layouts (left rail)
+    var pl = document.getElementById('pearl-layouts');
     if (pl) {
       if (d.pearl_layouts && d.pearl_layouts.length) {
-        pl.innerHTML = d.pearl_layouts.map(l => {
-          const btns = (l.layouts || []).map(lay =>
-            `<button class="btn-layout${lay.id === l.active_id ? ' btn-layout--active' : ''}"
-                     onclick="switchPearlLayout('${l.channel}','${lay.id}')">${lay.name}</button>`
-          ).join("");
-          return `<div class="layout-row">
-            <span class="label">Ch&nbsp;${l.channel}</span>
-            <div class="layout-btns">${btns || `<span class="layout-name">${l.active_name}</span>`}</div>
-          </div>`;
-        }).join("");
+        pl.innerHTML = d.pearl_layouts.map(function (l) {
+          var btns = (l.layouts || []).map(function (lay) {
+            var active = lay.id === l.active_id ? ' btn-layout--active' : '';
+            return '<button class="btn-layout' + active + '"' +
+              ' onclick="switchPearlLayout(\'' + l.channel + '\',\'' + lay.id + '\')">' +
+              lay.name + '</button>';
+          }).join('');
+          return '<div class="layout-row">' +
+            '<span class="label">Ch&nbsp;' + l.channel + '</span>' +
+            '<div class="layout-btns">' +
+              (btns || '<span class="layout-name">' + l.active_name + '</span>') +
+            '</div></div>';
+        }).join('');
       } else {
         pl.innerHTML = '<span class="muted">—</span>';
       }
     }
 
     // Pipeline slots
-    const ps = document.getElementById("pipeline-slots");
+    var ps = document.getElementById('pipeline-slots');
     if (ps) {
       if (d.pipeline_slots && d.pipeline_slots.length) {
-        ps.innerHTML = d.pipeline_slots.map(s =>
-          `<li class="slot">${s}</li>`
-        ).join("");
+        ps.innerHTML = d.pipeline_slots.map(function (s) {
+          return '<li class="slot">' + s + '</li>';
+        }).join('');
       } else {
         ps.innerHTML = '<li class="muted">—</li>';
       }
     }
 
-    // Session control buttons — driven by session_running from SSE
-    const btnStart     = document.getElementById("btn-start");
-    const btnStop      = document.getElementById("btn-stop");
-    const btnFinishing = document.getElementById("btn-finishing");
+    // Session buttons
+    var btnStart     = document.getElementById('btn-start');
+    var btnStop      = document.getElementById('btn-stop');
+    var btnFinishing = document.getElementById('btn-finishing');
     if (btnStart && btnStop && btnFinishing) {
-      const running = !!d.session_running;
-      btnStart.classList.toggle("hidden", running);
-      btnStop.classList.toggle("hidden", !running);
-      btnFinishing.classList.add("hidden");
+      var running = !!d.session_running;
+      btnStart.classList.toggle('hidden', running);
+      btnStop.classList.toggle('hidden', !running);
+      btnFinishing.classList.add('hidden');
+    }
+
+    // Rehearsal banner
+    var banner = document.getElementById('rehearsal-banner');
+    if (banner) {
+      banner.style.display = (mode === 'rehearsal' || d.rehearsal_active) ? 'block' : 'none';
     }
   };
-});
 
-async function startSession() {
-  const status = document.getElementById("control-status");
-  if (status) status.textContent = "Starting…";
-  try {
-    const r = await fetch("/api/session/start", { method: "POST" });
-    const body = await r.json();
-    if (r.ok && body.success) {
-      if (status) status.textContent = "Started (PID " + body.pid + ")";
-    } else {
-      if (status) status.textContent = body.error || "Failed to start";
+  // ── Session control ──────────────────────────────────────────────────
+  async function startSession() {
+    var status = document.getElementById('control-status');
+    if (status) status.textContent = 'Starting…';
+    try {
+      var r    = await fetch('/api/session/start', { method: 'POST' });
+      var body = await r.json();
+      if (r.ok && body.success) {
+        if (status) status.textContent = 'Started (PID ' + body.pid + ')';
+      } else {
+        if (status) status.textContent = body.error || 'Failed to start';
+      }
+    } catch (err) {
+      if (status) status.textContent = 'Error: ' + err.message;
     }
-  } catch (err) {
-    if (status) status.textContent = "Error: " + err.message;
   }
-}
 
-async function switchPearlLayout(channelId, layoutId) {
-  try {
-    await fetch("/api/pearl/switch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channel_id: channelId, layout_id: layoutId }),
-    });
-  } catch (err) {
-    console.error("Layout switch failed:", err);
-  }
-}
-
-async function stopSession() {
-  const btnStop      = document.getElementById("btn-stop");
-  const btnFinishing = document.getElementById("btn-finishing");
-  const status       = document.getElementById("control-status");
-  if (btnStop)      btnStop.classList.add("hidden");
-  if (btnFinishing) btnFinishing.classList.remove("hidden");
-  if (status) status.textContent = "Stopping…";
-  try {
-    const r = await fetch("/api/session/stop", { method: "POST" });
-    const body = await r.json();
-    if (!r.ok || !body.success) {
-      if (btnStop)      btnStop.classList.remove("hidden");
-      if (btnFinishing) btnFinishing.classList.add("hidden");
-      if (status) status.textContent = body.error || "Failed to stop";
-    } else {
-      if (status) status.textContent = "SIGINT sent — pipeline finishing…";
+  async function stopSession() {
+    var btnStop      = document.getElementById('btn-stop');
+    var btnFinishing = document.getElementById('btn-finishing');
+    var status       = document.getElementById('control-status');
+    if (btnStop)      btnStop.classList.add('hidden');
+    if (btnFinishing) btnFinishing.classList.remove('hidden');
+    if (status) status.textContent = 'Stopping…';
+    try {
+      var r    = await fetch('/api/session/stop', { method: 'POST' });
+      var body = await r.json();
+      if (!r.ok || !body.success) {
+        if (btnStop)      btnStop.classList.remove('hidden');
+        if (btnFinishing) btnFinishing.classList.add('hidden');
+        if (status) status.textContent = body.error || 'Failed to stop';
+      } else {
+        if (status) status.textContent = 'Pipeline finishing…';
+      }
+    } catch (err) {
+      if (status) status.textContent = 'Error: ' + err.message;
     }
-  } catch (err) {
-    if (status) status.textContent = "Error: " + err.message;
   }
-}
+
+  async function switchPearlLayout(channelId, layoutId) {
+    try {
+      await fetch('/api/pearl/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel_id: channelId, layout_id: layoutId }),
+      });
+    } catch (err) {
+      console.error('Layout switch failed:', err);
+    }
+  }
+
+  window.startSession       = startSession;
+  window.stopSession        = stopSession;
+  window.switchPearlLayout  = switchPearlLayout;
+
+}());
 </script>
 {% endblock %}

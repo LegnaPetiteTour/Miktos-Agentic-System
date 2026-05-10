@@ -1,100 +1,108 @@
 {% extends "base.html" %}
-{% block title %}Miktos — Home{% endblock %}
+{% block title %}Miktos — Pre-flight{% endblock %}
 {% block content %}
 <section class="home-shell">
 
-  <header class="home-header">
-    <h1 class="home-title">Pre-flight</h1>
-    <p class="home-subtitle">Select a production mode, verify devices, then enter production.</p>
-  </header>
-
   <div class="preflight-card">
-    <div class="preflight-grid">
 
-      <!-- ── SESSION ────────────────────────────────────────────── -->
-      <section class="preflight-section">
-        <h2 class="pf-heading">Session</h2>
-        <div class="info-row">
-          <span class="info-label">Current</span>
-          <strong class="info-value" id="home-session-name">—</strong>
-        </div>
-        <div class="info-row">
-          <span class="info-label">State</span>
-          <strong class="info-value" id="home-stream-badge">—</strong>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Hardware</span>
-          <strong class="info-value" id="home-hw-val">—</strong>
-        </div>
-        <div class="info-row">
-          <span class="info-label">YouTube EN</span>
-          <strong class="info-value info-muted">configured in Setup</strong>
-        </div>
-        <div class="info-row info-row--last">
-          <span class="info-label">YouTube FR</span>
-          <strong class="info-value info-muted">configured in Setup</strong>
-        </div>
-      </section>
+    <!-- ══ 1. DEVICE READINESS ══════════════════════════════════════════ -->
+    <!-- Dominant section — operator confirms "can I go live?" first      -->
+    <div class="pf-section-label">Device Readiness</div>
+    <div class="rdy-grid">
 
-      <!-- ── PRODUCTION MODE ────────────────────────────────────── -->
-      <section class="preflight-section">
-        <h2 class="pf-heading">Production Mode</h2>
-        <div class="mode-grid">
-          <button class="mode-card" data-mode="pearl-only">
-            <strong>Pearl Only</strong>
-            <span>EN/FR channel encoding via Pearl hardware encoder</span>
-          </button>
-          <button class="mode-card" data-mode="obs-only">
-            <strong>OBS Only</strong>
-            <span>Software compositor — stream and record via OBS</span>
-          </button>
-          <button class="mode-card" data-mode="pearl-obs">
-            <strong>Pearl + OBS</strong>
-            <span>Hybrid — Pearl encodes, OBS composites graphics</span>
-          </button>
-          <button class="mode-card" data-mode="rehearsal">
-            <strong>Rehearsal</strong>
-            <span>Full cockpit visible, no live output sent</span>
-          </button>
+      <div class="rdy-card rdy-card--neutral" id="rdy-card-obs">
+        <div class="rdy-card-top">
+          <span class="rdy-dot rdy-dot--neutral" id="rdy-dot-obs"></span>
+          <span class="rdy-device-name">OBS</span>
         </div>
-      </section>
+        <div class="rdy-status rdy-status--neutral" id="rdy-status-obs">—</div>
+        <div class="rdy-detail" id="rdy-detail-obs">—</div>
+      </div>
 
-      <!-- ── DEVICE READINESS ───────────────────────────────────── -->
-      <section class="preflight-section">
-        <h2 class="pf-heading">Device Readiness</h2>
-        <div class="ready-row" id="rdy-obs-row">
-          <span class="info-label">OBS</span>
-          <strong id="rdy-obs-text">—</strong>
+      <div class="rdy-card rdy-card--neutral" id="rdy-card-pearl">
+        <div class="rdy-card-top">
+          <span class="rdy-dot rdy-dot--neutral" id="rdy-dot-pearl"></span>
+          <span class="rdy-device-name">Pearl</span>
         </div>
-        <div class="ready-row" id="rdy-pearl-row">
-          <span class="info-label">Pearl</span>
-          <strong id="rdy-pearl-text">—</strong>
+        <div class="rdy-status rdy-status--neutral" id="rdy-status-pearl">—</div>
+        <div class="rdy-detail" id="rdy-detail-pearl">—</div>
+      </div>
+
+      <div class="rdy-card rdy-card--neutral" id="rdy-card-captions">
+        <div class="rdy-card-top">
+          <span class="rdy-dot rdy-dot--neutral" id="rdy-dot-captions"></span>
+          <span class="rdy-device-name">Captions</span>
         </div>
-        <div class="ready-row" id="rdy-captions-row">
-          <span class="info-label">Captions</span>
-          <strong id="rdy-captions-text">—</strong>
-        </div>
-        <div class="ready-row ready-row--last" id="rdy-hw-row">
-          <span class="info-label">Hardware</span>
-          <strong id="rdy-hw-text">—</strong>
-        </div>
-      </section>
+        <div class="rdy-status rdy-status--neutral" id="rdy-status-captions">—</div>
+        <div class="rdy-detail" id="rdy-detail-hw">—</div>
+      </div>
 
     </div>
 
+    <!-- ══ 2. PRODUCTION MODE ════════════════════════════════════════════ -->
+    <!-- Horizontal strip — selected mode fully lit, others dimmed         -->
+    <div class="pf-section-label pf-section-label--spaced">Production Mode</div>
+    <div class="mode-strip">
+      <button class="mode-btn" data-mode="pearl-only">
+        <strong>Pearl Only</strong>
+        <span>EN/FR via Pearl hardware encoder</span>
+      </button>
+      <button class="mode-btn" data-mode="obs-only">
+        <strong>OBS Only</strong>
+        <span>Stream and record via OBS</span>
+      </button>
+      <button class="mode-btn" data-mode="pearl-obs">
+        <strong>Pearl + OBS</strong>
+        <span>Pearl encodes, OBS composites</span>
+      </button>
+      <button class="mode-btn" data-mode="rehearsal">
+        <strong>Rehearsal</strong>
+        <span>Full cockpit, no live output</span>
+      </button>
+    </div>
+
+    <!-- ══ 3. SESSION CONTEXT (thin strip — historical, not action-critical) -->
+    <div class="session-strip">
+      <span class="ss-item">
+        <span class="ss-label">Session</span>
+        <strong class="ss-val" id="home-session-name">—</strong>
+      </span>
+      <span class="ss-sep">·</span>
+      <span class="ss-item">
+        <span class="ss-label">State</span>
+        <strong class="ss-val" id="home-stream-badge">—</strong>
+      </span>
+      <span class="ss-sep">·</span>
+      <span class="ss-item">
+        <span class="ss-label">Hardware</span>
+        <strong class="ss-val" id="home-hw-val">—</strong>
+      </span>
+      <span class="ss-sep">·</span>
+      <span class="ss-item">
+        <span class="ss-label">YouTube EN</span>
+        <strong class="ss-val ss-val--muted">configured in Setup</strong>
+      </span>
+      <span class="ss-sep">·</span>
+      <span class="ss-item">
+        <span class="ss-label">YouTube FR</span>
+        <strong class="ss-val ss-val--muted">configured in Setup</strong>
+      </span>
+    </div>
+
+    <!-- ══ 4. GATE FOOTER ════════════════════════════════════════════════ -->
     <footer class="preflight-footer">
       <div class="pf-warning" id="home-warnings"></div>
       <a class="btn-enter" id="btn-enter" href="/produce">Enter Production →</a>
     </footer>
-  </div>
 
+  </div>
 </section>
 
 <script>
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'miktos_mode';
+  var STORAGE_KEY  = 'miktos_mode';
   var DEFAULT_MODE = 'pearl-only';
   var _obsOk   = false;
   var _pearlOk = false;
@@ -103,10 +111,32 @@
     return localStorage.getItem(STORAGE_KEY) || DEFAULT_MODE;
   }
 
+  // ── Helpers ────────────────────────────────────────────────────────────
+  function setCard(cardId, dotId, statusId, state, statusText) {
+    // state: 'ok' | 'err' | 'neutral'
+    var card = document.getElementById(cardId);
+    if (card) {
+      card.className = 'rdy-card rdy-card--' + state;
+    }
+    var dot = document.getElementById(dotId);
+    if (dot) dot.className = 'rdy-dot rdy-dot--' + state;
+
+    var st = document.getElementById(statusId);
+    if (st) {
+      st.textContent = statusText;
+      st.className = 'rdy-status rdy-status--' + state;
+    }
+  }
+
+  function setDetail(detailId, text) {
+    var el = document.getElementById(detailId);
+    if (el) el.textContent = text || '—';
+  }
+
   // ── Mode selector ──────────────────────────────────────────────────────
   function applyMode(mode) {
-    document.querySelectorAll('.mode-card').forEach(function (btn) {
-      btn.classList.toggle('mode-card--selected', btn.dataset.mode === mode);
+    document.querySelectorAll('.mode-btn').forEach(function (btn) {
+      btn.classList.toggle('mode-btn--selected', btn.dataset.mode === mode);
     });
     localStorage.setItem(STORAGE_KEY, mode);
     updateEnter(mode);
@@ -117,8 +147,8 @@
     mode = mode || currentMode();
     var btn    = document.getElementById('btn-enter');
     var warnEl = document.getElementById('home-warnings');
-    var msg    = '';
-    var state  = 'ok';    // 'ok' | 'warn' | 'err'
+    var msg     = '';
+    var state   = 'ok';
     var blocked = false;
 
     if (mode === 'rehearsal') {
@@ -139,12 +169,14 @@
       }
     } else if (mode === 'pearl-obs') {
       if (!_obsOk && !_pearlOk) {
-        msg = '⚠ Both OBS and Pearl are unreachable.';
+        msg = '⚠ Both OBS and Pearl are unreachable — cannot enter production.';
         state = 'err'; blocked = true;
       } else if (!_obsOk) {
-        msg = '⚠ OBS unreachable — hybrid mode will use Pearl only.'; state = 'warn';
+        msg = '⚠ OBS is unreachable — Pearl + OBS mode requires both devices.';
+        state = 'err'; blocked = true;
       } else if (!_pearlOk) {
-        msg = '⚠ Pearl unreachable — hybrid mode will use OBS only.'; state = 'warn';
+        msg = '⚠ Pearl is unreachable — Pearl + OBS mode requires both devices.';
+        state = 'err'; blocked = true;
       } else {
         msg = '✓ OBS and Pearl connected.';
       }
@@ -165,22 +197,50 @@
     }
   }
 
-  // Init
+  // ── Enrich device cards with live detail (non-blocking) ───────────────
+  function fetchOBSDetail(version) {
+    fetch('/api/switcher/obs/scenes')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var scenes = Array.isArray(d.scenes) ? d.scenes.length : 0;
+        var ver    = version ? 'v' + version : '';
+        setDetail('rdy-detail-obs',
+          [ver, scenes ? scenes + ' scenes' : ''].filter(Boolean).join(' · ') || '—');
+      })
+      .catch(function () {
+        if (version) setDetail('rdy-detail-obs', 'v' + version);
+      });
+  }
+
+  function fetchPearlDetail() {
+    fetch('/api/pearl/channels')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var channels = Array.isArray(d.channels) ? d.channels.length : 0;
+        fetch('/api/pearl/inputs')
+          .then(function (r2) { return r2.json(); })
+          .then(function (d2) {
+            var inputs = Array.isArray(d2.inputs) ? d2.inputs.length : 0;
+            var parts  = [];
+            if (channels) parts.push(channels + ' channels');
+            if (inputs)   parts.push(inputs   + ' inputs');
+            setDetail('rdy-detail-pearl', parts.join(' · ') || '—');
+          })
+          .catch(function () {
+            if (channels) setDetail('rdy-detail-pearl', channels + ' channels');
+          });
+      })
+      .catch(function () {});
+  }
+
+  // ── Init mode ─────────────────────────────────────────────────────────
   applyMode(localStorage.getItem(STORAGE_KEY) || DEFAULT_MODE);
-  document.querySelectorAll('.mode-card').forEach(function (btn) {
+  document.querySelectorAll('.mode-btn').forEach(function (btn) {
     btn.addEventListener('click', function () { applyMode(btn.dataset.mode); });
   });
 
   // ── Device readiness via SSE ───────────────────────────────────────────
-  function setReady(rowId, txtId, stateClass, label) {
-    var row = document.getElementById(rowId);
-    if (row) {
-      var isLast = row.classList.contains('ready-row--last');
-      row.className = 'ready-row ready-row--' + stateClass + (isLast ? ' ready-row--last' : '');
-    }
-    var txt = document.getElementById(txtId);
-    if (txt) txt.textContent = label;
-  }
+  var _detailFetched = false;
 
   var es = new EventSource('/api/status/stream');
   es.onmessage = function (e) {
@@ -189,16 +249,27 @@
       _obsOk   = !!d.obs_ok;
       _pearlOk = !!d.pearl_ok;
 
-      setReady('rdy-obs-row',      'rdy-obs-text',
-        _obsOk   ? 'ok' : 'err',     _obsOk   ? 'Connected' : 'Unreachable');
-      setReady('rdy-pearl-row',    'rdy-pearl-text',
-        _pearlOk ? 'ok' : 'err',     _pearlOk ? 'Connected' : 'Unreachable');
-      setReady('rdy-captions-row', 'rdy-captions-text',
-        d.captions_ok ? 'ok' : 'neutral', d.captions_ok ? 'Active' : 'Inactive');
-      var hw = d.hardware || '—';
-      setReady('rdy-hw-row', 'rdy-hw-text',
-        hw !== 'unknown' && hw !== '—' ? 'ok' : 'neutral', hw);
+      // OBS card
+      setCard('rdy-card-obs', 'rdy-dot-obs', 'rdy-status-obs',
+        _obsOk ? 'ok' : 'err',
+        _obsOk ? 'Connected' : 'Unreachable');
 
+      // Pearl card
+      setCard('rdy-card-pearl', 'rdy-dot-pearl', 'rdy-status-pearl',
+        _pearlOk ? 'ok' : 'err',
+        _pearlOk ? 'Online' : 'Unreachable');
+
+      // Captions card
+      var capOk = !!d.captions_ok;
+      setCard('rdy-card-captions', 'rdy-dot-captions', 'rdy-status-captions',
+        capOk ? 'ok' : 'neutral',
+        capOk ? 'Active' : 'Inactive');
+
+      // Hardware detail under Captions card
+      var hw = d.hardware || '—';
+      setDetail('rdy-detail-hw', hw !== 'unknown' ? hw : '—');
+
+      // Session strip
       var snEl = document.getElementById('home-session-name');
       if (snEl) snEl.textContent = d.session_name || '—';
 
@@ -209,7 +280,14 @@
       if (badge) {
         var s = d.stream_state || 'idle';
         badge.textContent = s.toUpperCase();
-        badge.className = 'info-value status-stream--' + s;
+        badge.className = 'ss-val status-stream--' + s;
+      }
+
+      // Enrich cards once on first successful data
+      if (!_detailFetched) {
+        _detailFetched = true;
+        if (_obsOk)   fetchOBSDetail(d.obs_version || null);
+        if (_pearlOk) fetchPearlDetail();
       }
 
       updateEnter(currentMode());

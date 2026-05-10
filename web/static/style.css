@@ -1,5 +1,4 @@
-/* Miktos Web Cockpit — style.css
-   Design tokens match Phase 9 rich terminal palette. */
+/* Miktos Web Cockpit — style.css */
 
 :root {
   --bg:          #0d1117;
@@ -14,7 +13,6 @@
   --nav-height:  3rem;
   --radius:      6px;
   --gap:         1rem;
-  /* Typography (Phase 19c-3) */
   --font-ui:   'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Menlo', ui-monospace, monospace;
 }
@@ -156,14 +154,7 @@ a:hover { text-decoration: underline; }
 .msb-idle      { color: var(--muted); }
 .msb-done      { color: var(--accent); }
 
-/* ── Cockpit multi-column grid (Phase 18) ───────────────────────────────── */
-/*
-  Four columns:
-    left    — EN channel   (240px fixed)
-  centre  — Production   (1fr, expands)
-    right   — FR channel   (240px fixed)
-    sidebar — Health/Auto  (220px fixed)
-*/
+/* ── Cockpit multi-column grid — mode-aware ────────────────────────────── */
 /* When placed inside .main (which is a grid), span all auto-fill columns */
 .main > .cockpit-grid {
   grid-column: 1 / -1;
@@ -171,13 +162,27 @@ a:hover { text-decoration: underline; }
 
 .cockpit-grid {
   display: grid;
-  grid-template-columns:
-    [left-start]    260px  [left-end centre-start]
-    1fr             [centre-end right-start]
-    280px           [right-end];
-  grid-template-rows: auto;
   gap: var(--gap);
+  padding: var(--gap);
   align-items: start;
+  /* Default: pearl-obs balanced 3-col */
+  grid-template-columns: 230px 1fr 210px;
+}
+
+/* pearl-obs + rehearsal: balanced */
+.cockpit-grid[data-mode="pearl-obs"],
+.cockpit-grid[data-mode="rehearsal"] {
+  grid-template-columns: 230px 1fr 210px;
+}
+
+/* pearl-only: left narrower (no OBS scene grid) */
+.cockpit-grid[data-mode="pearl-only"] {
+  grid-template-columns: 200px 1fr 210px;
+}
+
+/* obs-only: left narrower (no Pearl channel list) */
+.cockpit-grid[data-mode="obs-only"] {
+  grid-template-columns: 200px 1fr 210px;
 }
 
 /* Each column is a flex column so panels stack vertically */
@@ -188,9 +193,9 @@ a:hover { text-decoration: underline; }
   min-width: 0;   /* prevent blowout in narrow grid cells */
 }
 
-.cockpit-col-left       { grid-column: left-start   / left-end; }
-.cockpit-col-centre     { grid-column: centre-start / centre-end; }
-.cockpit-col-right-rail { grid-column: right-start  / right-end; }
+.cockpit-col-left       { grid-column: 1; }
+.cockpit-col-centre     { grid-column: 2; }
+.cockpit-col-right-rail { grid-column: 3; }
 
 /* Column header label */
 .col-label {
@@ -523,12 +528,11 @@ a:hover { text-decoration: underline; }
 
 /* ── Home / Pre-flight page ─────────────────────────────────────────────── */
 
-/* Shell: full-width in .main grid, centered, max 1180px */
+/* Shell: full-width in .main grid, no artificial max-width cap */
 .home-shell {
   grid-column: 1 / -1;
-  max-width: 1180px;
-  margin: 2rem auto 0;
   width: 100%;
+  margin: 0;
 }
 
 .home-header {
@@ -549,7 +553,7 @@ a:hover { text-decoration: underline; }
   margin: 0;
 }
 
-/* Main card */
+/* Main card — fills available width */
 .preflight-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -557,22 +561,182 @@ a:hover { text-decoration: underline; }
   padding: 1.5rem;
 }
 
-/* Three-column grid — sizes to content, no forced height */
+/* Three-column grid — fluid, fills card width */
 .preflight-grid {
   display: grid;
-  grid-template-columns: 1fr 1.35fr 1fr;
+  grid-template-columns: minmax(220px, 1fr) minmax(320px, 1.6fr) minmax(220px, 1fr);
   gap: 0;
   align-items: start;
 }
 
 .preflight-section {
   min-width: 0;
-  padding: 0 1.5rem;
+  padding: 0 1.75rem;
 }
 .preflight-section:first-child { padding-left: 0; }
 .preflight-section:last-child  { padding-right: 0; }
 .preflight-section + .preflight-section {
   border-left: 1px solid var(--border);
+}
+
+/* ── Section label (replaces .pf-heading in new Home layout) ── */
+.pf-section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+.pf-section-label--spaced { margin-top: 1.5rem; }
+
+/* ── Device readiness cards ─────────────────────────────────────── */
+.rdy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.rdy-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: border-color 0.2s;
+}
+.rdy-card--ok      { border-left-color: var(--green); }
+.rdy-card--err     { border-left-color: var(--red);   }
+.rdy-card--neutral { border-left-color: var(--border); }
+
+.rdy-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rdy-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.rdy-dot--ok      { background: var(--green); box-shadow: 0 0 5px rgba(63,185,80,0.55); }
+.rdy-dot--err     { background: var(--red); }
+.rdy-dot--neutral { background: #444; }
+
+.rdy-device-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rdy-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.rdy-status--ok      { color: var(--green); }
+.rdy-status--err     { color: var(--red);   }
+.rdy-status--neutral { color: var(--muted); }
+
+.rdy-detail {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
+}
+
+/* ── Mode strip (replaces .mode-grid + .mode-card) ──────────────── */
+.mode-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.mode-btn {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  opacity: 0.45;
+  transition: border-color 0.12s, opacity 0.12s;
+}
+.mode-btn:hover {
+  border-color: var(--accent);
+  opacity: 0.75;
+}
+.mode-btn--selected {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.08);
+  opacity: 1;
+}
+.mode-btn strong {
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: block;
+  color: var(--text);
+}
+.mode-btn--selected strong { color: var(--accent); }
+.mode-btn span {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ── Session strip ──────────────────────────────────────────────── */
+.session-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  margin-top: 1.25rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+.ss-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.ss-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.ss-val {
+  font-weight: 600;
+  color: var(--text);
+}
+.ss-val--muted {
+  font-weight: 400;
+  color: var(--muted);
+}
+.ss-sep {
+  color: var(--border);
+  font-size: 0.85rem;
+  user-select: none;
+}
+
+/* Responsive — stack on narrow screens */
+@media (max-width: 700px) {
+  .rdy-grid    { grid-template-columns: 1fr; }
+  .mode-strip  { grid-template-columns: repeat(2, 1fr); }
+  .session-strip { font-size: 0.72rem; }
 }
 
 /* Section heading */
