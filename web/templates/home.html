@@ -3,17 +3,18 @@
 {% block content %}
 <section class="home-shell">
 
+  <!-- ══ MAIN CARD ══════════════════════════════════════════════════════ -->
   <div class="preflight-card">
 
-    <!-- ══ 1. DEVICE READINESS ══════════════════════════════════════════ -->
-    <!-- Dominant section — operator confirms "can I go live?" first      -->
-    <div class="pf-section-label">Device Readiness</div>
-    <div class="rdy-grid">
+    <!-- 1. PRODUCTION SYSTEMS -->
+    <div class="pf-section-label">Production Systems</div>
+    <div class="rdy-grid rdy-grid--two">
 
       <div class="rdy-card rdy-card--neutral" id="rdy-card-obs">
         <div class="rdy-card-top">
           <span class="rdy-dot rdy-dot--neutral" id="rdy-dot-obs"></span>
           <span class="rdy-device-name">OBS</span>
+          <span class="rdy-device-type">Software compositor</span>
         </div>
         <div class="rdy-status rdy-status--neutral" id="rdy-status-obs">—</div>
         <div class="rdy-detail" id="rdy-detail-obs">—</div>
@@ -23,24 +24,15 @@
         <div class="rdy-card-top">
           <span class="rdy-dot rdy-dot--neutral" id="rdy-dot-pearl"></span>
           <span class="rdy-device-name">Pearl</span>
+          <span class="rdy-device-type">Hardware encoder</span>
         </div>
         <div class="rdy-status rdy-status--neutral" id="rdy-status-pearl">—</div>
         <div class="rdy-detail" id="rdy-detail-pearl">—</div>
       </div>
 
-      <div class="rdy-card rdy-card--neutral" id="rdy-card-captions">
-        <div class="rdy-card-top">
-          <span class="rdy-dot rdy-dot--neutral" id="rdy-dot-captions"></span>
-          <span class="rdy-device-name">Captions</span>
-        </div>
-        <div class="rdy-status rdy-status--neutral" id="rdy-status-captions">—</div>
-        <div class="rdy-detail" id="rdy-detail-hw">—</div>
-      </div>
-
     </div>
 
-    <!-- ══ 2. PRODUCTION MODE ════════════════════════════════════════════ -->
-    <!-- Horizontal strip — selected mode fully lit, others dimmed         -->
+    <!-- 2. PRODUCTION MODE -->
     <div class="pf-section-label pf-section-label--spaced">Production Mode</div>
     <div class="mode-strip">
       <button class="mode-btn" data-mode="pearl-only">
@@ -61,42 +53,104 @@
       </button>
     </div>
 
-    <!-- ══ 3. SESSION CONTEXT (thin strip — historical, not action-critical) -->
+    <!-- 3. SESSION CONTEXT — only what matters at pre-flight -->
     <div class="session-strip">
       <span class="ss-item">
-        <span class="ss-label">Session</span>
+        <span class="ss-label">Event</span>
         <strong class="ss-val" id="home-session-name">—</strong>
       </span>
       <span class="ss-sep">·</span>
       <span class="ss-item">
-        <span class="ss-label">State</span>
-        <strong class="ss-val" id="home-stream-badge">—</strong>
-      </span>
-      <span class="ss-sep">·</span>
-      <span class="ss-item">
-        <span class="ss-label">Hardware</span>
-        <strong class="ss-val" id="home-hw-val">—</strong>
-      </span>
-      <span class="ss-sep">·</span>
-      <span class="ss-item">
         <span class="ss-label">YouTube EN</span>
-        <strong class="ss-val ss-val--muted">configured in Setup</strong>
+        <strong class="ss-val ss-val--muted" id="home-yt-en">checking…</strong>
       </span>
       <span class="ss-sep">·</span>
       <span class="ss-item">
         <span class="ss-label">YouTube FR</span>
-        <strong class="ss-val ss-val--muted">configured in Setup</strong>
+        <strong class="ss-val ss-val--muted" id="home-yt-fr">checking…</strong>
       </span>
     </div>
 
-    <!-- ══ 4. GATE FOOTER ════════════════════════════════════════════════ -->
-    <footer class="preflight-footer">
-      <div class="pf-warning" id="home-warnings"></div>
+    <!-- 4. GATE FOOTER — button only, no warning text inside card -->
+    <footer class="preflight-footer preflight-footer--right">
       <a class="btn-enter" id="btn-enter" href="/produce">Enter Production →</a>
     </footer>
 
   </div>
+
+  <!-- ══ PRE-FLIGHT CHECKLIST — outside and below the card ══════════════ -->
+  <!-- Evaluates ALL conditions simultaneously.                            -->
+  <!-- Blocking issues (red) prevent entering production.                  -->
+  <!-- Advisory issues (amber) are surfaced but don't block.               -->
+  <div class="preflight-checklist" id="preflight-checklist">
+    <!-- populated by JS -->
+  </div>
+
 </section>
+
+<style>
+  /* Footer: button only, right-aligned */
+  .preflight-footer--right {
+    justify-content: flex-end;
+    border-top: 1px solid var(--border);
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+  }
+
+  /* Pre-flight checklist panel — below the card */
+  .preflight-checklist {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .chk-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    font-size: 0.84rem;
+    font-weight: 500;
+  }
+  .chk-item--blocking {
+    background: rgba(248, 81, 73, 0.07);
+    border-color: rgba(248, 81, 73, 0.25);
+    color: var(--text);
+  }
+  .chk-item--advisory {
+    background: rgba(210, 153, 34, 0.07);
+    border-color: rgba(210, 153, 34, 0.2);
+    color: var(--text);
+  }
+  .chk-item--ok {
+    background: rgba(63, 185, 80, 0.06);
+    border-color: rgba(63, 185, 80, 0.2);
+    color: var(--text);
+  }
+  .chk-item--rehearsal {
+    background: rgba(210, 153, 34, 0.06);
+    border-color: rgba(210, 153, 34, 0.15);
+    color: var(--text);
+  }
+
+  .chk-icon {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    width: 1.2rem;
+    text-align: center;
+  }
+  .chk-icon--err      { color: var(--red); }
+  .chk-icon--warn     { color: var(--yellow); }
+  .chk-icon--ok       { color: var(--green); }
+  .chk-icon--rehearsal{ color: var(--yellow); }
+
+  .chk-text { flex: 1; }
+  .chk-text strong { font-weight: 700; }
+  .chk-text span   { color: var(--muted); font-weight: 400; margin-left: 0.3rem; }
+</style>
 
 <script>
 (function () {
@@ -104,32 +158,29 @@
 
   var STORAGE_KEY  = 'miktos_mode';
   var DEFAULT_MODE = 'pearl-only';
+
+  // Live state — updated by SSE
   var _obsOk   = false;
   var _pearlOk = false;
+  var _ytEnOk  = false;
+  var _ytFrOk  = false;
 
   function currentMode() {
     return localStorage.getItem(STORAGE_KEY) || DEFAULT_MODE;
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────
+  // ── System cards ───────────────────────────────────────────────────────
   function setCard(cardId, dotId, statusId, state, statusText) {
-    // state: 'ok' | 'err' | 'neutral'
     var card = document.getElementById(cardId);
-    if (card) {
-      card.className = 'rdy-card rdy-card--' + state;
-    }
-    var dot = document.getElementById(dotId);
-    if (dot) dot.className = 'rdy-dot rdy-dot--' + state;
-
-    var st = document.getElementById(statusId);
-    if (st) {
-      st.textContent = statusText;
-      st.className = 'rdy-status rdy-status--' + state;
-    }
+    if (card) card.className = 'rdy-card rdy-card--' + state;
+    var dot  = document.getElementById(dotId);
+    if (dot)  dot.className  = 'rdy-dot rdy-dot--' + state;
+    var st   = document.getElementById(statusId);
+    if (st)  { st.textContent = statusText; st.className = 'rdy-status rdy-status--' + state; }
   }
 
-  function setDetail(detailId, text) {
-    var el = document.getElementById(detailId);
+  function setDetail(id, text) {
+    var el = document.getElementById(id);
     if (el) el.textContent = text || '—';
   }
 
@@ -139,53 +190,90 @@
       btn.classList.toggle('mode-btn--selected', btn.dataset.mode === mode);
     });
     localStorage.setItem(STORAGE_KEY, mode);
-    updateEnter(mode);
+    renderChecklist(mode);
   }
 
-  // ── Enter Production gate ──────────────────────────────────────────────
-  function updateEnter(mode) {
+  // ── Pre-flight checklist — evaluates ALL conditions ────────────────────
+  function renderChecklist(mode) {
     mode = mode || currentMode();
-    var btn    = document.getElementById('btn-enter');
-    var warnEl = document.getElementById('home-warnings');
-    var msg     = '';
-    var state   = 'ok';
+    var items   = [];   // { type: 'blocking'|'advisory'|'ok'|'rehearsal', icon, label, detail }
     var blocked = false;
 
     if (mode === 'rehearsal') {
-      msg = '✓ Rehearsal mode — no live output will be sent.';
-    } else if (mode === 'pearl-only') {
-      if (!_pearlOk) {
-        msg = '⚠ Pearl is unreachable — Pearl-only mode cannot enter production.';
-        state = 'err'; blocked = true;
-      } else {
-        msg = '✓ Pearl connected.';
+      items.push({
+        type: 'rehearsal', icon: '⚠',
+        label: 'Rehearsal mode active',
+        detail: 'No Pearl or OBS connection will be made. Safe for dry runs and training.'
+      });
+    } else {
+      // ── Blocking checks (mode-dependent) ────────────────────────────
+      var needsPearl = (mode === 'pearl-only' || mode === 'pearl-obs');
+      var needsOBS   = (mode === 'obs-only'   || mode === 'pearl-obs');
+
+      if (needsPearl && !_pearlOk) {
+        items.push({
+          type: 'blocking', icon: '⛔',
+          label: 'Pearl is unreachable',
+          detail: mode === 'pearl-only'
+            ? 'Pearl Only mode requires Pearl to be online.'
+            : 'Pearl + OBS mode requires both systems.'
+        });
+        blocked = true;
       }
-    } else if (mode === 'obs-only') {
-      if (!_obsOk) {
-        msg = '⚠ OBS is unreachable — OBS-only mode cannot enter production.';
-        state = 'err'; blocked = true;
-      } else {
-        msg = '✓ OBS connected.';
+
+      if (needsOBS && !_obsOk) {
+        items.push({
+          type: 'blocking', icon: '⛔',
+          label: 'OBS is unreachable',
+          detail: mode === 'obs-only'
+            ? 'OBS Only mode requires OBS to be running with WebSocket enabled.'
+            : 'Pearl + OBS mode requires both systems.'
+        });
+        blocked = true;
       }
-    } else if (mode === 'pearl-obs') {
-      if (!_obsOk && !_pearlOk) {
-        msg = '⚠ Both OBS and Pearl are unreachable — cannot enter production.';
-        state = 'err'; blocked = true;
-      } else if (!_obsOk) {
-        msg = '⚠ OBS is unreachable — Pearl + OBS mode requires both devices.';
-        state = 'err'; blocked = true;
-      } else if (!_pearlOk) {
-        msg = '⚠ Pearl is unreachable — Pearl + OBS mode requires both devices.';
-        state = 'err'; blocked = true;
-      } else {
-        msg = '✓ OBS and Pearl connected.';
+
+      // ── Advisory checks (not mode-dependent) ────────────────────────
+      if (!_ytEnOk) {
+        items.push({
+          type: 'advisory', icon: '⚠',
+          label: 'YouTube EN not configured',
+          detail: 'Go to Setup to add your YouTube EN credentials before streaming.'
+        });
+      }
+
+      if (!_ytFrOk) {
+        items.push({
+          type: 'advisory', icon: '⚠',
+          label: 'YouTube FR not configured',
+          detail: 'Go to Setup to add your YouTube FR credentials before streaming.'
+        });
+      }
+
+      // ── All clear ───────────────────────────────────────────────────
+      if (items.length === 0) {
+        items.push({
+          type: 'ok', icon: '✓',
+          label: 'All systems ready',
+          detail: 'You can enter production.'
+        });
       }
     }
 
-    if (warnEl) {
-      warnEl.textContent = msg;
-      warnEl.className = 'pf-warning pf-warning--' + state;
+    // Render
+    var panel = document.getElementById('preflight-checklist');
+    if (panel) {
+      panel.innerHTML = items.map(function (item) {
+        return '<div class="chk-item chk-item--' + item.type + '">' +
+          '<span class="chk-icon chk-icon--' + (item.type === 'blocking' ? 'err' : item.type === 'advisory' ? 'warn' : item.type) + '">' + item.icon + '</span>' +
+          '<span class="chk-text"><strong>' + esc(item.label) + '</strong>' +
+          (item.detail ? '<span>' + esc(item.detail) + '</span>' : '') +
+          '</span>' +
+        '</div>';
+      }).join('');
     }
+
+    // Gate the Enter Production button
+    var btn = document.getElementById('btn-enter');
     if (btn) {
       if (blocked) {
         btn.classList.add('btn-enter--disabled');
@@ -197,7 +285,86 @@
     }
   }
 
-  // ── Enrich device cards with live detail (non-blocking) ───────────────
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── YouTube credential check ───────────────────────────────────────────
+  function checkYouTube() {
+    fetch('/api/setup/status')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        _ytEnOk = !!(d.youtube_en_configured || d.youtube_configured);
+        _ytFrOk = !!(d.youtube_fr_configured || d.youtube_configured);
+
+        var enEl = document.getElementById('home-yt-en');
+        var frEl = document.getElementById('home-yt-fr');
+        if (enEl) {
+          enEl.textContent = _ytEnOk ? 'Configured' : 'Not configured';
+          enEl.className   = 'ss-val ' + (_ytEnOk ? 'ss-val--ok' : 'ss-val--muted');
+        }
+        if (frEl) {
+          frEl.textContent = _ytFrOk ? 'Configured' : 'Not configured';
+          frEl.className   = 'ss-val ' + (_ytFrOk ? 'ss-val--ok' : 'ss-val--muted');
+        }
+        renderChecklist(currentMode());
+      })
+      .catch(function () {
+        // Endpoint unavailable — treat as not configured
+        var enEl = document.getElementById('home-yt-en');
+        var frEl = document.getElementById('home-yt-fr');
+        if (enEl) { enEl.textContent = 'See Setup'; enEl.className = 'ss-val ss-val--muted'; }
+        if (frEl) { frEl.textContent = 'See Setup'; frEl.className = 'ss-val ss-val--muted'; }
+        renderChecklist(currentMode());
+      });
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  applyMode(localStorage.getItem(STORAGE_KEY) || DEFAULT_MODE);
+  document.querySelectorAll('.mode-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { applyMode(btn.dataset.mode); });
+  });
+  checkYouTube();
+
+  // ── SSE — system status ────────────────────────────────────────────────
+  var _detailFetched = false;
+
+  var es = new EventSource('/api/status/stream');
+  es.onmessage = function (e) {
+    try {
+      var d    = JSON.parse(e.data);
+      _obsOk   = !!d.obs_ok;
+      _pearlOk = !!d.pearl_ok;
+
+      // OBS card
+      setCard('rdy-card-obs', 'rdy-dot-obs', 'rdy-status-obs',
+        _obsOk ? 'ok' : 'err',
+        _obsOk ? 'Connected' : 'Unreachable');
+
+      // Pearl card
+      setCard('rdy-card-pearl', 'rdy-dot-pearl', 'rdy-status-pearl',
+        _pearlOk ? 'ok' : 'err',
+        _pearlOk ? 'Online' : 'Unreachable');
+
+      // Session strip — event name
+      var snEl = document.getElementById('home-session-name');
+      if (snEl) snEl.textContent = d.session_name || '—';
+
+      // Enrich system cards once on first successful data
+      if (!_detailFetched) {
+        _detailFetched = true;
+        if (_obsOk)   fetchOBSDetail(d.obs_version || null);
+        if (_pearlOk) fetchPearlDetail();
+      }
+
+      // Re-render checklist every tick (system status may have changed)
+      renderChecklist(currentMode());
+    } catch (_) {}
+  };
+
+  // ── System card detail enrichment ──────────────────────────────────────
   function fetchOBSDetail(version) {
     fetch('/api/switcher/obs/scenes')
       .then(function (r) { return r.json(); })
@@ -232,67 +399,6 @@
       })
       .catch(function () {});
   }
-
-  // ── Init mode ─────────────────────────────────────────────────────────
-  applyMode(localStorage.getItem(STORAGE_KEY) || DEFAULT_MODE);
-  document.querySelectorAll('.mode-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () { applyMode(btn.dataset.mode); });
-  });
-
-  // ── Device readiness via SSE ───────────────────────────────────────────
-  var _detailFetched = false;
-
-  var es = new EventSource('/api/status/stream');
-  es.onmessage = function (e) {
-    try {
-      var d = JSON.parse(e.data);
-      _obsOk   = !!d.obs_ok;
-      _pearlOk = !!d.pearl_ok;
-
-      // OBS card
-      setCard('rdy-card-obs', 'rdy-dot-obs', 'rdy-status-obs',
-        _obsOk ? 'ok' : 'err',
-        _obsOk ? 'Connected' : 'Unreachable');
-
-      // Pearl card
-      setCard('rdy-card-pearl', 'rdy-dot-pearl', 'rdy-status-pearl',
-        _pearlOk ? 'ok' : 'err',
-        _pearlOk ? 'Online' : 'Unreachable');
-
-      // Captions card
-      var capOk = !!d.captions_ok;
-      setCard('rdy-card-captions', 'rdy-dot-captions', 'rdy-status-captions',
-        capOk ? 'ok' : 'neutral',
-        capOk ? 'Active' : 'Inactive');
-
-      // Hardware detail under Captions card
-      var hw = d.hardware || '—';
-      setDetail('rdy-detail-hw', hw !== 'unknown' ? hw : '—');
-
-      // Session strip
-      var snEl = document.getElementById('home-session-name');
-      if (snEl) snEl.textContent = d.session_name || '—';
-
-      var hwEl = document.getElementById('home-hw-val');
-      if (hwEl) hwEl.textContent = hw;
-
-      var badge = document.getElementById('home-stream-badge');
-      if (badge) {
-        var s = d.stream_state || 'idle';
-        badge.textContent = s.toUpperCase();
-        badge.className = 'ss-val status-stream--' + s;
-      }
-
-      // Enrich cards once on first successful data
-      if (!_detailFetched) {
-        _detailFetched = true;
-        if (_obsOk)   fetchOBSDetail(d.obs_version || null);
-        if (_pearlOk) fetchPearlDetail();
-      }
-
-      updateEnter(currentMode());
-    } catch (_) {}
-  };
 }());
 </script>
 {% endblock %}

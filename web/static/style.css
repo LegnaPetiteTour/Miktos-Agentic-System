@@ -598,6 +598,10 @@ a:hover { text-decoration: underline; }
   grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
 }
+/* Two-card variant for Production Systems (OBS + Pearl only) */
+.rdy-grid--two {
+  grid-template-columns: repeat(2, 1fr);
+}
 
 .rdy-card {
   background: var(--bg);
@@ -634,6 +638,15 @@ a:hover { text-decoration: underline; }
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--text);
+}
+
+/* System type subtitle next to device name */
+.rdy-device-type {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: auto;
+  letter-spacing: 0.02em;
 }
 
 .rdy-status {
@@ -725,6 +738,10 @@ a:hover { text-decoration: underline; }
 .ss-val--muted {
   font-weight: 400;
   color: var(--muted);
+}
+.ss-val--ok {
+  font-weight: 600;
+  color: var(--green);
 }
 .ss-sep {
   color: var(--border);
