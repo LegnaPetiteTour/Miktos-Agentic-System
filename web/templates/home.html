@@ -56,18 +56,18 @@
     <!-- 3. SESSION CONTEXT — only what matters at pre-flight -->
     <div class="session-strip">
       <span class="ss-item">
-        <span class="ss-label">Event</span>
+        <span class="ss-label">Previous Event:</span>
         <strong class="ss-val" id="home-session-name">—</strong>
       </span>
       <span class="ss-sep">·</span>
       <span class="ss-item">
         <span class="ss-label">YouTube EN</span>
-        <strong class="ss-val ss-val--muted" id="home-yt-en">checking…</strong>
+        <strong class="ss-val ss-val--muted" id="home-dest-youtube_en">checking…</strong>
       </span>
       <span class="ss-sep">·</span>
       <span class="ss-item">
         <span class="ss-label">YouTube FR</span>
-        <strong class="ss-val ss-val--muted" id="home-yt-fr">checking…</strong>
+        <strong class="ss-val ss-val--muted" id="home-dest-youtube_fr">checking…</strong>
       </span>
     </div>
 
@@ -291,30 +291,31 @@
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // ── YouTube credential check ───────────────────────────────────────────
-  function checkYouTube() {
+  // ── Streaming destination status ──────────────────────────────────────
+  function checkDestinations() {
     fetch('/api/setup/status')
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        _ytEnOk = !!(d.youtube_en_configured || d.youtube_configured);
-        _ytFrOk = !!(d.youtube_fr_configured || d.youtube_configured);
+        var dests = d.destinations || {};
 
-        var enEl = document.getElementById('home-yt-en');
-        var frEl = document.getElementById('home-yt-fr');
-        if (enEl) {
-          enEl.textContent = _ytEnOk ? 'Configured' : 'Not configured';
-          enEl.className   = 'ss-val ' + (_ytEnOk ? 'ss-val--ok' : 'ss-val--muted');
-        }
-        if (frEl) {
-          frEl.textContent = _ytFrOk ? 'Configured' : 'Not configured';
-          frEl.className   = 'ss-val ' + (_ytFrOk ? 'ss-val--ok' : 'ss-val--muted');
-        }
+        // Update YouTube EN/FR in session strip
+        Object.keys(dests).forEach(function (key) {
+          var dest  = dests[key];
+          var el    = document.getElementById('home-dest-' + key);
+          if (!el) return;
+          el.textContent = dest.configured ? 'Configured' : 'Not configured';
+          el.className   = 'ss-val ' + (dest.configured ? 'ss-val--ok' : 'ss-val--muted');
+        });
+
+        // Store configured state for checklist gate
+        _ytEnOk = !!(dests.youtube_en && dests.youtube_en.configured);
+        _ytFrOk = !!(dests.youtube_fr && dests.youtube_fr.configured);
+
         renderChecklist(currentMode());
       })
       .catch(function () {
-        // Endpoint unavailable — treat as not configured
-        var enEl = document.getElementById('home-yt-en');
-        var frEl = document.getElementById('home-yt-fr');
+        var enEl = document.getElementById('home-dest-youtube_en');
+        var frEl = document.getElementById('home-dest-youtube_fr');
         if (enEl) { enEl.textContent = 'See Setup'; enEl.className = 'ss-val ss-val--muted'; }
         if (frEl) { frEl.textContent = 'See Setup'; frEl.className = 'ss-val ss-val--muted'; }
         renderChecklist(currentMode());
@@ -326,7 +327,7 @@
   document.querySelectorAll('.mode-btn').forEach(function (btn) {
     btn.addEventListener('click', function () { applyMode(btn.dataset.mode); });
   });
-  checkYouTube();
+  checkDestinations();
 
   // ── SSE — system status ────────────────────────────────────────────────
   var _detailFetched = false;

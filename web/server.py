@@ -75,6 +75,7 @@ templates.env.globals["css_version"] = _css_hash
 # API routers
 app.include_router(session.router, prefix="/api/session")
 app.include_router(session.sessions_router, prefix="/api/sessions")
+app.include_router(session.setup_router, prefix="/api/setup")
 app.include_router(runner.router, prefix="/api/session")
 app.include_router(status.router, prefix="/api/status")
 app.include_router(pearl.router, prefix="/api/pearl")
