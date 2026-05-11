@@ -1,130 +1,176 @@
-# Core Contract
+# Miktos Core Contract
 
-This document describes the invariants the Miktos architecture depends on.
-If you are extending the engine, adding a domain, or reviewing a PR, check
-your changes against these rules first.
-
----
-
-## 1. The Engine Does Not Know What Domain It Is In
-
-The engine (`engine/`) has zero imports from `domains/`. It does not know
-whether it is processing files, streams, or Pearl recordings. Domain knowledge
-lives in scanner tools and classifier functions injected at runtime. The engine
-processes the output of those tools, not the tools themselves.
-
-**Violation test:** If you find yourself writing `if domain == "streamlab":`
-inside `engine/`, stop. That logic belongs in the scanner tool.
+**Status:** Active  
+**ADR:** ADR-009 (adapter contract), ADR-010 (core/domain boundary)  
+**Last updated:** 2026-05-08
 
 ---
 
-## 2. The Scanner Adapter Is the Only Domain Seam
+## Purpose
 
-Each domain plugs into the engine through exactly one surface: a scanner tool
-that converts its world into the engine's internal task shape (`AlertItem` or
-equivalent). The engine's graph, state, router, and nodes are untouched.
+This document defines the strict boundary between the Miktos Core engine
+and every domain, adapter, UI layer, and product built on top of it.
 
-Three domains have passed through the same engine with zero engine changes:
+The boundary exists to make the engine reusable. Three independent domains
+(File Analyzer, Kosmos, StreamLab) have run through the same engine with
+zero engine modification between them. This is only possible if the boundary
+is respected.
+
+---
+
+## What the Core Engine Is
+
+Miktos Core is a closed-loop orchestration engine. It receives a goal,
+decomposes it into tasks, executes through adapters, reviews outcomes,
+makes decisions, updates state, and loops or exits.
+
+Core components:
 
 ```text
-Domain 1 — File Analyzer:   FileScannerTool     → MIME alert items
-Domain 2 — Kosmos:          FileScannerTool     → media alert items
-Domain 3 — StreamLab:       OBSMonitorTool      → stream alert items
-Domain 4 — Epiphan:         EpiphanMonitorTool  → Pearl alert items
+engine/graph/         LangGraph nodes, router, state machine
+engine/messaging/     MessageBus, pub/sub, agent-to-agent messaging
+engine/coordinator/   SessionCoordinator, parallel worker dispatch
+engine/services/      State store, run ID generation
+engine/models/        Shared schemas (RunState, TaskItem, etc.)
+engine/adapters/      DeviceAdapter protocol, capability flags, registry
+engine/tools/         Shared tool interfaces
 ```
-
-Adding a fifth domain means writing a scanner tool. It does not mean touching
-`engine/graph/`, `engine/coordinator/`, or any shared module.
 
 ---
 
-## 3. Workers Are Stateless and Side-Effect-Isolated
+## What the Core May Know About
 
-Every pipeline worker (`domains/streamlab_post/workers/*.py`) receives a
-payload dict and returns a result dict. Workers do not share state with each
-other. Side effects (file writes, API calls) happen inside the worker, not
-before or after it. This is why parallel execution is safe.
+The core engine operates on these abstractions only:
+
+- **Goals** — intent expressed as task items
+- **Tasks** — unit of work with input, expected output, success criteria
+- **Plans** — ordered or parallel sequences of tasks
+- **Execution steps** — single task execution through an adapter or tool
+- **Review results** — pass / fail / partial against success criteria
+- **State** — `RunState` — the single source of truth for a session
+- **Retries** — count, backoff, exhaustion policy
+- **Decisions** — continue / retry / replan / escalate / stop
+- **Errors** — structured, with recovery path or escalation trigger
+- **Artifacts** — opaque outputs from execution (file paths, IDs, payloads)
+- **Events** — typed events published to the MessageBus
+- **Adapters** — abstract capability providers conforming to `DeviceAdapter`
+
+---
+
+## What the Core Must Never Know About
+
+The following are domain-specific and must never appear in `engine/`:
+
+| Forbidden in core | Belongs in |
+| --- | --- |
+| OBS scene names | `engine/adapters/obs_adapter.py` or `domains/streamlab/` |
+| Pearl channel IDs | `engine/adapters/pearl_adapter.py` or session config |
+| YouTube video IDs | `domains/streamlab_post/workers/youtube_worker.py` |
+| StreamLab pipeline stages | `domains/streamlab_post/coordinator.py` |
+| ElevenLabs API behaviour | `domains/streamlab_post/workers/transcript_worker.py` |
+| Google Translate API behaviour | `domains/streamlab_post/workers/translation_worker.py` |
+| File organizer category rules | `domains/kosmos/` |
+| MIME classifier rules | `domains/file_analyzer/` |
+| UI layout decisions | `web/templates/` |
+| Cockpit panel rendering | `web/api/`, `web/templates/` |
+| Hardware-specific REST endpoints | `engine/adapters/` implementations |
+| Hardcoded device behaviour | `engine/adapters/` implementations |
+| Session config YAML structure | `domains/streamlab_post/config/` |
+
+---
+
+## The Boundary Rule
+
+If the core needs something from a domain, it must arrive through one of:
+
+1. **Adapter capability** — `adapter.capabilities().supports_layout_switch`
+2. **Task schema** — structured `TaskItem` with typed inputs
+3. **State object** — `RunState` fields only
+4. **Execution interface** — `adapter.switch_layout(layout_id, channel)`
+5. **Domain policy** — injected at runtime, never hardcoded in core
+
+**Wrong — domain logic leaking into core:**
 
 ```python
-# Correct
-result = worker.run({"file": path, "dry_run": True})
-
-# Wrong — do not do this
-worker.state["file"] = path
-result = worker.run({})
+# engine/graph/execution_node.py
+if device == "pearl":
+    client.switch_to_layout(channel_id=2, layout_id=9)
 ```
 
-`dry_run=True` must produce no irreversible side effects. Every worker that
-touches external systems must implement `dry_run` and every test must use it.
+**Correct — capability-driven, adapter-abstracted:**
+
+```python
+# engine/graph/execution_node.py
+if adapter.capabilities().supports_layout_switch:
+    adapter.switch_layout(task.layout_id, task.channel)
+```
 
 ---
 
-## 4. The Web Layer Is a Surface, Not a Controller
+## Adapter Contract
 
-`web/` renders state and forwards commands. It does not orchestrate. It does
-not contain business logic. When the operator clicks "Start Session", the web
-layer starts `run_session.py` — the same script the operator has always run
-from a terminal. The terminal path is always preserved as a fallback.
+Every adapter must conform to the `DeviceAdapter` Protocol defined in
+`engine/adapters/base.py`.
 
-The cockpit SSE streams (`/api/status/stream`) read from files and process
-objects. They do not write state, trigger transitions, or make decisions.
+Key invariants:
 
----
+1. `capabilities()` must never require a live hardware connection.
+2. All methods may return falsy or raise when hardware is unavailable.
+3. Unsupported actions must return a structured response — never silently fail.
+4. `health()` must never raise — always return a dict.
+5. Adapters own their hardware knowledge. The core never calls
+   device-specific APIs directly.
 
-## 5. State Is Files, Not Memory
+Capability flags drive cockpit rendering:
 
-All persistent state is written to disk as JSON before the process that wrote
-it exits. There is no in-memory-only state that matters across restarts. The
-SSE stream, session coordinator, action log, rehearsal mode, and run-of-show
-all read from files that survive a server restart.
+```python
+# Correct: render based on declared capabilities
+if adapter.capabilities().supports_layout_switch:
+    render_layout_panel()
 
-Consequence: every module that owns state has a `Path` constant
-(`ACTION_LOG_FILE`, `RUNOFSHOW_STATE_FILE`, etc.) that is monkeypatchable in
-tests. Tests must never read from or write to production data paths.
+# Wrong: render based on hardware name
+if hardware_name == "epiphan":
+    render_layout_panel()
+```
 
----
-
-## 6. Tests Are the Contract, Not the Documentation
-
-Every capability has a test. If something is not tested, it is not part of the
-contract — it may be removed without warning. 252 tests must pass before any
-PR merges. CI enforces this.
-
-Test discipline:
-- Tests use `dry_run=True` for workers that touch external systems
-- SSE endpoints are tested by patching `_event_stream` with a finite generator
-- Module-level path constants are monkeypatched — never use real data paths
-- `raise_server_exceptions=False` on `TestClient` for error-path tests
+Full capability flag list: `engine/adapters/base.py` → `AdapterCapabilities`.
 
 ---
 
-## 7. Lint Is Enforced, Not Optional
+## Engine Proof
 
-`ruff` runs in CI before tests. An unused import fails the build. No
-`# noqa` exceptions without a documented reason. Pylance errors in production
-files are fixed with `# type: ignore[<code>]` — not suppressed wholesale with
-`# type: ignore`.
+Three domains. Zero engine changes between them.
+
+```text
+Domain 1 — File Analyzer:  FileScannerTool    → MIME alert items
+Domain 2 — Kosmos:         FileScannerTool    → media alert items
+Domain 3 — StreamLab:      OBSMonitorTool     → stream alert items
+Domain 4 — Epiphan:        EpiphanMonitorTool → Pearl alert items
+```
+
+Verified: `git diff main -- engine/graph/` is empty between domain additions.
+The engine processes identically. Only the scanner tool and classifier
+function are injected at runtime.
 
 ---
 
-## 8. The `.env` File Is Not the Source of Truth for Defaults
+## Violations
 
-Defaults in code must match what is documented in `.env.example`. When you
-change a default (e.g. `PEARL_CHANNEL_EN` from `1` to `2`), update both the
-code and `.env.example` in the same commit. The `.env` file itself is
-gitignored and never committed.
+If you find domain-specific logic in `engine/`, it is a bug.
+Open an issue with label `core-contract-violation`.
+
+Examples of violations to watch for:
+
+- An import of `domains/` inside `engine/`
+- A hardcoded device name inside `engine/graph/`
+- A YouTube/Pearl/OBS-specific call inside `engine/coordinator/`
+- A pipeline stage name hardcoded inside `engine/`
 
 ---
 
-## Invariant Summary
+## Related Documents
 
-| # | Rule |
-|---|------|
-| 1 | Engine has no domain imports |
-| 2 | One scanner seam per domain |
-| 3 | Workers are stateless, `dry_run` required |
-| 4 | Web layer is a surface, not a controller |
-| 5 | State is files, not memory |
-| 6 | Tests are the contract |
-| 7 | Lint is enforced |
-| 8 | Code defaults match `.env.example` |
+- `engine/adapters/base.py` — `DeviceAdapter` Protocol + `AdapterCapabilities`
+- `PRODUCT_POSITIONING.md` — what Miktos is and is not
+- `ROADMAP.md` — phase history and architectural decisions
+- `CONTRIBUTING.md` — how to contribute

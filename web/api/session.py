@@ -135,3 +135,46 @@ async def session_report(session_name: str) -> HTMLResponse:
     if not reports:
         return HTMLResponse("<p>No report found for this session.</p>", status_code=404)
     return HTMLResponse(reports[0].read_text(encoding="utf-8"))
+
+
+# ---------------------------------------------------------------------------
+# /api/setup/* — pre-flight destination status (extensible per platform)
+# ---------------------------------------------------------------------------
+
+setup_router = APIRouter()
+
+
+@setup_router.get("/status")
+async def setup_status() -> JSONResponse:
+    """Return the configuration status of each streaming destination.
+
+    Shape:
+        {
+          "destinations": {
+            "youtube_en": { "configured": true,  "label": "YouTube EN", "video_id": "abc123" },
+            "youtube_fr": { "configured": false, "label": "YouTube FR", "video_id": null }
+          }
+        }
+
+    Add a new key under "destinations" for each future platform
+    (vimeo, instagram, tiktok, linkedin, facebook, x …).
+    """
+    cfg = _read_config()
+    yt = cfg.get("youtube", {})
+    en_id = (yt.get("en") or {}).get("video_id") or ""
+    fr_id = (yt.get("fr") or {}).get("video_id") or ""
+
+    return JSONResponse({
+        "destinations": {
+            "youtube_en": {
+                "configured": bool(en_id),
+                "label": "YouTube EN",
+                "video_id": en_id or None,
+            },
+            "youtube_fr": {
+                "configured": bool(fr_id),
+                "label": "YouTube FR",
+                "video_id": fr_id or None,
+            },
+        }
+    })

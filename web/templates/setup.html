@@ -2,31 +2,40 @@
 {% block title %}Miktos — Session Setup{% endblock %}
 
 {% block content %}
-<div class="panel setup-panel">
-  <h2 class="panel-title">Session Setup</h2>
+<div class="setup-layout">
   <form id="setup-form" onsubmit="submitConfig(event)">
 
-    <div class="field-group">
-      <label class="label" for="event_name">Event Name <span class="required">*</span></label>
-      <input class="input" type="text" id="event_name" name="event_name" required
-             placeholder="e.g. Pearl-Session-005" />
-    </div>
-
-    <div class="field-group">
-      <label class="label">Hardware</label>
-      <div class="radio-row">
-        <label class="radio-label">
-          <input type="radio" name="hardware" value="obs" id="hw-obs" />
-          OBS
-        </label>
-        <label class="radio-label">
-          <input type="radio" name="hardware" value="epiphan" id="hw-epiphan" checked />
-          Epiphan
-        </label>
+    <!-- ── Group 1: Session Identity ────────────────────────────────── -->
+    <div class="setup-group">
+      <div class="setup-group-label">Session Identity</div>
+      <div class="field-group">
+        <label class="label" for="event_name">Event Name <span class="required">*</span></label>
+        <input class="input" type="text" id="event_name" name="event_name" required
+               placeholder="e.g. Pearl-Session-005" />
       </div>
     </div>
 
-    <div id="epiphan-fields">
+    <!-- ── Group 2: Hardware ─────────────────────────────────────────── -->
+    <div class="setup-group">
+      <div class="setup-group-label">Hardware</div>
+      <div class="field-group">
+        <label class="label">Type</label>
+        <div class="radio-row">
+          <label class="radio-label">
+            <input type="radio" name="hardware" value="obs" id="hw-obs" />
+            OBS
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="hardware" value="epiphan" id="hw-epiphan" checked />
+            Epiphan Pearl
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Group 3: Channels (Epiphan) ──────────────────────────────── -->
+    <div class="setup-group" id="epiphan-fields">
+      <div class="setup-group-label">Channels</div>
       <div class="field-group">
         <label class="label" for="pearl_host">Pearl Host</label>
         <input class="input" type="text" id="pearl_host" name="pearl_host"
@@ -42,19 +51,25 @@
       </div>
     </div>
 
-    <div class="field-group">
-      <label class="label" for="youtube_en_video_id">YouTube EN Video ID</label>
-      <input class="input" type="text" id="youtube_en_video_id" name="youtube_en_video_id" />
+    <!-- ── Group 4: Destinations ─────────────────────────────────────── -->
+    <div class="setup-group">
+      <div class="setup-group-label">Destinations</div>
+      <div class="field-group">
+        <label class="label" for="youtube_en_video_id">YouTube EN Video ID</label>
+        <input class="input" type="text" id="youtube_en_video_id" name="youtube_en_video_id" />
+      </div>
+      <div class="field-group">
+        <label class="label" for="youtube_fr_video_id">YouTube FR Video ID</label>
+        <input class="input" type="text" id="youtube_fr_video_id" name="youtube_fr_video_id" />
+      </div>
     </div>
 
-    <div class="field-group">
-      <label class="label" for="youtube_fr_video_id">YouTube FR Video ID</label>
-      <input class="input" type="text" id="youtube_fr_video_id" name="youtube_fr_video_id" />
-    </div>
-
-    <div class="field-actions">
+    <!-- ── Actions ───────────────────────────────────────────────────── -->
+    <div class="field-actions setup-actions">
+      <button class="btn-secondary" type="button" disabled title="Validation coming soon">Validate</button>
       <button class="btn-primary" type="submit">Save Config</button>
     </div>
+
   </form>
 
   <div id="setup-result" class="setup-result"></div>

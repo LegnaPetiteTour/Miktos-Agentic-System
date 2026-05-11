@@ -26,7 +26,7 @@ health — no terminal required.
 ## What Works Today (Phase 19 — Production-Ready)
 
 | Capability | Status |
-|---|---|
+| --- | --- |
 | Post-stream closure pipeline (7 workers, 4 stages) | ✅ Live |
 | OBS WebSocket monitoring | ✅ Live |
 | Pearl (Epiphan) hardware integration | ✅ Live |
@@ -257,4 +257,3 @@ See [PRODUCT_POSITIONING.md](PRODUCT_POSITIONING.md) for what Miktos is and is n
 ## License
 
 MIT — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
-

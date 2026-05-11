@@ -1,97 +1,174 @@
-{# panel_graphics.html — Lower thirds, transitions, intro/outro panel (HTMX partial) #}
+{# panel_graphics.html — Lower thirds, transitions, bumpers (HTMX partial) #}
+
+<style>
+  #panel-graphics .gfx-section {
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+  #panel-graphics .gfx-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  #panel-graphics .gfx-section-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  #panel-graphics .gfx-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 0.35rem 0.6rem;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+    display: block;
+  }
+  #panel-graphics .gfx-input:focus {
+    outline: 1px solid var(--accent);
+    border-color: transparent;
+  }
+  #panel-graphics .gfx-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 0.35rem;
+  }
+  #panel-graphics .gfx-btn {
+    flex: 1;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: var(--font-ui);
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  #panel-graphics .gfx-btn:hover { border-color: var(--text); }
+  #panel-graphics .gfx-btn--onair {
+    background: rgba(248,81,73,0.12);
+    border-color: var(--red);
+    color: var(--red);
+  }
+  #panel-graphics .gfx-btn--onair:hover { background: rgba(248,81,73,0.22); }
+  #panel-graphics .gfx-btn--play {
+    background: rgba(63,185,80,0.08);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  #panel-graphics .gfx-btn--play:hover { background: rgba(63,185,80,0.18); }
+  #panel-graphics .gfx-status {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    min-height: 1rem;
+    font-family: var(--font-mono);
+  }
+</style>
+
 <section class="panel" id="panel-graphics">
   <h2 class="panel-title">Graphics</h2>
 
-  {# --- Lower Thirds --- #}
-  <fieldset style="border:1px solid var(--border, #444);border-radius:4px;padding:0.5rem;margin-bottom:0.75rem;">
-    <legend style="font-size:0.8rem;padding:0 0.25rem;">Lower Third</legend>
-    <input id="lt-name"  type="text" placeholder="Name"         class="input-field" style="width:100%;margin-bottom:0.35rem;" />
-    <input id="lt-title" type="text" placeholder="Title"        class="input-field" style="width:100%;margin-bottom:0.35rem;" />
-    <input id="lt-org"   type="text" placeholder="Organization" class="input-field" style="width:100%;margin-bottom:0.5rem;" />
-    <div style="display:flex;gap:0.5rem;">
-      <button class="btn btn-primary" onclick="lowerThirdOn()" style="flex:1;">On Air</button>
-      <button class="btn"             onclick="lowerThirdOff()" style="flex:1;">Off Air</button>
+  <!-- Lower Third -->
+  <div class="gfx-section">
+    <div class="gfx-section-label">Lower Third</div>
+    <input id="lt-name"  type="text" placeholder="Name"         class="gfx-input" />
+    <input id="lt-title" type="text" placeholder="Title / Role" class="gfx-input" />
+    <input id="lt-org"   type="text" placeholder="Organization" class="gfx-input" />
+    <div class="gfx-row">
+      <button class="gfx-btn gfx-btn--onair" onclick="lowerThirdOn()">● On Air</button>
+      <button class="gfx-btn" onclick="lowerThirdOff()">Off Air</button>
     </div>
-    <div id="lt-status" class="muted" style="font-size:0.75rem;margin-top:0.35rem;"></div>
-  </fieldset>
+    <div class="gfx-status" id="lt-status"></div>
+  </div>
 
-  {# --- Transition --- #}
-  <fieldset style="border:1px solid var(--border, #444);border-radius:4px;padding:0.5rem;margin-bottom:0.75rem;">
-    <legend style="font-size:0.8rem;padding:0 0.25rem;">Transition</legend>
-    <div style="display:flex;gap:0.5rem;align-items:center;">
-      <select id="tx-type" class="input-field" style="flex:1;">
+  <!-- Transition -->
+  <div class="gfx-section">
+    <div class="gfx-section-label">Transition</div>
+    <div class="gfx-row">
+      <select id="tx-type" class="gfx-input" style="margin-bottom:0;flex:1;">
         <option value="cut">Cut</option>
         <option value="fade">Fade</option>
-        <option value="wipe">Wipe</option>
       </select>
-      <button class="btn btn-primary" onclick="doTransition()" style="flex:1;">Transition</button>
+      <button class="gfx-btn" onclick="doTransition()" style="flex:0 0 auto;padding:0.35rem 0.85rem;">Go</button>
     </div>
-    <div id="tx-status" class="muted" style="font-size:0.75rem;margin-top:0.35rem;"></div>
-  </fieldset>
+    <div class="gfx-status" id="tx-status"></div>
+  </div>
 
-  {# --- Intro / Outro --- #}
-  <fieldset style="border:1px solid var(--border, #444);border-radius:4px;padding:0.5rem;">
-    <legend style="font-size:0.8rem;padding:0 0.25rem;">Bumpers</legend>
-    <div style="display:flex;gap:0.5rem;">
-      <button class="btn" onclick="triggerClip('intro')" style="flex:1;">▶ Intro</button>
-      <button class="btn" onclick="triggerClip('outro')" style="flex:1;">▶ Outro</button>
+  <!-- Bumpers -->
+  <div class="gfx-section">
+    <div class="gfx-section-label">Bumpers</div>
+    <div class="gfx-row">
+      <button class="gfx-btn gfx-btn--play" onclick="triggerClip('intro')">▶ Intro</button>
+      <button class="gfx-btn gfx-btn--play" onclick="triggerClip('outro')">▶ Outro</button>
     </div>
-    <div id="clip-status" class="muted" style="font-size:0.75rem;margin-top:0.35rem;"></div>
-  </fieldset>
+    <div class="gfx-status" id="clip-status"></div>
+  </div>
+
 </section>
 
 <script>
 (function () {
   function setStatus(id, msg, ok) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.textContent = msg;
-      el.style.color = ok ? "var(--color-ok, #4caf50)" : "var(--color-err, #f44336)";
-    }
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = ok === true ? 'var(--green)' : ok === false ? 'var(--red)' : 'var(--muted)';
   }
 
   async function apiPost(path, body) {
-    const r = await fetch(path, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
+    var r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     return r.json();
   }
 
   window.lowerThirdOn = async function () {
-    const name  = document.getElementById("lt-name").value.trim();
-    const title = document.getElementById("lt-title").value.trim();
-    const org   = document.getElementById("lt-org").value.trim();
-    if (!name) { setStatus("lt-status", "Name is required.", false); return; }
+    var name  = (document.getElementById('lt-name')  || {}).value || '';
+    var title = (document.getElementById('lt-title') || {}).value || '';
+    var org   = (document.getElementById('lt-org')   || {}).value || '';
+    if (!name.trim()) { setStatus('lt-status', 'Name is required.', false); return; }
     try {
-      const d = await apiPost("/api/graphics/lower_third", {name, title, org});
-      setStatus("lt-status", d.ok ? "On Air: " + d.text : "Error: " + d.error, d.ok);
-    } catch (e) { setStatus("lt-status", "Request failed.", false); }
+      var d = await apiPost('/api/graphics/lower_third', { name: name.trim(), title: title.trim(), org: org.trim() });
+      setStatus('lt-status', d.ok ? '● On Air: ' + (d.text || name) : 'Error: ' + d.error, d.ok);
+    } catch { setStatus('lt-status', 'Request failed.', false); }
   };
 
   window.lowerThirdOff = async function () {
     try {
-      const r = await fetch("/api/graphics/lower_third", {method: "DELETE"});
-      const d = await r.json();
-      setStatus("lt-status", d.ok ? "Off Air." : "Error: " + d.error, d.ok);
-    } catch (e) { setStatus("lt-status", "Request failed.", false); }
+      var r = await fetch('/api/graphics/lower_third', { method: 'DELETE' });
+      var d = await r.json();
+      setStatus('lt-status', d.ok ? 'Off Air.' : 'Error: ' + d.error, d.ok);
+    } catch { setStatus('lt-status', 'Request failed.', false); }
   };
 
   window.doTransition = async function () {
-    const type = document.getElementById("tx-type").value;
+    var type = (document.getElementById('tx-type') || {}).value || 'cut';
     try {
-      const d = await apiPost("/api/graphics/transition", {type});
-      setStatus("tx-status", d.ok ? "Transitioned (" + type + ")." : "Error: " + d.error, d.ok);
-    } catch (e) { setStatus("tx-status", "Request failed.", false); }
+      var d = await apiPost('/api/graphics/transition', { type: type });
+      setStatus('tx-status', d.ok ? 'Transitioned (' + type + ').' : 'Error: ' + d.error, d.ok);
+    } catch { setStatus('tx-status', 'Request failed.', false); }
   };
 
   window.triggerClip = async function (clip) {
     try {
-      const r = await fetch("/api/graphics/" + clip, {method: "POST"});
-      const d = await r.json();
-      setStatus("clip-status", d.ok ? clip + " triggered." : "Error: " + d.error, d.ok);
-    } catch (e) { setStatus("clip-status", "Request failed.", false); }
+      var r = await fetch('/api/graphics/' + clip, { method: 'POST' });
+      var d = await r.json();
+      setStatus('clip-status', d.ok ? clip + ' triggered.' : 'Error: ' + d.error, d.ok);
+    } catch { setStatus('clip-status', 'Request failed.', false); }
   };
 })();
 </script>

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Miktos — Diagnostics{% endblock %}
+{% block content %}
+
+<!-- ── Info strip ────────────────────────────────────────────────────────── -->
+<div class="diag-strip">
+  <div class="diag-chip">
+    <span class="diag-chip-label">Hardware</span>
+    <span class="diag-chip-value" id="diag-hw">—</span>
+  </div>
+  <div class="diag-chip">
+    <span class="diag-chip-label">Session</span>
+    <span class="diag-chip-value" id="diag-session">—</span>
+  </div>
+  <div class="diag-chip">
+    <span class="diag-chip-label">Ticks</span>
+    <span class="diag-chip-value" id="diag-ticks">0</span>
+  </div>
+  <div class="diag-chip">
+    <span class="diag-chip-label">Alerts</span>
+    <span class="diag-chip-value" id="diag-alerts">none</span>
+  </div>
+  <div class="diag-chip">
+    <span class="diag-chip-label">Elapsed</span>
+    <span class="diag-chip-value" id="diag-elapsed">—</span>
+  </div>
+</div>
+
+<!-- ── Main diagnostics grid — 3 columns ─────────────────────────────────── -->
+<div class="diag-3col">
+
+  <!-- COL 1 — System Health -->
+  <div class="diag-3col-item">
+    <div class="diag-3col-label">Health</div>
+    <div hx-get="/panels/health" hx-trigger="load" hx-swap="outerHTML"></div>
+  </div>
+
+  <!-- COL 2 — Action Log -->
+  <div class="diag-3col-item">
+    <div class="diag-3col-label">Logs</div>
+    <div hx-get="/panels/action_log" hx-trigger="load" hx-swap="outerHTML"></div>
+  </div>
+
+  <!-- COL 3 — Raw Inputs (Pearl feeds + pipeline) -->
+  <div class="diag-3col-item">
+    <div class="diag-3col-label">Raw Inputs</div>
+
+    <section class="panel">
+      <h2 class="panel-title">Pearl Inputs — EN</h2>
+      <div hx-get="/panels/feed_en" hx-trigger="load" hx-swap="innerHTML"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Pearl Inputs — FR</h2>
+      <div hx-get="/panels/feed_fr" hx-trigger="load" hx-swap="innerHTML"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Pipeline Slots</h2>
+      <ul id="diag-pipeline" class="slot-list"><li class="muted">—</li></ul>
+    </section>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var es = new EventSource('/api/status/stream');
+  es.onmessage = function (e) {
+    try {
+      var d = JSON.parse(e.data);
+      var el = function (id) { return document.getElementById(id); };
+
+      var hw = el('diag-hw');   if (hw) hw.textContent = d.hardware || '—';
+      var sn = el('diag-session'); if (sn) sn.textContent = d.session_name || '—';
+      var tk = el('diag-ticks'); if (tk) tk.textContent = d.tick ?? 0;
+      var al = el('diag-alerts');
+      if (al) al.textContent = (d.alerts && d.alerts.length) ? d.alerts.join(', ') : 'none';
+      var elapsed = el('diag-elapsed'); if (elapsed) elapsed.textContent = d.elapsed || '—';
+
+      var ps = el('diag-pipeline');
+      if (ps) {
+        if (d.pipeline_slots && d.pipeline_slots.length) {
+          ps.innerHTML = d.pipeline_slots.map(function (s) {
+            return '<li class="slot">' + s + '</li>';
+          }).join('');
+        } else {
+          ps.innerHTML = '<li class="muted">—</li>';
+        }
+      }
+    } catch (_) {}
+  };
+}());
+</script>
+
+{% endblock %}

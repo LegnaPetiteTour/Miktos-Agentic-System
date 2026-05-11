@@ -18,7 +18,9 @@ Payload shape:
 
 import asyncio
 import json
+import os
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator
@@ -35,6 +37,11 @@ _CONFIG_PATH = get_config_dir() / "session_config.yaml"
 _MESSAGE_LOG = get_data_dir() / "messages" / "message.log"
 _LAYOUT_LOG = get_data_dir() / "logs" / "layout_log.jsonl"
 _SESSIONS_DIR = get_data_dir() / "sessions"
+_CAPTIONS_FILE = get_data_dir() / "captions" / "captions.jsonl"
+
+# Cache for expensive network probes — gate to every 30 s
+_obs_cache: dict = {"ok": False, "ts": 0.0}
+_pearl_cache: dict = {"ok": False, "ts": 0.0}
 
 _UUID_RE = re.compile(r"^[0-9a-f]{12}$")
 _LOG_LINE_RE = re.compile(
@@ -162,6 +169,89 @@ def _named_sessions() -> list[Path]:
     )
 
 
+def _read_session_name() -> str:
+    """Return the name of the most-recent named session dir, or '—'."""
+    sessions = _named_sessions()
+    return sessions[-1].name if sessions else "—"
+
+
+def _read_rehearsal_active() -> bool:
+    """Read rehearsal state file without importing the full module."""
+    state_file = get_data_dir() / "state" / "rehearsal.json"
+    if not state_file.exists():
+        return False
+    try:
+        data = json.loads(state_file.read_text(encoding="utf-8"))
+        return bool(data.get("active", False))
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _read_captions_channel_status() -> tuple[str, str]:
+    """Scan the last 200 lines of captions.jsonl for recent EN / FR activity.
+
+    Returns a tuple (en_status, fr_status) where each value is one of:
+        "active"   — a caption was written within the last 60 seconds
+        "idle"     — file exists but no recent captions for that channel
+        "—"        — file absent or unreadable
+    """
+    if not _CAPTIONS_FILE.exists():
+        return "—", "—"
+    now = datetime.now(timezone.utc).timestamp()
+    en_fresh = fr_fresh = False
+    try:
+        with _CAPTIONS_FILE.open(encoding="utf-8") as fh:
+            lines = fh.readlines()
+        for raw in lines[-200:]:
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                entry = json.loads(raw)
+                ch = entry.get("channel", "")
+                ts_str = entry.get("ts", "")
+                ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00")).timestamp()
+                if now - ts < 60:
+                    if ch == "en":
+                        en_fresh = True
+                    elif ch == "fr":
+                        fr_fresh = True
+            except Exception:  # noqa: BLE001
+                continue
+    except Exception:  # noqa: BLE001
+        return "—", "—"
+    return ("active" if en_fresh else "idle"), ("active" if fr_fresh else "idle")
+
+
+def _probe_pearl_sync() -> bool:
+    """Synchronous Pearl reachability probe; returns True on success."""
+    try:
+        from domains.epiphan.tools.pearl_client import PearlClient
+        client = PearlClient()
+        channels = client.get_channels()
+        return isinstance(channels, list) and len(channels) > 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _probe_obs_sync() -> bool:
+    """Synchronous OBS reachability probe; returns True on success."""
+    try:
+        import obsws_python as obs  # type: ignore[import-untyped]
+
+        cl = obs.ReqClient(
+            host=os.getenv("OBS_HOST", "localhost"),
+            port=int(os.getenv("OBS_PORT", "4455")),
+            password=os.getenv("OBS_PASSWORD", ""),
+            timeout=2,
+        )
+        cl.get_version()
+        cl.disconnect()
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _latest_session_info() -> tuple[list[str], str]:
     """Returns (pipeline_slots, elapsed_HH:MM) for the most recent named session."""
     sessions = _named_sessions()
@@ -188,12 +278,39 @@ def _latest_session_info() -> tuple[list[str], str]:
 async def _event_stream() -> AsyncGenerator[str, None]:
     from web.api.runner import get_runner_state  # local import avoids circular deps
 
+    loop = asyncio.get_event_loop()
+
     while True:
         hardware = _read_hardware()
         stream_state, tick, alerts = _parse_message_log()
         pearl_layouts = _read_pearl_layouts()
         pipeline_slots, elapsed = _latest_session_info()
         runner = get_runner_state()
+        now_mono = time.monotonic()
+
+        # Mission Status Bar fields
+        session_name = _read_session_name()
+        rehearsal_active = _read_rehearsal_active()
+        en_cap_status, fr_cap_status = _read_captions_channel_status()
+
+        # Pearl probe — run in thread executor; gate to every 30 s
+        if now_mono - _pearl_cache["ts"] > 30.0:
+            pearl_ok = await loop.run_in_executor(None, _probe_pearl_sync)
+            _pearl_cache["ok"] = pearl_ok
+            _pearl_cache["ts"] = now_mono
+        else:
+            pearl_ok = _pearl_cache["ok"]
+
+        # OBS probe — run in thread executor; gate to every 30 s
+        if now_mono - _obs_cache["ts"] > 30.0:
+            obs_ok = await loop.run_in_executor(None, _probe_obs_sync)
+            _obs_cache["ok"] = obs_ok
+            _obs_cache["ts"] = now_mono
+        else:
+            obs_ok = _obs_cache["ok"]
+
+        # Captions "pipeline active" = at least one channel has recent captions
+        captions_ok = en_cap_status == "active" or fr_cap_status == "active"
 
         payload = {
             "hardware": hardware,
@@ -205,6 +322,14 @@ async def _event_stream() -> AsyncGenerator[str, None]:
             "elapsed": elapsed,
             "session_running": runner["running"],
             "session_pid": runner["pid"],
+            # Mission Status Bar
+            "session_name": session_name,
+            "rehearsal_active": rehearsal_active,
+            "en_status": stream_state,          # EN is the primary recording channel
+            "fr_status": fr_cap_status,         # FR alive = FR captions flowing
+            "obs_ok": obs_ok,
+            "pearl_ok": pearl_ok,
+            "captions_ok": captions_ok,
         }
         yield f"data: {json.dumps(payload)}\n\n"
         await asyncio.sleep(1)

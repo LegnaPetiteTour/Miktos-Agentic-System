@@ -42,9 +42,29 @@ def _obs_client():  # type: ignore[return]
 # ---------------------------------------------------------------------------
 
 
+# OBS input kinds that support audio (mute + volume queries).
+# All others (video captures, images, browser, scenes, text) return
+# error 604 "input does not support audio" when queried.
+_AUDIO_KINDS: frozenset[str] = frozenset({
+    "wasapi_input_capture",       # Windows mic
+    "wasapi_output_capture",      # Windows desktop audio
+    "coreaudio_input_capture",    # macOS mic
+    "coreaudio_output_capture",   # macOS desktop audio
+    "alsa_input_capture",         # Linux mic
+    "pulse_input_capture",        # Linux PulseAudio mic
+    "pulse_output_capture",       # Linux PulseAudio desktop
+    "jack_output_capture",        # JACK audio
+    "ffmpeg_source",              # media files (video+audio)
+    "vlc_source",                 # VLC media source
+    "sck_audio_capture",          # ScreenCapture Kit audio (macOS)
+    "audio_line",                 # Audio Line (virtual)
+    "sndio_output_capture",       # sndio (OpenBSD)
+})
+
+
 @router.get("/inputs")
 async def list_audio_inputs() -> JSONResponse:
-    """Return all OBS audio inputs with mute state and volume in dB."""
+    """Return OBS audio inputs (only kinds that support mute/volume) with state."""
     try:
         cl = _obs_client()
         inputs_resp = cl.get_input_list()
@@ -52,6 +72,9 @@ async def list_audio_inputs() -> JSONResponse:
         for inp in inputs_resp.inputs or []:
             name: str = inp.get("inputName", "")
             kind: str = inp.get("inputKind", "")
+            # Skip non-audio sources — querying them returns OBS error 604
+            if kind not in _AUDIO_KINDS:
+                continue
             muted: bool | None = None
             volume_db: float | None = None
             try:

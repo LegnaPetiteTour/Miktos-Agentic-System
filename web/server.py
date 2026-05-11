@@ -24,7 +24,7 @@ load_dotenv(dotenv_path=_PROJECT_ROOT / ".env")  # must run before any PearlClie
 
 import uvicorn  # noqa: E402
 from fastapi import FastAPI, Request  # noqa: E402
-from fastapi.responses import HTMLResponse  # noqa: E402
+from fastapi.responses import HTMLResponse, RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.templating import Jinja2Templates  # noqa: E402
 
@@ -58,15 +58,24 @@ app = FastAPI(title="Miktos Web Cockpit", version="0.1.0")
 # Static files
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
+import hashlib as _hashlib
+
 # Templates
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 # Expose AUTH_ENABLED to every template as a global so base.html can render
 # the logout button without repeating the env-var lookup in every view.
 templates.env.globals["auth_enabled"] = auth_api.AUTH_ENABLED
 
+# Cache-busting version string for style.css — derived from the file's
+# content hash so the browser fetches a fresh copy whenever CSS changes.
+_css_path = BASE_DIR / "static" / "style.css"
+_css_hash = _hashlib.md5(_css_path.read_bytes()).hexdigest()[:8]
+templates.env.globals["css_version"] = _css_hash
+
 # API routers
 app.include_router(session.router, prefix="/api/session")
 app.include_router(session.sessions_router, prefix="/api/sessions")
+app.include_router(session.setup_router, prefix="/api/setup")
 app.include_router(runner.router, prefix="/api/session")
 app.include_router(status.router, prefix="/api/status")
 app.include_router(pearl.router, prefix="/api/pearl")
@@ -115,8 +124,18 @@ async def health_check() -> dict:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request) -> HTMLResponse:
+@app.get("/", response_class=RedirectResponse)
+async def root_redirect(request: Request) -> RedirectResponse:
+    return RedirectResponse(url="/home", status_code=302)
+
+
+@app.get("/home", response_class=HTMLResponse)
+async def home(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="home.html")
+
+
+@app.get("/produce", response_class=HTMLResponse)
+async def produce(request: Request) -> HTMLResponse:
     creds = onboarding.check_credentials()
     missing_credentials = not all([
         creds["youtube_client"],
@@ -131,6 +150,17 @@ async def index(request: Request) -> HTMLResponse:
         name="index.html",
         context={"missing_credentials": missing_credentials},
     )
+
+
+@app.get("/diagnostics", response_class=HTMLResponse)
+async def diagnostics(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="diagnostics.html")
+
+
+@app.get("/index", response_class=RedirectResponse)
+async def index_legacy(request: Request) -> RedirectResponse:
+    """Legacy /index alias — redirects to /produce."""
+    return RedirectResponse(url="/produce", status_code=302)
 
 
 @app.get("/setup", response_class=HTMLResponse)
@@ -209,6 +239,15 @@ async def panel_rehearsal(request: Request) -> HTMLResponse:
 async def panel_channels(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="panel_channels.html")
 
+
+@app.get("/panels/feed_en", response_class=HTMLResponse)
+async def panel_feed_en(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_feed_en.html")
+
+
+@app.get("/panels/feed_fr", response_class=HTMLResponse)
+async def panel_feed_fr(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request=request, name="panel_feed_fr.html")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
-/* Miktos Web Cockpit — style.css
-   Design tokens match Phase 9 rich terminal palette. */
+/* Miktos Web Cockpit — style.css */
 
 :root {
   --bg:          #0d1117;
@@ -14,6 +13,8 @@
   --nav-height:  3rem;
   --radius:      6px;
   --gap:         1rem;
+  --font-ui:   'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Menlo', ui-monospace, monospace;
 }
 
 /* Reset */
@@ -22,34 +23,156 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   line-height: 1.5;
 }
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* Nav */
+/* ── Unified Nav Bar ────────────────────────────────────────────── */
 .nav {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 0 1.5rem;
   height: var(--nav-height);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 1rem;
+  overflow: hidden;
 }
+
+/* Left group — brand + links, flex:1 pushes centre to true middle */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
 .nav-brand {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 800;
+  font-size: 0.82rem;
   color: var(--accent);
-  letter-spacing: 0.05em;
-  margin-right: auto;
+  letter-spacing: 0.12em;
+  flex-shrink: 0;
 }
-.nav-link { color: var(--muted); }
-.nav-link.active { color: var(--text); border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
-.nav-logout { color: var(--muted); font-size: inherit; font-family: inherit; }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.05rem;
+}
+
+/* All nav text: lowercase, 0.78rem, weight 400 */
+.nav-link {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.1s;
+}
+.nav-link:hover { color: var(--text); text-decoration: none; }
+.nav-link.active {
+  color: var(--text);
+  background: rgba(255,255,255,0.06);
+}
+
+.nav-logout {
+  font-size: 0.78rem;
+  font-weight: 400;
+  font-family: var(--font-ui);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+.nav-logout:hover { color: var(--text); }
+
+/* Vertical divider */
+.nav-div {
+  width: 1px;
+  height: 1rem;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 0.6rem;
+}
+
+/* Centre status chips — no flex, width is content-only */
+/* True page centering comes from equal flex:1 sides */
+.nav-status {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.nsc-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.4rem;
+  flex-shrink: 0;
+}
+
+/* All status text: lowercase, 0.75rem, weight 400, no transforms */
+.nsc-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+  text-transform: none;  /* HTML is already lowercase */
+}
+
+.nsc-val {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text);
+}
+.nsc-mono { font-family: var(--font-mono); }
+.nsc-muted { color: var(--muted); }
+
+/* LIVE / REHEARSAL — the only exception: bold, uppercase, coloured */
+.nsc-mode {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--green);
+  text-transform: uppercase;
+}
+.msb-rehearsal .nsc-mode { color: var(--yellow); }
+
+/* Status dots */
+.nsc-dot {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.nsc-dot--live { color: var(--green); }
+.nsc-dot--idle { color: var(--muted); }
+
+/* Separator pipe */
+.nav-sep {
+  font-size: 0.65rem;
+  color: var(--border);
+  padding: 0 0.15rem;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Right group — flex:1, items pushed to the right */
+.nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+}
 
 /* Main */
 .main {
@@ -62,14 +185,98 @@ a:hover { text-decoration: underline; }
   gap: var(--gap);
 }
 
-/* ── Cockpit multi-column grid (Phase 18) ───────────────────────────────── */
-/*
-  Four columns:
-    left    — EN channel   (240px fixed)
-  centre  — Production   (1fr, expands)
-    right   — FR channel   (240px fixed)
-    sidebar — Health/Auto  (220px fixed)
-*/
+/* ── Mission Status Bar ─────────────────────────────────────────────────── */
+.mission-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  height: 2.25rem;
+  font-size: 0.72rem;
+  font-family: var(--font-ui);
+  overflow-x: auto;
+  white-space: nowrap;
+  /* Span full viewport width regardless of .main max-width */
+  position: sticky;
+  top: var(--nav-height);
+  z-index: 50;
+  flex-shrink: 0;
+}
+
+/* When the bar is inside the .main grid it must break out */
+.main > .mission-bar {
+  grid-column: 1 / -1;
+  /* Negative margins cancel .main's padding so the bar is truly full-width */
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  margin-top: -1.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  width: calc(100% + 3rem);
+}
+
+.msb-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.75rem;
+}
+
+.msb-label {
+  color: var(--muted);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.msb-value {
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+}
+
+.msb-session .msb-value {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dividers */
+.msb-divider {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 0.25rem;
+}
+
+/* Push the ELAPSED chip to the far right */
+.msb-divider--push {
+  flex: 1;
+  width: auto;
+  background: transparent;
+  margin: 0;
+}
+
+/* Mode chip — LIVE vs REHEARSAL */
+.msb-live .msb-value      { color: var(--green); }
+.msb-rehearsal .msb-value { color: var(--yellow); }
+
+/* Status dots */
+.msb-dot { font-size: 0.85rem; line-height: 1; cursor: default; }
+
+.msb-streaming { color: var(--green); }
+.msb-stopped   { color: var(--yellow); }
+.msb-idle      { color: var(--muted); }
+.msb-done      { color: var(--accent); }
+
+/* ── Cockpit multi-column grid — mode-aware ────────────────────────────── */
 /* When placed inside .main (which is a grid), span all auto-fill columns */
 .main > .cockpit-grid {
   grid-column: 1 / -1;
@@ -77,14 +284,27 @@ a:hover { text-decoration: underline; }
 
 .cockpit-grid {
   display: grid;
-  grid-template-columns:
-    [left-start]    240px  [left-end centre-start]
-    1fr             [centre-end right-start]
-    240px           [right-end sidebar-start]
-    220px           [sidebar-end];
-  grid-template-rows: auto;
   gap: var(--gap);
+  padding: var(--gap);
   align-items: start;
+  /* Default: pearl-obs balanced 3-col */
+  grid-template-columns: 230px 1fr 210px;
+}
+
+/* pearl-obs + rehearsal: balanced */
+.cockpit-grid[data-mode="pearl-obs"],
+.cockpit-grid[data-mode="rehearsal"] {
+  grid-template-columns: 230px 1fr 210px;
+}
+
+/* pearl-only: left narrower (no OBS scene grid) */
+.cockpit-grid[data-mode="pearl-only"] {
+  grid-template-columns: 200px 1fr 210px;
+}
+
+/* obs-only: left narrower (no Pearl channel list) */
+.cockpit-grid[data-mode="obs-only"] {
+  grid-template-columns: 200px 1fr 210px;
 }
 
 /* Each column is a flex column so panels stack vertically */
@@ -95,10 +315,9 @@ a:hover { text-decoration: underline; }
   min-width: 0;   /* prevent blowout in narrow grid cells */
 }
 
-.cockpit-col-left    { grid-column: left-start    / left-end; }
-.cockpit-col-centre  { grid-column: centre-start  / centre-end; }
-.cockpit-col-right   { grid-column: right-start   / right-end; }
-.cockpit-col-sidebar { grid-column: sidebar-start / sidebar-end; }
+.cockpit-col-left       { grid-column: 1; }
+.cockpit-col-centre     { grid-column: 2; }
+.cockpit-col-right-rail { grid-column: 3; }
 
 /* Column header label */
 .col-label {
@@ -118,8 +337,7 @@ a:hover { text-decoration: underline; }
   }
   .cockpit-col-left,
   .cockpit-col-centre,
-  .cockpit-col-right,
-  .cockpit-col-sidebar {
+  .cockpit-col-right-rail {
     grid-column: 1 / -1;
   }
 }
@@ -244,7 +462,75 @@ a:hover { text-decoration: underline; }
 .session-name { font-family: inherit; }
 .link { color: var(--accent); }
 
-/* Session control panel */
+/* ── Compact cockpit control strip (Phase 19c-2) ───────────────────────── */
+/* Replaces separate panel-control + panel-stream full panels */
+.cockpit-control-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.ccs-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ccs-divider {
+  width: 1px;
+  height: 1.4rem;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.ccs-state {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 6rem;
+}
+
+.ccs-status {
+  font-size: 0.77rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* ── Pearl inputs summary chip (Phase 19c-2) ────────────────────────────── */
+.inputs-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.78rem;
+}
+
+.inputs-chip-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.inputs-chip-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.78rem;
+}
+.inputs-chip-link:hover { text-decoration: underline; }
+
+/* Session control panel (legacy — kept for control-row references in panels) */
 .control-row { display: flex; align-items: center; gap: 0.75rem; }
 .btn-start {
   background: var(--green);
@@ -275,3 +561,699 @@ a:hover { text-decoration: underline; }
   font-size: 0.85rem;
 }
 .hidden { display: none !important; }
+
+/* ── Pearl Channel assignment panel ────────────────────────────────────── */
+/*
+  Three-column grid: [channel name 1fr] [EN 34px] [FR 34px]
+  Buttons are always right-aligned in fixed columns.
+*/
+
+/* Small pill button used in the channel list */
+.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 22px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.btn-sm:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.channel-row {
+  display: grid;
+  grid-template-columns: 1fr 34px 34px;
+  align-items: center;
+  column-gap: 0.35rem;
+  padding: 0.22rem 0.4rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+}
+
+/* Highlight the whole row when it is assigned */
+.channel-row.ch-row--en {
+  background: rgba(63, 185, 80, 0.07);
+  border-color: rgba(63, 185, 80, 0.25);
+}
+.channel-row.ch-row--fr {
+  background: rgba(88, 166, 255, 0.07);
+  border-color: rgba(88, 166, 255, 0.25);
+}
+
+.ch-name {
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.ch-assigned-en { color: var(--green); }
+.ch-assigned-fr { color: var(--accent); }
+
+.ch-role-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+  margin-left: 0.2rem;
+}
+.ch-tag-en { color: var(--green); }
+.ch-tag-fr { color: var(--accent); }
+
+/* Active EN button — green fill */
+.ch-btn--active-en {
+  background: var(--green) !important;
+  color: #000 !important;
+  border-color: var(--green) !important;
+}
+
+/* Active FR button — blue fill */
+.ch-btn--active-fr {
+  background: var(--accent) !important;
+  color: #000 !important;
+  border-color: var(--accent) !important;
+}
+
+/* ── Home / Pre-flight page ─────────────────────────────────────────────── */
+
+/* Shell: full-width in .main grid, no artificial max-width cap */
+.home-shell {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+}
+
+.home-header {
+  margin-bottom: 1.25rem;
+}
+
+.home-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 0.3rem;
+  letter-spacing: -0.01em;
+}
+
+.home-subtitle {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Main card — fills available width */
+.preflight-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+/* Three-column grid — fluid, fills card width */
+.preflight-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(320px, 1.6fr) minmax(220px, 1fr);
+  gap: 0;
+  align-items: start;
+}
+
+.preflight-section {
+  min-width: 0;
+  padding: 0 1.75rem;
+}
+.preflight-section:first-child { padding-left: 0; }
+.preflight-section:last-child  { padding-right: 0; }
+.preflight-section + .preflight-section {
+  border-left: 1px solid var(--border);
+}
+
+/* ── Section label (replaces .pf-heading in new Home layout) ── */
+.pf-section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+.pf-section-label--spaced { margin-top: 1.5rem; }
+
+/* ── Device readiness cards ─────────────────────────────────────── */
+.rdy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+/* Two-card variant for Production Systems (OBS + Pearl only) */
+.rdy-grid--two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.rdy-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: border-color 0.2s;
+}
+.rdy-card--ok      { border-left-color: var(--green); }
+.rdy-card--err     { border-left-color: var(--red);   }
+.rdy-card--neutral { border-left-color: var(--border); }
+
+.rdy-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rdy-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.rdy-dot--ok      { background: var(--green); box-shadow: 0 0 5px rgba(63,185,80,0.55); }
+.rdy-dot--err     { background: var(--red); }
+.rdy-dot--neutral { background: #444; }
+
+.rdy-device-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* System type subtitle next to device name */
+.rdy-device-type {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: auto;
+  letter-spacing: 0.02em;
+}
+
+.rdy-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.rdy-status--ok      { color: var(--green); }
+.rdy-status--err     { color: var(--red);   }
+.rdy-status--neutral { color: var(--muted); }
+
+.rdy-detail {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
+}
+
+/* ── Mode strip (replaces .mode-grid + .mode-card) ──────────────── */
+.mode-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.mode-btn {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  opacity: 0.45;
+  transition: border-color 0.12s, opacity 0.12s;
+}
+.mode-btn:hover {
+  border-color: var(--accent);
+  opacity: 0.75;
+}
+.mode-btn--selected {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.08);
+  opacity: 1;
+}
+.mode-btn strong {
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: block;
+  color: var(--text);
+}
+.mode-btn--selected strong { color: var(--accent); }
+.mode-btn span {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ── Session strip ──────────────────────────────────────────────── */
+.session-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  margin-top: 1.25rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+.ss-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.ss-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.ss-val {
+  font-weight: 600;
+  color: var(--text);
+}
+.ss-val--muted {
+  font-weight: 400;
+  color: var(--muted);
+}
+.ss-val--ok {
+  font-weight: 600;
+  color: var(--green);
+}
+.ss-sep {
+  color: var(--border);
+  font-size: 0.85rem;
+  user-select: none;
+}
+
+/* Responsive — stack on narrow screens */
+@media (max-width: 700px) {
+  .rdy-grid    { grid-template-columns: 1fr; }
+  .mode-strip  { grid-template-columns: repeat(2, 1fr); }
+  .session-strip { font-size: 0.72rem; }
+}
+
+/* Section heading */
+.pf-heading {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin: 0 0 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Info rows (Session column) */
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.84rem;
+}
+.info-row--last { border-bottom: none; }
+
+.info-label { color: var(--muted); flex-shrink: 0; }
+.info-value  { font-weight: 700; text-align: right; color: var(--text); }
+.info-muted  { color: var(--muted); font-weight: 400; }
+
+/* Stream state badge colors */
+.status-stream--streaming { color: var(--green); }
+.status-stream--stopped   { color: var(--yellow); }
+.status-stream--idle      { color: var(--muted); }
+
+/* Mode grid — 2×2 */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.mode-card {
+  text-align: left;
+  min-height: 88px;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: border-color 0.12s, background 0.12s;
+}
+.mode-card:hover { border-color: var(--accent); }
+.mode-card--selected {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.1);
+}
+.mode-card strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: block;
+}
+.mode-card--selected strong { color: var(--accent); }
+.mode-card span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* Readiness rows */
+.ready-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.84rem;
+}
+.ready-row--last { border-bottom: none; }
+.ready-row--ok      strong { color: var(--green); }
+.ready-row--err     strong { color: var(--red); }
+.ready-row--neutral strong { color: var(--muted); }
+
+/* Footer — warning message + CTA */
+.preflight-footer {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pf-warning {
+  font-size: 0.84rem;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+.pf-warning--ok   { color: var(--green); }
+.pf-warning--warn { color: var(--yellow); }
+.pf-warning--err  { color: var(--red); }
+
+.btn-enter {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.5rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.12s;
+  flex-shrink: 0;
+}
+.btn-enter:hover { opacity: 0.85; text-decoration: none; }
+.btn-enter--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Responsive — stack columns vertically below 960px */
+@media (max-width: 960px) {
+  .preflight-grid { grid-template-columns: 1fr; }
+  .preflight-section { padding: 0 !important; }
+  .preflight-section + .preflight-section {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-top: 1.25rem !important;
+    margin-top: 1.25rem;
+  }
+}
+
+/* ── Mode-aware panel visibility (Phase 19b-3) ──────────────────────────── */
+body[data-mode="pearl-only"] .obs-zone   { display: none; }
+body[data-mode="obs-only"]   .pearl-zone { display: none; }
+
+/* Rehearsal banner */
+.rehearsal-banner {
+  display: none;
+  grid-column: 1 / -1;
+  background: rgba(210, 153, 34, 0.12);
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  color: var(--yellow);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  padding: 0.55rem 1rem;
+}
+body[data-mode="rehearsal"] .rehearsal-banner { display: block; }
+
+/* ── Compact health chip (right rail on Produce) ─────────────────────────── */
+.hchip-row {
+  display: grid;
+  grid-template-columns: 1.1rem 1fr auto;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0;
+}
+.hchip-ticks {
+  display: grid;
+  grid-template-columns: auto auto auto auto;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+  margin-top: 0.45rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border, #2a2a2a);
+}
+.hchip-dot {
+  font-size: 0.75rem;
+  color: var(--text-muted, #555);
+}
+.hchip-dot.hchip-ok      { color: var(--green, #22c55e); }
+.hchip-dot.hchip-err     { color: var(--red,   #ef4444); }
+.hchip-dot.hchip-neutral { color: var(--text-muted, #555); }
+.hchip-label {
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+}
+.hchip-status {
+  font-size: 0.75rem;
+  color: var(--text-primary, #e0e0e0);
+  text-align: right;
+}
+.panel-diag-link {
+  font-size: 0.7rem;
+  color: var(--text-muted, #666);
+  text-decoration: none;
+  float: right;
+  margin-top: 0.1rem;
+}
+.panel-diag-link:hover { color: var(--text-primary, #e0e0e0); }
+
+/* ── Diagnostics page ────────────────────────────────────────────────────── */
+.diag-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.2rem;
+  padding: 0.75rem 1rem;
+  background: var(--panel-bg, #161616);
+  border-bottom: 1px solid var(--border, #2a2a2a);
+  margin-bottom: 1rem;
+}
+.diag-chip {
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+}
+.diag-chip-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted, #777);
+}
+.diag-chip-value {
+  font-size: 0.82rem;
+  color: var(--text-primary, #e0e0e0);
+  font-family: var(--font-mono);
+}
+.diag-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 0 1rem 1rem;
+}
+.diag-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ── Diagnostics 3-column layout (Phase 19c-4) ───────────────────────────── */
+.diag-3col {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 0;
+  min-height: 0;
+}
+
+.diag-3col-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-right: 1px solid var(--border);
+}
+.diag-3col-item:last-child { border-right: none; }
+
+.diag-3col-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+/* ── Setup page — grouped cards (Phase 19c-4) ────────────────────────────── */
+.setup-layout {
+  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.setup-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.setup-group-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+.setup-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.45rem 1rem;
+  font-family: var(--font-ui);
+  font-size: inherit;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ── Sessions page — wider layout (Phase 19c-4) ──────────────────────────── */
+.sessions-layout {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sessions-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+
+.sessions-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.sessions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.sessions-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.sessions-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.sessions-table tr:last-child td { border-bottom: none; }
+.sessions-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+.session-date {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.slot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.slot-list .slot {
+  font-size: 0.78rem;
+  color: var(--text-primary, #e0e0e0);
+  font-family: var(--font-mono);
+  padding: 0.15rem 0;
+  border-bottom: 1px solid var(--border, #1e1e1e);
+}

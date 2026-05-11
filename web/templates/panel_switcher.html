@@ -1,9 +1,52 @@
-{# panel_switcher.html — OBS scene switcher panel (HTMX partial) #}
-<section class="panel" id="panel-switcher">
+{# panel_switcher.html — OBS scene switcher (HTMX partial) #}
+<section class="panel obs-zone" id="panel-switcher">
   <h2 class="panel-title">Scene Switcher</h2>
   <div id="switcher-scenes"><span class="muted">Loading…</span></div>
-  <div id="switcher-status" class="muted" style="font-size:0.8rem;margin-top:0.4rem;"></div>
+  <div id="switcher-status" class="switcher-status muted"></div>
 </section>
+
+<style>
+  .switcher-scenes-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .btn-scene {
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: var(--font-ui);
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.1s, color 0.1s, background 0.1s;
+    text-align: left;
+  }
+  .btn-scene:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .btn-scene-active {
+    border-color: var(--green);
+    background: rgba(63, 185, 80, 0.1);
+    color: var(--green);
+    font-weight: 700;
+  }
+  .btn-scene-active::before {
+    content: "● ";
+    font-size: 0.6rem;
+    vertical-align: middle;
+  }
+  .switcher-status {
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    min-height: 1rem;
+    font-family: var(--font-mono);
+  }
+</style>
 
 <script>
 (function () {
@@ -17,18 +60,24 @@
         el.innerHTML = '<span class="muted">OBS offline</span>';
         return;
       }
-      el.innerHTML = (d.scenes || []).map(s =>
-        `<button class="btn-scene${s === d.current ? ' btn-scene-active' : ''}"
-                 onclick="switchScene('${s.replace(/'/g, "\\'")}')">` +
-          escHtml(s) +
-        `</button>`
-      ).join(" ");
+      const scenes = d.scenes || [];
+      if (!scenes.length) {
+        el.innerHTML = '<span class="muted">No scenes found</span>';
+        return;
+      }
+      el.innerHTML = '<div class="switcher-scenes-grid">' +
+        scenes.map(s => {
+          const active = s === d.current;
+          return `<button class="btn-scene${active ? ' btn-scene-active' : ''}"
+            onclick="queueObsPreview('${s.replace(/'/g, "\\'")}')">${escHtml(s)}</button>`;
+        }).join('') +
+      '</div>';
     } catch { /* ignore */ }
   }
 
   async function switchScene(name) {
     const st = document.getElementById("switcher-status");
-    if (st) st.textContent = "Switching…";
+    if (st) { st.textContent = "Switching…"; st.style.color = "var(--muted)"; }
     try {
       const r = await fetch("/api/switcher/obs/switch", {
         method: "POST",
@@ -36,10 +85,13 @@
         body: JSON.stringify({ scene_name: name }),
       });
       const d = await r.json();
-      if (st) st.textContent = d.success ? ("✓ " + name) : (d.error || "Failed");
+      if (st) {
+        st.textContent = d.success ? ("✓ " + name) : (d.error || "Failed");
+        st.style.color = d.success ? "var(--green)" : "var(--red)";
+      }
     } catch (err) {
       const st = document.getElementById("switcher-status");
-      if (st) st.textContent = "Error: " + err.message;
+      if (st) { st.textContent = "Error: " + err.message; st.style.color = "var(--red)"; }
     }
     loadScenes();
   }

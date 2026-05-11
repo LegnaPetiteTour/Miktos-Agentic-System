@@ -2,8 +2,10 @@
 {% block title %}Miktos — Session History{% endblock %}
 
 {% block content %}
-<div class="panel">
-  <h2 class="panel-title">Session History</h2>
+<div class="sessions-layout">
+  <div class="sessions-header">
+    <h2 class="sessions-title">Session History</h2>
+  </div>
   <div id="sessions-list"
        hx-get="/api/sessions"
        hx-trigger="load"
@@ -23,10 +25,16 @@ document.body.addEventListener("htmx:afterRequest", (e) => {
       target.innerHTML = '<p class="muted">No named sessions found.</p>';
       return;
     }
+    // Parse date from session name (YYYY-MM-DD prefix convention)
+    function parseDate(name) {
+      const m = name.match(/^(\d{4}-\d{2}-\d{2})/);
+      return m ? m[1] : '—';
+    }
     target.innerHTML = `
       <table class="sessions-table">
         <thead>
           <tr>
+            <th>Date</th>
             <th>Name</th>
             <th>Hardware</th>
             <th>Report</th>
@@ -35,6 +43,7 @@ document.body.addEventListener("htmx:afterRequest", (e) => {
         <tbody>
           ${sessions.map(s => `
             <tr>
+              <td class="session-date">${parseDate(s.name)}</td>
               <td class="session-name">${s.name}</td>
               <td>${s.hardware || '—'}</td>
               <td>${s.has_report

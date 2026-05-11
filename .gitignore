@@ -19,6 +19,7 @@ env/
 data/state/*.json
 data/logs/*.log
 data/logs/*.jsonl
+data/logs/*.bak
 data/review_queue/*.json
 
 # VS Code
