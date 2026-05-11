@@ -9,21 +9,94 @@
   <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js" crossorigin="anonymous"></script>
 </head>
 <body>
+
   <nav class="nav">
-    <span class="nav-brand">Miktos</span>
-    <a class="nav-link {% if request.url.path == '/home' or request.url.path == '/' %}active{% endif %}" href="/home">Home</a>
-    <a class="nav-link {% if request.url.path == '/produce' %}active{% endif %}" href="/produce">Produce</a>
-    <a class="nav-link {% if request.url.path == '/setup' or '/onboarding' in request.url.path %}active{% endif %}" href="/setup">Setup</a>
-    <a class="nav-link {% if '/sessions' in request.url.path %}active{% endif %}" href="/sessions">Sessions</a>
-    <a class="nav-link {% if request.url.path == '/diagnostics' %}active{% endif %}" href="/diagnostics">Diagnostics</a>
-    {% if auth_enabled %}
-    <form method="post" action="/logout" style="margin:0;margin-left:auto;">
-      <button type="submit" class="nav-link nav-logout" style="background:none;border:none;cursor:pointer;padding:0;">Sign out</button>
-    </form>
-    {% endif %}
+
+    <!-- LEFT GROUP — flex: 1, items left-aligned -->
+    <div class="nav-left">
+      <span class="nav-brand">MIKTOS</span>
+      <div class="nav-links">
+        <a class="nav-link {% if request.url.path == '/home' or request.url.path == '/' %}active{% endif %}" href="/home">home</a>
+        <a class="nav-link {% if request.url.path == '/produce' %}active{% endif %}" href="/produce">produce</a>
+        <a class="nav-link {% if request.url.path == '/setup' or '/onboarding' in request.url.path %}active{% endif %}" href="/setup">setup</a>
+        <a class="nav-link {% if '/sessions' in request.url.path %}active{% endif %}" href="/sessions">sessions</a>
+        <a class="nav-link {% if request.url.path == '/diagnostics' %}active{% endif %}" href="/diagnostics">diagnostics</a>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <span class="nav-div"></span>
+
+    <!-- CENTRE — status chips, no flex, naturally centred by equal flex sides -->
+    <div class="nav-status" id="nav-status">
+
+      <div class="nsc-chip">
+        <span class="nsc-label">session</span>
+        <span class="nsc-val nsc-mono" id="msb-session-name">—</span>
+      </div>
+
+      <span class="nav-sep">|</span>
+
+      <div class="nsc-chip" id="msb-mode-chip">
+        <span class="nsc-mode" id="msb-mode">—</span>
+      </div>
+
+      <div class="nsc-chip">
+        <span class="nsc-label" id="msb-device-mode">—</span>
+      </div>
+
+      <span class="nav-sep">|</span>
+
+      <div class="nsc-chip">
+        <span class="nsc-label">en</span>
+        <span class="nsc-dot" id="msb-en">○</span>
+      </div>
+
+      <div class="nsc-chip">
+        <span class="nsc-label">fr</span>
+        <span class="nsc-dot" id="msb-fr">○</span>
+      </div>
+
+      <span class="nav-sep">|</span>
+
+      <div class="nsc-chip">
+        <span class="nsc-label">obs</span>
+        <span class="nsc-dot" id="msb-obs">○</span>
+      </div>
+
+      <div class="nsc-chip">
+        <span class="nsc-label">pearl</span>
+        <span class="nsc-dot" id="msb-pearl">○</span>
+      </div>
+
+      <div class="nsc-chip">
+        <span class="nsc-label">captions</span>
+        <span class="nsc-dot" id="msb-captions">○</span>
+      </div>
+
+    </div>
+
+    <!-- DIVIDER -->
+    <span class="nav-div"></span>
+
+    <!-- RIGHT GROUP — flex: 1, items right-aligned -->
+    <div class="nav-right">
+      <div class="nsc-chip">
+        <span class="nsc-label">elapsed</span>
+        <span class="nsc-val nsc-mono" id="msb-elapsed">—</span>
+      </div>
+      {% if auth_enabled %}
+      <form method="post" action="/logout" style="margin:0;">
+        <button type="submit" class="nav-link nav-logout">sign out</button>
+      </form>
+      {% endif %}
+    </div>
+
   </nav>
+
   <main class="main">
     {% block content %}{% endblock %}
   </main>
+
 </body>
 </html>

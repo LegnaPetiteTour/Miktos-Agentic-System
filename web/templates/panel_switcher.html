@@ -69,7 +69,7 @@
         scenes.map(s => {
           const active = s === d.current;
           return `<button class="btn-scene${active ? ' btn-scene-active' : ''}"
-            onclick="switchScene('${s.replace(/'/g, "\\'")}')">${escHtml(s)}</button>`;
+            onclick="queueObsPreview('${s.replace(/'/g, "\\'")}')">${escHtml(s)}</button>`;
         }).join('') +
       '</div>';
     } catch { /* ignore */ }

@@ -31,26 +31,148 @@ body {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* Nav */
+/* ── Unified Nav Bar ────────────────────────────────────────────── */
 .nav {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 0 1.5rem;
   height: var(--nav-height);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 1rem;
+  overflow: hidden;
 }
+
+/* Left group — brand + links, flex:1 pushes centre to true middle */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
 .nav-brand {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 800;
+  font-size: 0.82rem;
   color: var(--accent);
-  letter-spacing: 0.05em;
-  margin-right: auto;
+  letter-spacing: 0.12em;
+  flex-shrink: 0;
 }
-.nav-link { color: var(--muted); }
-.nav-link.active { color: var(--text); border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
-.nav-logout { color: var(--muted); font-size: inherit; font-family: var(--font-ui); }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.05rem;
+}
+
+/* All nav text: lowercase, 0.78rem, weight 400 */
+.nav-link {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.1s;
+}
+.nav-link:hover { color: var(--text); text-decoration: none; }
+.nav-link.active {
+  color: var(--text);
+  background: rgba(255,255,255,0.06);
+}
+
+.nav-logout {
+  font-size: 0.78rem;
+  font-weight: 400;
+  font-family: var(--font-ui);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+.nav-logout:hover { color: var(--text); }
+
+/* Vertical divider */
+.nav-div {
+  width: 1px;
+  height: 1rem;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 0.6rem;
+}
+
+/* Centre status chips — no flex, width is content-only */
+/* True page centering comes from equal flex:1 sides */
+.nav-status {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.nsc-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.4rem;
+  flex-shrink: 0;
+}
+
+/* All status text: lowercase, 0.75rem, weight 400, no transforms */
+.nsc-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+  text-transform: none;  /* HTML is already lowercase */
+}
+
+.nsc-val {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text);
+}
+.nsc-mono { font-family: var(--font-mono); }
+.nsc-muted { color: var(--muted); }
+
+/* LIVE / REHEARSAL — the only exception: bold, uppercase, coloured */
+.nsc-mode {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--green);
+  text-transform: uppercase;
+}
+.msb-rehearsal .nsc-mode { color: var(--yellow); }
+
+/* Status dots */
+.nsc-dot {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.nsc-dot--live { color: var(--green); }
+.nsc-dot--idle { color: var(--muted); }
+
+/* Separator pipe */
+.nav-sep {
+  font-size: 0.65rem;
+  color: var(--border);
+  padding: 0 0.15rem;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Right group — flex:1, items pushed to the right */
+.nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+}
 
 /* Main */
 .main {

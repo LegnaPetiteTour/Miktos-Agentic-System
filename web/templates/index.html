@@ -10,54 +10,8 @@
 {% endif %}
 
 <!-- ═══════════════════════════════════════════════════════
-     MISSION STATUS BAR
-═══════════════════════════════════════════════════════ -->
-<div class="mission-bar" id="mission-bar">
-  <div class="msb-chip msb-session">
-    <span class="msb-label">SESSION</span>
-    <span class="msb-value" id="msb-session-name">—</span>
-  </div>
-  <div class="msb-divider"></div>
-  <div class="msb-chip" id="msb-mode-chip">
-    <span class="msb-value" id="msb-mode">—</span>
-  </div>
-  <div class="msb-chip msb-device-mode" id="msb-device-mode-chip">
-    <span class="msb-value msb-label--device" id="msb-device-mode">—</span>
-  </div>
-  <div class="msb-divider"></div>
-  <div class="msb-chip">
-    <span class="msb-label">EN</span>
-    <span class="msb-value msb-dot" id="msb-en">—</span>
-  </div>
-  <div class="msb-chip">
-    <span class="msb-label">FR</span>
-    <span class="msb-value msb-dot" id="msb-fr">—</span>
-  </div>
-  <div class="msb-divider"></div>
-  <div class="msb-chip">
-    <span class="msb-label">OBS</span>
-    <span class="msb-value msb-dot" id="msb-obs">—</span>
-  </div>
-  <div class="msb-chip">
-    <span class="msb-label">PEARL</span>
-    <span class="msb-value msb-dot" id="msb-pearl">—</span>
-  </div>
-  <div class="msb-chip">
-    <span class="msb-label">CAPTIONS</span>
-    <span class="msb-value msb-dot" id="msb-captions">—</span>
-  </div>
-  <div class="msb-divider msb-divider--push"></div>
-  <div class="msb-chip">
-    <span class="msb-label">ELAPSED</span>
-    <span class="msb-value" id="msb-elapsed">—</span>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════
-     COCKPIT GRID — mode-aware layout
-     data-mode is stamped from localStorage on load.
-     CSS handles column structure per mode.
-     Zone visibility is controlled by CSS per mode.
+     COCKPIT GRID
+     3 columns: LEFT RAIL | CENTRE VIDEO | RIGHT ACTION RAIL
 ═══════════════════════════════════════════════════════ -->
 <div id="cockpit" class="cockpit-grid" data-mode="pearl-obs">
 
@@ -65,16 +19,14 @@
     ⚠ REHEARSAL MODE — No live output will be sent
   </div>
 
-  <!-- ═══════════════════════════════
-       LEFT RAIL
-       Zones are shown/hidden by CSS based on data-mode.
-  ════════════════════════════════ -->
+  <!-- ════════════════════════
+       LEFT RAIL — switching controls
+  ═════════════════════════════ -->
   <div class="cockpit-col cockpit-col-left">
 
-    <!-- MODE LABEL — visible inside cockpit, replaces col-label -->
     <div class="cockpit-mode-label" id="cockpit-mode-label">—</div>
 
-    <!-- ── PEARL ZONE — shown in: pearl-only, pearl-obs, rehearsal ── -->
+    <!-- PEARL ZONE -->
     <section class="panel pearl-zone" id="panel-pearl">
       <h2 class="panel-title">Pearl Layouts</h2>
       <div id="pearl-layouts"><span class="muted">—</span></div>
@@ -84,21 +36,23 @@
 
     <div class="pearl-zone inputs-chip" id="panel-inputs-chip">
       <span class="inputs-chip-label">Pearl Inputs</span>
-      <a href="/diagnostics" class="inputs-chip-link">View Diagnostics →</a>
+      <a href="/diagnostics" class="inputs-chip-link">Details →</a>
     </div>
 
-    <!-- ── OBS ZONE — shown in: obs-only, pearl-obs, rehearsal ── -->
+    <!-- OBS ZONE -->
     <div class="obs-zone" hx-get="/panels/switcher" hx-trigger="load" hx-swap="outerHTML"></div>
     <div class="obs-zone" hx-get="/panels/audio" hx-trigger="load" hx-swap="outerHTML"></div>
 
   </div>
 
-  <!-- ═══════════════════════════════
-       CENTRE STAGE
-  ════════════════════════════════ -->
+  <!-- ════════════════════════
+       CENTRE — Video Monitor
+       Program / Preview grid only.
+       Run-of-show and graphics moved to right rail.
+  ═════════════════════════════ -->
   <div class="cockpit-col cockpit-col-centre">
 
-    <!-- Control strip — always present -->
+    <!-- Control strip -->
     <div class="cockpit-control-strip" id="panel-control">
       <div class="ccs-actions">
         <button class="btn-start" id="btn-start" onclick="startSession()">▶ Start</button>
@@ -106,41 +60,72 @@
         <span class="btn-finishing hidden" id="btn-finishing">Finishing…</span>
       </div>
       <div class="ccs-divider"></div>
-      <div class="ccs-state" id="panel-stream">
+      <div class="ccs-state">
         <span class="state-badge" id="stream-state">—</span>
         <span class="elapsed muted" id="session-elapsed"></span>
       </div>
       <div class="ccs-status muted" id="control-status"></div>
     </div>
 
-    <!-- Mode-aware preview — rendered by JS below -->
-    <section class="panel" id="panel-preview-centre">
-      <div id="preview-thumbs" class="preview-thumbs-wrap"></div>
+    <!-- ═══════════════════════════════════════════════════
+         VIDEO MONITOR — Program / Preview grid
+         PREVIEW (left) | PROGRAM (right)
+         Rows: one per active channel/source
+    ════════════════════════════════════════════════════ -->
+    <section class="panel video-monitor" id="video-monitor">
+
+      <!-- Column headers -->
+      <div class="vm-header">
+        <div class="vm-col-label vm-col-preview">
+          <span class="vm-col-icon">◐</span> Preview
+        </div>
+        <div class="vm-col-label vm-col-program">
+          <span class="vm-col-icon vm-icon-live">●</span> Program
+        </div>
+      </div>
+
+      <!-- Video rows — populated by JS based on mode -->
+      <div id="vm-rows" class="vm-rows"></div>
+
+      <!-- Transition bar -->
+      <div class="vm-transition-bar" id="vm-transition-bar">
+        <div class="vm-tx-left">
+          <button class="vm-tx-btn" id="tx-cut"  onclick="doTransition('cut')">CUT</button>
+          <button class="vm-tx-btn" id="tx-fade" onclick="doTransition('fade')">FADE</button>
+        </div>
+        <div class="vm-tx-status" id="vm-tx-status"></div>
+        <div class="vm-tx-right">
+          <button class="vm-take-btn" id="btn-take" onclick="commitPreview()">
+            TAKE →
+          </button>
+        </div>
+      </div>
+
     </section>
-
-    <!-- Run-of-show — always present -->
-    <div hx-get="/panels/runofshow" hx-trigger="load" hx-swap="outerHTML"></div>
-
-    <!-- Graphics — always present -->
-    <div hx-get="/panels/graphics" hx-trigger="load" hx-swap="outerHTML"></div>
 
   </div>
 
-  <!-- ═══════════════════════════════
-       RIGHT RAIL — always present
-       Safety + monitoring panels belong in every mode.
-  ════════════════════════════════ -->
+  <!-- ════════════════════════
+       RIGHT RAIL — Action panels
+       Run-of-show + Graphics + Emergency + Health (compact)
+  ═════════════════════════════ -->
   <div class="cockpit-col cockpit-col-right-rail">
 
-    <section class="panel" id="panel-pipeline">
-      <h2 class="panel-title">Pipeline</h2>
-      <ul id="pipeline-slots" class="slot-list"><li class="muted">—</li></ul>
-    </section>
+    <!-- Run-of-show — primary action panel -->
+    <div hx-get="/panels/runofshow" hx-trigger="load" hx-swap="outerHTML"></div>
 
-    <div hx-get="/panels/captions" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Graphics — lower thirds + bumpers -->
+    <div hx-get="/panels/graphics" hx-trigger="load" hx-swap="outerHTML"></div>
 
+    <!-- Emergency stop — always accessible -->
+    <div hx-get="/panels/safe_mode" hx-trigger="load" hx-swap="outerHTML"></div>
+
+    <!-- Rehearsal toggle -->
+    <div hx-get="/panels/rehearsal" hx-trigger="load" hx-swap="outerHTML"></div>
+
+    <!-- Compact health + pipeline status -->
     <section class="panel" id="panel-health-chip">
-      <h2 class="panel-title">Health
+      <h2 class="panel-title">System
         <a href="/diagnostics" class="panel-diag-link">Details →</a>
       </h2>
       <div class="hchip-row">
@@ -166,53 +151,295 @@
       </div>
     </section>
 
-    <div hx-get="/panels/safe_mode" hx-trigger="load" hx-swap="outerHTML"></div>
-    <div hx-get="/panels/rehearsal" hx-trigger="load" hx-swap="outerHTML"></div>
+    <!-- Pipeline — demoted to status chip -->
+    <section class="panel panel-pipeline-chip" id="panel-pipeline">
+      <h2 class="panel-title">Pipeline</h2>
+      <ul id="pipeline-slots" class="slot-list"><li class="muted">—</li></ul>
+    </section>
 
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     STYLES — Video Monitor + new layout
+═══════════════════════════════════════════════════════ -->
 <style>
-/* ── Mode-aware grid columns ──────────────────────────────────────── */
-/* pearl-obs and rehearsal: balanced 3-column */
+/* ── Mode-aware grid ─────────────────────────────────────── */
+/* Right rail is wider now — it holds run-of-show + graphics */
 #cockpit[data-mode="pearl-obs"],
 #cockpit[data-mode="rehearsal"] {
-  grid-template-columns: 230px 1fr 210px;
+  grid-template-columns: 220px 1fr 290px;
 }
-
-/* pearl-only: narrower left (no OBS scene grid), wider centre */
 #cockpit[data-mode="pearl-only"] {
-  grid-template-columns: 210px 1fr 210px;
+  grid-template-columns: 200px 1fr 290px;
 }
-
-/* obs-only: narrower left (no Pearl channel list), wider centre */
 #cockpit[data-mode="obs-only"] {
-  grid-template-columns: 210px 1fr 210px;
+  grid-template-columns: 200px 1fr 290px;
 }
 
-/* ── Zone visibility ──────────────────────────────────────────────── */
-/* pearl-obs + rehearsal: show both zones */
+/* ── Zone visibility ─────────────────────────────────────── */
 #cockpit[data-mode="pearl-obs"]  .pearl-zone,
 #cockpit[data-mode="pearl-obs"]  .obs-zone,
 #cockpit[data-mode="rehearsal"]  .pearl-zone,
-#cockpit[data-mode="rehearsal"]  .obs-zone { display: block; }
-
-/* pearl-only: Pearl zones only */
+#cockpit[data-mode="rehearsal"]  .obs-zone  { display: block; }
 #cockpit[data-mode="pearl-only"] .pearl-zone { display: block; }
 #cockpit[data-mode="pearl-only"] .obs-zone   { display: none;  }
-
-/* obs-only: OBS zones only */
 #cockpit[data-mode="obs-only"]   .obs-zone   { display: block; }
 #cockpit[data-mode="obs-only"]   .pearl-zone { display: none;  }
+#cockpit[data-mode="rehearsal"]  .rehearsal-banner { display: block; }
 
-/* ── Rehearsal banner ─────────────────────────────────────────────── */
-#cockpit[data-mode="rehearsal"] .rehearsal-banner { display: block; }
+/* ── Video Monitor panel ─────────────────────────────────── */
+.video-monitor {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
-/* ── Mode label chip in mission bar ──────────────────────────────── */
-.msb-device-mode { font-size: 0.65rem; letter-spacing: 0.08em; }
-.msb-label--device { text-transform: uppercase; color: var(--muted); }
+/* Column header row */
+.vm-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.vm-col-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+.vm-col-preview { background: rgba(255,255,255,0.03); }
+.vm-col-program { background: rgba(248,81,73,0.06); }
 
-/* ── Mode label inside cockpit left rail ─────────────────────────── */
+.vm-col-icon { font-size: 0.7rem; }
+.vm-icon-live { color: var(--red); animation: live-pulse 2s ease-in-out infinite; }
+@keyframes live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Video rows */
+.vm-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vm-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+/* Channel label — left of each row */
+.vm-row-label-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0.25rem 0;
+}
+.vm-row-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.vm-row-label-en { color: var(--green); }
+.vm-row-label-fr { color: var(--accent); }
+.vm-row-label-obs { color: var(--muted); }
+
+.vm-row-divider {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Thumbnail cell */
+.vm-thumb {
+  position: relative;
+  aspect-ratio: 16/9;
+  background: #090909;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  cursor: default;
+}
+.vm-thumb--preview {
+  border-color: #2a2a2a;
+  opacity: 0.85;
+}
+.vm-thumb--preview:hover { opacity: 1; }
+.vm-thumb--program {
+  border-color: rgba(248,81,73,0.35);
+  box-shadow: 0 0 0 1px rgba(248,81,73,0.15);
+}
+.vm-thumb--selected-preview {
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+.vm-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+.vm-thumb img.vm-visible { display: block; }
+
+.vm-thumb-ph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  color: #2a2a2a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* LIVE badge on program thumbnails */
+.vm-live-badge {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+/* PREVIEW badge on queued thumbnails */
+.vm-preview-badge {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  background: rgba(88,166,255,0.85);
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  display: none;
+}
+.vm-thumb--selected-preview .vm-preview-badge { display: block; }
+
+/* Scene/layout name overlay at bottom of thumbnail */
+.vm-thumb-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.5rem 0.4rem 0.3rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+  display: none;
+}
+.vm-thumb img.vm-visible ~ .vm-thumb-name { display: block; }
+
+/* ── Transition bar ──────────────────────────────────────── */
+.vm-transition-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.5rem;
+  border-top: 1px solid var(--border);
+  gap: 0.75rem;
+}
+
+.vm-tx-left {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.vm-tx-btn {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-ui);
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s;
+}
+.vm-tx-btn:hover { border-color: var(--text); color: var(--text); }
+.vm-tx-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(88,166,255,0.08);
+}
+
+.vm-tx-status {
+  flex: 1;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+  font-family: var(--font-mono);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vm-take-btn {
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-family: var(--font-ui);
+  letter-spacing: 0.06em;
+  padding: 0.35rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--green);
+  background: rgba(63,185,80,0.12);
+  color: var(--green);
+  cursor: pointer;
+  transition: background 0.1s, opacity 0.1s;
+}
+.vm-take-btn:hover { background: rgba(63,185,80,0.22); }
+.vm-take-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--muted);
+  background: transparent;
+}
+
+/* ── Right rail adjustments ──────────────────────────────── */
+/* Pipeline chip — compact in the action rail */
+.panel-pipeline-chip .slot-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.panel-pipeline-chip .slot {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  padding: 0;
+  border-bottom: none;
+  color: var(--muted);
+}
+
+/* Mode label */
 .cockpit-mode-label {
   font-size: 0.62rem;
   font-weight: 600;
@@ -223,82 +450,17 @@
   border-bottom: 1px solid var(--border);
   margin-bottom: 0.75rem;
 }
-
-/* ── Preview thumbs — mode-aware layout ──────────────────────────── */
-.preview-thumbs-wrap {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: nowrap;
-}
-.preview-thumb-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
-}
-/* pearl-obs / rehearsal: 3 equal thumbs */
-.preview-thumbs-wrap.thumbs--three .preview-thumb-item { flex: 1; }
-/* pearl-only: 2 wider thumbs */
-.preview-thumbs-wrap.thumbs--two   .preview-thumb-item { flex: 1; }
-/* obs-only: 1 full-width thumb */
-.preview-thumbs-wrap.thumbs--one   .preview-thumb-item { flex: 1; }
-
-.preview-thumb-label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  text-align: center;
-}
-.preview-thumb-label .thumb-badge {
-  display: inline-block;
-  font-size: 0.58rem;
-  font-weight: 700;
-  padding: 0.1rem 0.35rem;
-  border-radius: 3px;
-  margin-left: 0.3rem;
-  vertical-align: middle;
-  letter-spacing: 0.06em;
-}
-.thumb-badge--en { background: rgba(63,185,80,0.15); color: var(--green); }
-.thumb-badge--fr { background: rgba(88,166,255,0.12); color: var(--accent); }
-.thumb-badge--obs { background: rgba(100,100,100,0.15); color: var(--muted); }
-
-.preview-thumb-frame {
-  width: 100%;
-  aspect-ratio: 16/9;
-  background: #0a0a0a;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-.preview-thumb-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: none;
-}
-.preview-thumb-frame img.thumb-visible { display: block; }
-.preview-thumb-frame .thumb-ph {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  color: #333;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
+.msb-device-mode { font-size: 0.65rem; letter-spacing: 0.08em; }
+.msb-label--device { text-transform: uppercase; color: var(--muted); }
 </style>
 
+<!-- ═══════════════════════════════════════════════════════
+     SCRIPT
+═══════════════════════════════════════════════════════ -->
 <script>
 (function () {
   'use strict';
 
-  // ── Mode config ──────────────────────────────────────────────────────
   var MODE_LABELS = {
     'pearl-obs':  'Pearl + OBS',
     'pearl-only': 'Pearl Only',
@@ -308,99 +470,281 @@
 
   var mode = localStorage.getItem('miktos_mode') || 'pearl-obs';
 
-  // Stamp data-mode on cockpit grid
+  // Stamp mode
   var cockpit = document.getElementById('cockpit');
   if (cockpit) cockpit.dataset.mode = mode;
-
-  // Also stamp on body for any external CSS
   document.body.dataset.mode = mode;
 
-  // Update mission bar device mode chip
-  var modeLabel = document.getElementById('msb-device-mode');
-  if (modeLabel) modeLabel.textContent = MODE_LABELS[mode] || mode;
+  var el = document.getElementById('msb-device-mode');
+  if (el) el.textContent = MODE_LABELS[mode] || mode;
 
-  // Update cockpit mode label (left rail header)
-  var cockpitModeLabel = document.getElementById('cockpit-mode-label');
-  if (cockpitModeLabel) cockpitModeLabel.textContent = MODE_LABELS[mode] || mode;
+  var cl = document.getElementById('cockpit-mode-label');
+  if (cl) cl.textContent = MODE_LABELS[mode] || mode;
 
-  // ── Mode-aware preview ───────────────────────────────────────────────
-  function buildPreview() {
-    var wrap = document.getElementById('preview-thumbs');
-    if (!wrap) return;
+  // ── Video Monitor ─────────────────────────────────────────────────────
+  //
+  // State:
+  //   _program[sourceId] = { imgData, sceneName }  — what's live now
+  //   _preview[sourceId] = { imgData, sceneName }  — what's queued
+  //   _selectedTx = 'cut' | 'fade'
+  //   _pendingTake = true when operator has selected a preview target
 
-    // Determine which sources to show based on mode
-    var sources = [];
+  var _program   = {};
+  var _preview   = {};
+  var _selectedTx = 'cut';
+  var _pendingTake = false;
+
+  // Define rows based on mode
+  function getRows() {
     if (mode === 'pearl-only') {
-      sources = [
-        { id: 'pearl_en', label: 'Pearl', badge: 'EN', badgeClass: 'thumb-badge--en' },
-        { id: 'pearl_fr', label: 'Pearl', badge: 'FR', badgeClass: 'thumb-badge--fr' },
+      return [
+        { id: 'pearl_en', label: 'EN', labelClass: 'vm-row-label-en', liveBadge: true },
+        { id: 'pearl_fr', label: 'FR', labelClass: 'vm-row-label-fr', liveBadge: true },
       ];
-      wrap.className = 'preview-thumbs-wrap thumbs--two';
     } else if (mode === 'obs-only') {
-      sources = [
-        { id: 'obs', label: 'OBS Program', badge: '', badgeClass: 'thumb-badge--obs' },
+      return [
+        { id: 'obs', label: 'OBS', labelClass: 'vm-row-label-obs', liveBadge: true },
       ];
-      wrap.className = 'preview-thumbs-wrap thumbs--one';
     } else {
-      // pearl-obs + rehearsal: all three
-      sources = [
-        { id: 'pearl_en', label: 'Pearl', badge: 'EN', badgeClass: 'thumb-badge--en' },
-        { id: 'pearl_fr', label: 'Pearl', badge: 'FR', badgeClass: 'thumb-badge--fr' },
-        { id: 'obs',      label: 'OBS',   badge: '',   badgeClass: 'thumb-badge--obs' },
+      return [
+        { id: 'pearl_en', label: 'EN', labelClass: 'vm-row-label-en', liveBadge: true },
+        { id: 'pearl_fr', label: 'FR', labelClass: 'vm-row-label-fr', liveBadge: true },
+        { id: 'obs',      label: 'OBS', labelClass: 'vm-row-label-obs', liveBadge: true },
       ];
-      wrap.className = 'preview-thumbs-wrap thumbs--three';
     }
-
-    wrap.innerHTML = sources.map(function (s) {
-      var badge = s.badge
-        ? '<span class="thumb-badge ' + s.badgeClass + '">' + s.badge + '</span>'
-        : '';
-      return '<div class="preview-thumb-item">' +
-        '<div class="preview-thumb-label">' + s.label + badge + '</div>' +
-        '<div class="preview-thumb-frame">' +
-          '<img id="pthumb-' + s.id + '" alt="' + s.label + ' ' + s.badge + '" />' +
-          '<div class="thumb-ph">No signal</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
   }
 
-  buildPreview();
+  function buildVideoMonitor() {
+    var rows = getRows();
+    var wrap = document.getElementById('vm-rows');
+    if (!wrap) return;
 
-  // ── Thumbnail polling ────────────────────────────────────────────────
-  function refreshThumb(sourceId) {
-    var img = document.getElementById('pthumb-' + sourceId);
+    wrap.innerHTML = rows.map(function (row) {
+      return [
+        '<div class="vm-row-label-wrap">',
+          '<span class="vm-row-label ' + row.labelClass + '">' + row.label + '</span>',
+          '<div class="vm-row-divider"></div>',
+        '</div>',
+        '<div class="vm-row">',
+          // PREVIEW cell
+          '<div class="vm-thumb vm-thumb--preview" id="vm-prev-' + row.id + '"',
+              ' title="Click a layout or scene to queue a preview">',
+            '<img id="vm-prev-img-' + row.id + '" alt="Preview ' + row.label + '" />',
+            '<div class="vm-preview-badge">PREVIEW</div>',
+            '<div class="vm-thumb-name" id="vm-prev-name-' + row.id + '"></div>',
+            '<div class="vm-thumb-ph">',
+              '<span style="font-size:1.2rem;opacity:0.2;">◐</span>',
+              '<span>Select to preview</span>',
+            '</div>',
+          '</div>',
+          // PROGRAM cell
+          '<div class="vm-thumb vm-thumb--program" id="vm-prog-' + row.id + '">',
+            '<img id="vm-prog-img-' + row.id + '" alt="Program ' + row.label + '" />',
+            (row.liveBadge ? '<div class="vm-live-badge">LIVE</div>' : ''),
+            '<div class="vm-thumb-name" id="vm-prog-name-' + row.id + '"></div>',
+            '<div class="vm-thumb-ph">',
+              '<span style="font-size:1.2rem;opacity:0.2;">●</span>',
+              '<span>No signal</span>',
+            '</div>',
+          '</div>',
+        '</div>',
+      ].join('');
+    }).join('');
+
+    // OBS-only: hide transition bar (no Pearl to transition)
+    // Keep it for all modes — it controls OBS transitions too
+    updateTakeBtn();
+  }
+
+  // ── Thumbnail polling — PROGRAM column ───────────────────────────────
+  function pollProgram(sourceId) {
+    var img = document.getElementById('vm-prog-img-' + sourceId);
     if (!img) return;
     fetch('/api/preview/thumbnail?source=' + sourceId)
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d.data) {
           img.src = 'data:' + d.content_type + ';base64,' + d.data;
-          img.classList.add('thumb-visible');
-          var ph = img.nextElementSibling;
+          img.classList.add('vm-visible');
+          var ph = img.parentElement.querySelector('.vm-thumb-ph');
           if (ph) ph.style.display = 'none';
+          // Store as last known program state
+          _program[sourceId] = { imgData: img.src };
         }
       })
       .catch(function () {});
   }
 
-  function refreshAllThumbs() {
-    if (mode === 'pearl-only') {
-      refreshThumb('pearl_en');
-      refreshThumb('pearl_fr');
-    } else if (mode === 'obs-only') {
-      refreshThumb('obs');
-    } else {
-      refreshThumb('pearl_en');
-      refreshThumb('pearl_fr');
-      refreshThumb('obs');
-    }
+  function pollAllProgram() {
+    getRows().forEach(function (row) { pollProgram(row.id); });
   }
 
-  refreshAllThumbs();
-  setInterval(refreshAllThumbs, 2500);
+  // ── OBS Scene Preview — when operator selects a scene ────────────────
+  // When user clicks a scene button in the switcher panel, JS calls:
+  //   window.queueObsPreview(sceneName)
+  // We capture the CURRENT program thumbnail as "what was before"
+  // and mark the scene as queued.
 
-  // ── SSE — all status updates ─────────────────────────────────────────
+  var _pendingObsScene = null;
+
+  window.queueObsPreview = function (sceneName) {
+    // Move current OBS program to preview cell as "coming up"
+    var progImg = document.getElementById('vm-prog-img-obs');
+    var prevImg = document.getElementById('vm-prev-img-obs');
+    var prevName = document.getElementById('vm-prev-name-obs');
+    var prevCell = document.getElementById('vm-prev-obs');
+
+    // We'll fetch the scene screenshot from OBS WebSocket via a custom approach:
+    // Since we can't preview without a Python endpoint, we show the queued scene name
+    // and the current program moves to preview as "now → next"
+    _pendingObsScene = sceneName;
+    _pendingTake = true;
+
+    if (prevName) prevName.textContent = sceneName;
+    if (prevCell) prevCell.classList.add('vm-thumb--selected-preview');
+
+    // Fetch the scene screenshot using existing obs thumbnail (it will update soon)
+    // Show current program in preview as reference
+    if (progImg && progImg.src && prevImg) {
+      prevImg.src = progImg.src;
+      prevImg.classList.add('vm-visible');
+      var prevPh = prevImg.parentElement.querySelector('.vm-thumb-ph');
+      if (prevPh) prevPh.style.display = 'none';
+    }
+
+    updateTakeBtn();
+    setTxStatus('Scene queued: ' + sceneName);
+  };
+
+  // ── Pearl Layout Preview — when operator clicks a layout ──────────────
+  // Moves current channel thumbnail to preview, marks it as pending
+  var _pendingPearlLayouts = {};
+
+  window.queuePearlPreview = function (channelId, layoutId, layoutName) {
+    // Determine source id
+    var sourceId = null;
+    var rows = getRows();
+    rows.forEach(function (row) {
+      if (row.id === 'pearl_en' && String(channelId) === '2') sourceId = 'pearl_en';
+      if (row.id === 'pearl_fr' && String(channelId) === '3') sourceId = 'pearl_fr';
+    });
+    if (!sourceId) sourceId = 'pearl_en'; // fallback
+
+    var progImg  = document.getElementById('vm-prog-img-' + sourceId);
+    var prevImg  = document.getElementById('vm-prev-img-' + sourceId);
+    var prevName = document.getElementById('vm-prev-name-' + sourceId);
+    var prevCell = document.getElementById('vm-prev-' + sourceId);
+
+    _pendingPearlLayouts[sourceId] = { channelId: channelId, layoutId: layoutId, layoutName: layoutName };
+    _pendingTake = true;
+
+    if (prevName) prevName.textContent = layoutName;
+    if (prevCell) prevCell.classList.add('vm-thumb--selected-preview');
+
+    // Copy current program thumb to preview as reference
+    if (progImg && progImg.src && prevImg) {
+      prevImg.src = progImg.src;
+      prevImg.classList.add('vm-visible');
+      var prevPh = prevImg.parentElement.querySelector('.vm-thumb-ph');
+      if (prevPh) prevPh.style.display = 'none';
+    }
+
+    updateTakeBtn();
+    setTxStatus('Layout queued: ' + layoutName + ' (Ch ' + channelId + ')');
+  };
+
+  // ── Transition selection ─────────────────────────────────────────────
+  document.addEventListener('click', function (e) {
+    var txBtn = e.target.closest('.vm-tx-btn');
+    if (!txBtn) return;
+    document.querySelectorAll('.vm-tx-btn').forEach(function (b) {
+      b.classList.remove('vm-tx-btn--active');
+    });
+    txBtn.classList.add('vm-tx-btn--active');
+    _selectedTx = txBtn.id === 'tx-fade' ? 'fade' : 'cut';
+  });
+
+  // Select CUT by default
+  var cutBtn = document.getElementById('tx-cut');
+  if (cutBtn) cutBtn.classList.add('vm-tx-btn--active');
+
+  // ── TAKE — commit preview to program ────────────────────────────────
+  window.commitPreview = async function () {
+    if (!_pendingTake) return;
+
+    // Execute OBS scene switch if pending
+    if (_pendingObsScene) {
+      try {
+        var r = await fetch('/api/switcher/obs/switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scene_name: _pendingObsScene, transition: _selectedTx }),
+        });
+        var d = await r.json();
+        setTxStatus(d.success ? '✓ ' + _pendingObsScene : 'Error: ' + (d.error || 'failed'));
+      } catch (err) {
+        setTxStatus('Error: ' + err.message);
+      }
+      _pendingObsScene = null;
+    }
+
+    // Execute Pearl layout switches if pending
+    for (var sid in _pendingPearlLayouts) {
+      var pending = _pendingPearlLayouts[sid];
+      try {
+        await fetch('/api/pearl/switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel_id: pending.channelId, layout_id: pending.layoutId }),
+        });
+        setTxStatus('✓ ' + pending.layoutName);
+      } catch (err) {
+        setTxStatus('Error: ' + err.message);
+      }
+    }
+    _pendingPearlLayouts = {};
+
+    // Clear preview state
+    _pendingTake = false;
+    document.querySelectorAll('.vm-thumb--selected-preview').forEach(function (c) {
+      c.classList.remove('vm-thumb--selected-preview');
+    });
+    document.querySelectorAll('[id^="vm-prev-name-"]').forEach(function (n) {
+      n.textContent = '';
+    });
+    updateTakeBtn();
+
+    // Poll immediately to show new state
+    setTimeout(pollAllProgram, 600);
+  };
+
+  window.doTransition = function (type) {
+    _selectedTx = type;
+    document.querySelectorAll('.vm-tx-btn').forEach(function (b) {
+      b.classList.toggle('vm-tx-btn--active', b.id === 'tx-' + type);
+    });
+  };
+
+  function setTxStatus(msg) {
+    var el = document.getElementById('vm-tx-status');
+    if (el) el.textContent = msg;
+    setTimeout(function () {
+      if (el) el.textContent = '';
+    }, 3000);
+  }
+
+  function updateTakeBtn() {
+    var btn = document.getElementById('btn-take');
+    if (btn) btn.disabled = !_pendingTake;
+  }
+
+  // ── Pearl layout buttons — hook into preview system ──────────────────
+  // Override switchPearlLayout to go through preview first
+  window.switchPearlLayout = function (channelId, layoutId, layoutName) {
+    window.queuePearlPreview(channelId, layoutId, layoutName || ('Layout ' + layoutId));
+  };
+
+  // ── SSE ──────────────────────────────────────────────────────────────
   var evtSource = new EventSource('/api/status/stream');
 
   evtSource.onmessage = function (e) {
@@ -408,74 +752,57 @@
     try { d = JSON.parse(e.data); } catch (_) { return; }
 
     // Mission bar
-    var msbSession = document.getElementById('msb-session-name');
-    if (msbSession) msbSession.textContent = d.session_name || '—';
+    function msb(id, val) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
+    msb('msb-session-name', d.session_name || '—');
+    msb('msb-elapsed',      d.elapsed      || '—');
+    msb('msb-device-mode',  MODE_LABELS[mode] || mode);
 
-    var msbMode    = document.getElementById('msb-mode');
-    var msbModeChip= document.getElementById('msb-mode-chip');
-    if (msbMode && msbModeChip) {
+    var modeEl = document.getElementById('msb-mode');
+    var modeChip = document.getElementById('msb-mode-chip');
+    if (modeEl && modeChip) {
       var rehearsal = !!d.rehearsal_active;
-      msbMode.textContent = rehearsal ? 'REHEARSAL' : 'LIVE';
-      msbModeChip.classList.toggle('msb-rehearsal', rehearsal);
-      msbModeChip.classList.toggle('msb-live',      !rehearsal);
+      modeEl.textContent = rehearsal ? 'REHEARSAL' : 'LIVE';
+      modeChip.classList.toggle('msb-rehearsal', rehearsal);
+      modeChip.classList.toggle('msb-live', !rehearsal);
     }
 
-    // EN dot
-    var msbEn = document.getElementById('msb-en');
-    if (msbEn) {
+    function dot(id, ok, label) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = ok ? '●' : '○';
+      el.className = 'nsc-dot ' + (ok ? 'nsc-dot--live' : 'nsc-dot--idle');
+      if (label) el.title = label;
+    }
+    dot('msb-obs',      d.obs_ok,      d.obs_ok ? 'ONLINE' : 'OFFLINE');
+    dot('msb-pearl',    d.pearl_ok,    d.pearl_ok ? 'ONLINE' : 'OFFLINE');
+    dot('msb-captions', d.captions_ok);
+
+    var enEl = document.getElementById('msb-en');
+    if (enEl) {
       var es = (d.en_status || 'idle').toLowerCase();
-      msbEn.textContent = es === 'streaming' ? '●' : es === 'stopped' ? '◼' : '○';
-      msbEn.className   = 'msb-value msb-dot msb-' + es;
-      msbEn.title       = (d.en_status || 'idle').toUpperCase();
+      enEl.textContent = es === 'streaming' ? '●' : '○';
+      enEl.className = 'nsc-dot ' + (es === 'streaming' ? 'nsc-dot--live' : 'nsc-dot--idle');
+    }
+    var frEl = document.getElementById('msb-fr');
+    if (frEl) {
+      var fs = (d.fr_status || 'idle').toLowerCase();
+      frEl.textContent = fs === 'active' ? '●' : '○';
+      frEl.className = 'nsc-dot ' + (fs === 'active' ? 'nsc-dot--live' : 'nsc-dot--idle');
     }
 
-    // FR dot
-    var msbFr = document.getElementById('msb-fr');
-    if (msbFr) {
-      var fs = (d.fr_status || '—').toLowerCase();
-      msbFr.textContent = fs === 'active' ? '●' : '○';
-      msbFr.className   = 'msb-value msb-dot ' + (fs === 'active' ? 'msb-streaming' : 'msb-idle');
-    }
-
-    // OBS dot
-    var msbObs = document.getElementById('msb-obs');
-    if (msbObs) {
-      msbObs.textContent = d.obs_ok ? '●' : '○';
-      msbObs.className   = 'msb-value msb-dot ' + (d.obs_ok ? 'msb-streaming' : 'msb-idle');
-      msbObs.title       = d.obs_ok ? 'ONLINE' : 'OFFLINE';
-    }
-
-    // Pearl dot
-    var msbPearl = document.getElementById('msb-pearl');
-    if (msbPearl) {
-      msbPearl.textContent = d.pearl_ok ? '●' : '○';
-      msbPearl.className   = 'msb-value msb-dot ' + (d.pearl_ok ? 'msb-streaming' : 'msb-idle');
-      msbPearl.title       = d.pearl_ok ? 'ONLINE' : 'OFFLINE';
-    }
-
-    // Captions dot
-    var msbCap = document.getElementById('msb-captions');
-    if (msbCap) {
-      msbCap.textContent = d.captions_ok ? '●' : '○';
-      msbCap.className   = 'msb-value msb-dot ' + (d.captions_ok ? 'msb-streaming' : 'msb-idle');
-    }
-
-    // Elapsed
-    var msbEl = document.getElementById('msb-elapsed');
-    if (msbEl) msbEl.textContent = d.elapsed || '—';
-
-    // Stream state badge
+    // Stream state
     var ss = document.getElementById('stream-state');
     if (ss) {
       ss.textContent = (d.stream_state || 'idle').toUpperCase();
-      ss.className   = 'state-badge state-' + (d.stream_state || 'idle');
+      ss.className = 'state-badge state-' + (d.stream_state || 'idle');
     }
-
-    // Session elapsed
     var sel = document.getElementById('session-elapsed');
     if (sel) sel.textContent = d.elapsed || '—';
 
-    // Ticks + alerts
+    // Ticks
     var tc = document.getElementById('tick-count');
     if (tc) tc.textContent = d.tick != null ? d.tick : 0;
     document.dispatchEvent(new CustomEvent('miktos:tick', { detail: { tick: d.tick || 0 } }));
@@ -483,26 +810,28 @@
     var al = document.getElementById('alerts-list');
     if (al) al.textContent = (d.alerts && d.alerts.length) ? d.alerts.join(', ') : 'none';
 
-    // Compact health chip
-    function setChip(dotId, txtId, ok, onText, offText) {
-      var dot = document.getElementById(dotId);
-      var txt = document.getElementById(txtId);
-      if (dot) dot.className = 'hchip-dot ' + (ok ? 'hchip-ok' : 'hchip-err');
-      if (txt) txt.textContent = ok ? onText : offText;
+    // Health chip
+    function setChip(dotId, txtId, ok, onTxt, offTxt) {
+      var dt = document.getElementById(dotId);
+      var tx = document.getElementById(txtId);
+      if (dt) dt.className = 'hchip-dot ' + (ok ? 'hchip-ok' : 'hchip-err');
+      if (tx) tx.textContent = ok ? onTxt : offTxt;
     }
     setChip('chip-obs-dot',      'chip-obs-txt',      d.obs_ok,      'Online',   'Offline');
     setChip('chip-pearl-dot',    'chip-pearl-txt',    d.pearl_ok,    'Online',   'Offline');
     setChip('chip-captions-dot', 'chip-captions-txt', d.captions_ok, 'Active',   'Inactive');
 
-    // Pearl layouts (left rail)
+    // Pearl layouts — now pass layoutName to the preview system
     var pl = document.getElementById('pearl-layouts');
     if (pl) {
       if (d.pearl_layouts && d.pearl_layouts.length) {
         pl.innerHTML = d.pearl_layouts.map(function (l) {
           var btns = (l.layouts || []).map(function (lay) {
             var active = lay.id === l.active_id ? ' btn-layout--active' : '';
+            // Pass layoutName as third argument to enable preview labeling
             return '<button class="btn-layout' + active + '"' +
-              ' onclick="switchPearlLayout(\'' + l.channel + '\',\'' + lay.id + '\')">' +
+              ' onclick="switchPearlLayout(\'' + l.channel + '\',\'' + lay.id + '\',\'' +
+              lay.name.replace(/'/g, "\\'") + '\')">' +
               lay.name + '</button>';
           }).join('');
           return '<div class="layout-row">' +
@@ -516,7 +845,7 @@
       }
     }
 
-    // Pipeline slots
+    // Pipeline
     var ps = document.getElementById('pipeline-slots');
     if (ps) {
       if (d.pipeline_slots && d.pipeline_slots.length) {
@@ -529,14 +858,14 @@
     }
 
     // Session buttons
-    var btnStart     = document.getElementById('btn-start');
-    var btnStop      = document.getElementById('btn-stop');
-    var btnFinishing = document.getElementById('btn-finishing');
-    if (btnStart && btnStop && btnFinishing) {
+    var btnStart = document.getElementById('btn-start');
+    var btnStop  = document.getElementById('btn-stop');
+    var btnFin   = document.getElementById('btn-finishing');
+    if (btnStart && btnStop && btnFin) {
       var running = !!d.session_running;
       btnStart.classList.toggle('hidden', running);
       btnStop.classList.toggle('hidden', !running);
-      btnFinishing.classList.add('hidden');
+      btnFin.classList.add('hidden');
     }
 
     // Rehearsal banner
@@ -547,59 +876,46 @@
   };
 
   // ── Session control ──────────────────────────────────────────────────
-  async function startSession() {
+  window.startSession = async function () {
     var status = document.getElementById('control-status');
     if (status) status.textContent = 'Starting…';
     try {
-      var r    = await fetch('/api/session/start', { method: 'POST' });
-      var body = await r.json();
-      if (r.ok && body.success) {
-        if (status) status.textContent = 'Started (PID ' + body.pid + ')';
-      } else {
-        if (status) status.textContent = body.error || 'Failed to start';
-      }
+      var r = await fetch('/api/session/start', { method: 'POST' });
+      var b = await r.json();
+      if (status) status.textContent = (r.ok && b.success)
+        ? 'Started (PID ' + b.pid + ')'
+        : (b.error || 'Failed');
     } catch (err) {
       if (status) status.textContent = 'Error: ' + err.message;
     }
-  }
+  };
 
-  async function stopSession() {
-    var btnStop      = document.getElementById('btn-stop');
-    var btnFinishing = document.getElementById('btn-finishing');
-    var status       = document.getElementById('control-status');
-    if (btnStop)      btnStop.classList.add('hidden');
-    if (btnFinishing) btnFinishing.classList.remove('hidden');
-    if (status) status.textContent = 'Stopping…';
+  window.stopSession = async function () {
+    var btnStop = document.getElementById('btn-stop');
+    var btnFin  = document.getElementById('btn-finishing');
+    var status  = document.getElementById('control-status');
+    if (btnStop) btnStop.classList.add('hidden');
+    if (btnFin)  btnFin.classList.remove('hidden');
+    if (status)  status.textContent = 'Stopping…';
     try {
-      var r    = await fetch('/api/session/stop', { method: 'POST' });
-      var body = await r.json();
-      if (!r.ok || !body.success) {
-        if (btnStop)      btnStop.classList.remove('hidden');
-        if (btnFinishing) btnFinishing.classList.add('hidden');
-        if (status) status.textContent = body.error || 'Failed to stop';
+      var r = await fetch('/api/session/stop', { method: 'POST' });
+      var b = await r.json();
+      if (!r.ok || !b.success) {
+        if (btnStop) btnStop.classList.remove('hidden');
+        if (btnFin)  btnFin.classList.add('hidden');
+        if (status)  status.textContent = b.error || 'Failed';
       } else {
         if (status) status.textContent = 'Pipeline finishing…';
       }
     } catch (err) {
       if (status) status.textContent = 'Error: ' + err.message;
     }
-  }
+  };
 
-  async function switchPearlLayout(channelId, layoutId) {
-    try {
-      await fetch('/api/pearl/switch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel_id: channelId, layout_id: layoutId }),
-      });
-    } catch (err) {
-      console.error('Layout switch failed:', err);
-    }
-  }
-
-  window.startSession       = startSession;
-  window.stopSession        = stopSession;
-  window.switchPearlLayout  = switchPearlLayout;
+  // ── Init ─────────────────────────────────────────────────────────────
+  buildVideoMonitor();
+  pollAllProgram();
+  setInterval(pollAllProgram, 2500);
 
 }());
 </script>
