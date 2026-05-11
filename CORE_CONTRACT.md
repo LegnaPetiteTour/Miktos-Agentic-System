@@ -62,7 +62,7 @@ The core engine operates on these abstractions only:
 The following are domain-specific and must never appear in `engine/`:
 
 | Forbidden in core | Belongs in |
-|---|---|
+| --- | --- |
 | OBS scene names | `engine/adapters/obs_adapter.py` or `domains/streamlab/` |
 | Pearl channel IDs | `engine/adapters/pearl_adapter.py` or session config |
 | YouTube video IDs | `domains/streamlab_post/workers/youtube_worker.py` |
@@ -90,6 +90,7 @@ If the core needs something from a domain, it must arrive through one of:
 5. **Domain policy** — injected at runtime, never hardcoded in core
 
 **Wrong — domain logic leaking into core:**
+
 ```python
 # engine/graph/execution_node.py
 if device == "pearl":
@@ -97,6 +98,7 @@ if device == "pearl":
 ```
 
 **Correct — capability-driven, adapter-abstracted:**
+
 ```python
 # engine/graph/execution_node.py
 if adapter.capabilities().supports_layout_switch:

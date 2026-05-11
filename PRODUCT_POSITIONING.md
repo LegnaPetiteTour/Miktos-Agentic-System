@@ -72,6 +72,7 @@ engine/adapters/obs_adapter.py      OBS WebSocket adapter
 ```
 
 StreamLab is a bilingual institutional broadcast cockpit that:
+
 - Controls Pearl and OBS from a single browser UI
 - Automates post-stream archival (transcription, translation, YouTube metadata)
 - Reduces live-event operation to a governed session workflow
@@ -127,7 +128,7 @@ A communications operator at a bilingual institution can:
 ## Current Status (Phase 19 — Production-Ready)
 
 | Capability | Status |
-|---|---|
+| --- | --- |
 | Post-stream closure pipeline | ✅ Production-validated |
 | Web cockpit (browser-based) | ✅ Production-validated |
 | Pearl hardware control | ✅ Production-validated |
@@ -146,6 +147,7 @@ A communications operator at a bilingual institution can:
 ## Commercial Boundary (Planned)
 
 **Open Source (free, always):**
+
 - Local cockpit
 - Core orchestration engine
 - OBS adapter
@@ -156,6 +158,7 @@ A communications operator at a bilingual institution can:
 - Adapter SDK
 
 **Pro Self-Hosted (paid, future):**
+
 - Docker deployment with auth and user roles
 - Advanced audit logs and encrypted secrets
 - Institution branding
@@ -164,6 +167,7 @@ A communications operator at a bilingual institution can:
 - Priority adapters
 
 **Managed / VIP (paid, future):**
+
 - Installation, configuration, staff training
 - Custom adapter development
 - Event readiness testing
